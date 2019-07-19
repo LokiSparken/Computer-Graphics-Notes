@@ -76,13 +76,44 @@
 
 ### **Lecture 2: Basic Math**
 #### **Basic Math: Vectors and Dot Products**
+* Dot(scalar) product：
+  $\vec a=(x_a,y_a),\ \ \vec b=(x_b,y_b),\ \ angle\ \vec a, \vec b = \theta$
+  $$\vec a \cdot \vec b = \vec b \cdot \vec a = \vert \vec a \vert \cdot \vert \vec b \vert \cdot cos\theta = x_ax_b+y_ay_b$$
+* 
 #### **Basic Math: Cross Products**
 #### **Basic Math: Creating a coordinate frame**
 #### **Basic Math: Matrices**
-#### **Basic Math: **
+> #### **`Maths notes are on the notebook`**
+#### **Compiling OpenGL Programs**
+* Set up
+  * Download VS 2019
+  * install C++ language
+  * VS will help to run the hw0-windows given by the course
+* Problems in demo running
+  * screenshot error:   
+    Change the code to save the back buffer instead of the front (this is in the third line of the saveScreenshot() procedure in mytest3.cpp)  
+    `glReadBuffer(GL_FRONT); -> glReadBuffer(GL_BACK);`
 
 ## <i class="fa fa-star"></i> **Unit 1**
 ### **Lecture 3: Transforms 1**
+* General Idea
+  * In general have the object in model coordinates.
+  * Tranform the object into world coordinates.
+  * Represent points on object as vectors.
+  * Multiply by matrices to transform.
+  * Demos with applet "Transformations Game" from www.cs.brown.edu/exploratories/home.html
+
+#### **Basic 2D Transforms**
+* 2D Transforms: rotation, scale, shear(错切)
+* 
+
+#### **Composing Transforms**
+
+
+#### **3D Rotations**
+
+
+
 ### **Lecture 4: Transforms 2**
 ### **Lecture 5: Viewing**
 
@@ -159,8 +190,41 @@
 ### **Lecture 2**
 * set up 创建、安排、安装配置、引起、产生、陷害
 * verify v. 核实
-* 
+* `GLSL => GL shading language?`
+* magnitude n. 向量的大小（向量的长度）
+* offset 
+* displacement 位移
+* parallelogram rule 平行四边形法则
+* be aligned with 对齐
+* commutative adj. (运算)可交换的
+* cartesian components 笛卡尔分量
+* orthogonal adj. 正交/直角/(相互)垂直/矩形的
+* transpose 转置（v. 使调换顺序/转移/变形）
+* norm 向量的模
+* Pythagorean proposition 毕达哥拉斯/勾股定理
+* symmetric adj. 对称的 symmetry n. 对称
+* cosine 余弦
+* inverse adj. 相反的
+* scalar product 数量积（=dot product点积）
+* associativity adj. 可结合性
+* derive v. 获得/使产生
+* denote v. 表示
+* span v. 涵盖、跨越、持续、包括
+* in terms of 从……角度看
+* determinant n. 决定因素
+* `dual matrix 对偶矩阵`
+* torso n. 身体躯干
+* consistent adj. 一致的、连续的、不矛盾的
+* transform v. 使改变
+* whereas (对比两个事实)然而，但是，尽管
+* niggle n. 小牢骚 v. 使烦恼，挑剔 niggling adj. (不严重却不断)烦人的
 
+### **Lecture 3**
+* motivate 引出
+* courtesy adj. 免费(试用)的 n. 礼貌、客气话
+* homogenous adj. 同种类的、同性质的
+* breakthrough n. 重大进展、突破
+* 
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
