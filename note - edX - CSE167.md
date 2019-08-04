@@ -224,6 +224,9 @@
 * courtesy adj. 免费(试用)的 n. 礼貌、客气话
 * homogenous adj. 同种类的、同性质的
 * breakthrough n. 重大进展、突破
+
+### **Lecture 4**
+* homogeneous coordinates 齐次坐标
 * 
 
 <i class="fa fa-star"></i>
