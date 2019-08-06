@@ -227,6 +227,8 @@
 
 ### **Lecture 4**
 * homogeneous coordinates 齐次坐标
+* rigid body 刚体
+* intuitive adj. 凭直觉得到的，直觉的，易懂的
 * 
 
 <i class="fa fa-star"></i>
