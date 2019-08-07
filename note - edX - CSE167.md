@@ -229,6 +229,9 @@
 * homogeneous coordinates 齐次坐标
 * rigid body 刚体
 * intuitive adj. 凭直觉得到的，直觉的，易懂的
+* diagram n. 示意图 v. 用图表示
+* tangent n. 正切，切线
+* canonical adj. 经典的
 * 
 
 <i class="fa fa-star"></i>
