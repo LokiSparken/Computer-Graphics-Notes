@@ -1,5 +1,4 @@
 // Output an image in ppm file
-#include <iostream>
 #include <fstream>
 using namespace std;
 

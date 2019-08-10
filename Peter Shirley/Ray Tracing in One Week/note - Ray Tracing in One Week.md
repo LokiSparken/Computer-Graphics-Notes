@@ -4,6 +4,20 @@
 # Chapter 1: Output an image 
 * .ppm格式：P3 nx*ny 各像素点的RGB
   * 可以直接看颜色效果欸好神奇ovo
+* cpp文件输出
+```c++
+#include <fstream>
+
+int main()
+{
+    ofstream output;    // 创建ofstream对象
+    output.open("filename.ext");    // 关联文本文件
+
+    output << "output some extents to the file.\n" ; // 输出到文件
+
+    output.close(); // 最后关闭文件
+}
+```
 
 # Chapter 2: The vec3 class
 * `class vec3`: 向量计算和颜色计算
