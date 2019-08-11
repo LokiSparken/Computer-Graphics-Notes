@@ -1,7 +1,7 @@
-> # Peter Shirley - Ray Tracing in One Week
-# Chapter 0: Overview
+> # <i class="fa fa-star"></i> Peter Shirley - Ray Tracing in One Week
+# <i class="fa fa-star"></i> Chapter 0: Overview
 
-# Chapter 1: Output an image 
+# <i class="fa fa-star"></i> Chapter 1: Output an image 
 * .ppm格式：P3 nx*ny 各像素点的RGB
   * 可以直接看颜色效果欸好神奇ovo
 * cpp文件输出
@@ -21,7 +21,7 @@ int main()
 ## 小结
     大概就是输出到ppm看下预览吧，输出的图挺好看的，根据比例显示颜色的样子=。=
 
-# Chapter 2: The vec3 class
+# <i class="fa fa-star"></i> Chapter 2: The vec3 class
 * `class vec3`: 向量计算和颜色计算
 * 复习一手cpp运算符重载
   * `operator[](int pos)`: 下标运算符重载，一般要针对常量对象和非常量对象写一个只读访问的`const T operator[](int pos) const`和一个返回引用的`T &operator[](int pos)`
@@ -34,7 +34,7 @@ int main()
 主要是加减乘除等。之后是一些向量常用的基本量如模长、对应方向上的单位向量等的获取。最后是点积和叉乘。`叉乘`用矩阵的形式，根据第一行的
 代数余子式展开求得新向量。
 
-# Chapter 3: Rays, a simple camera, and background
+# <i class="fa fa-star"></i> Chapter 3: Rays, a simple camera, and background
 * 头皮发麻，感觉写的注释比代码多……直接看小结叭QAQ
 ## 小结
 * 根据空间直线的参数方程形式建立`射线类ray`。
@@ -45,9 +45,37 @@ int main()
 * 用线性插值把色值范围相应缩放投影到要显示的平面区间
 * 线性插值：`blended_value = (1-t)*s + t*e, t∈[0,1]`（我还是更喜欢`s + (e-s)*t`）
 
-# Chapter 4: Adding a sphere
+# <i class="fa fa-star"></i> Chapter 4: Adding a sphere
+* 光线和球交点推导。设球心C(cx, cy, cz)，半径R，未知点p(x, y, z)。
+  * $(x-cx)^2 + (y-cy)^2 + (z-cz)^2 = R^2$
+  * 左部用向量表示，看作是 $\overrightarrow{p-C} \cdot \overrightarrow{p-C}$
+  * 考虑光线上的点 $p(t) = \overrightarrow{A} + \overrightarrow{B}t$ 并代入上式
+  * 完全展开，整理，得到关于参数 $t$ 的二次方程如下
+  * $t^2\overrightarrow{B}\cdot\overrightarrow{B} + 2t\overrightarrow{B}\cdot(\overrightarrow{A}-\overrightarrow{C}) + (\overrightarrow{A}-\overrightarrow{C})\cdot(\overrightarrow{A}-\overrightarrow{C}) - R^2 = 0$
+  * 令 $a = \overrightarrow{B}\cdot\overrightarrow{B}, b=2\overrightarrow{B}\cdot(\overrightarrow{A}-\overrightarrow{C}), c=(\overrightarrow{A}-\overrightarrow{C})\cdot(\overrightarrow{A}-\overrightarrow{C})-R^2$
+  * 求一元二次方程根的判别式 $b^2-4ac$ 
+  * $\delta < 0$时无交点，不光线没有照射到球上的这一点
+* 本节问题：
+  * 当圆心坐标设置在(0, 0, 1)时球位于相机背后，这里同样会显示，作者说后面解决。
+  * 作者的代码 $\delta = 0$ 时hit返回false，测下来在这里貌似没有问题，不知道后面会不会有影响。（所以我就先自己补=号了qvq，坐等打脸）
 
-# Word Box
+# <i class="fa fa-star"></i> Chapter 5: Surface	normals	and	multiple objects
+
+# <i class="fa fa-star"></i> Chapter 6:
+
+# <i class="fa fa-star"></i> Chapter 7:
+
+# <i class="fa fa-star"></i> Chapter 8:
+
+# <i class="fa fa-star"></i> Chapter 9:
+
+# <i class="fa fa-star"></i> Chapter 10:
+
+# <i class="fa fa-star"></i> Chapter 11:
+
+# <i class="fa fa-star"></i> Chapter 12:
+
+# <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
 * staple adj. 主要的，基本的 n. 订书钉，基本食物 v. 用订书钉装订
 * preach v. 宣讲，说教
@@ -71,8 +99,9 @@ int main()
 * ray n. 射线，少量 v. 照射，发光
 
 ## Chapter 4: Adding a sphere
-* 
+* straightforward adj. 简单的
 
+## Chapter 5: Surface normals and multiple objects
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
