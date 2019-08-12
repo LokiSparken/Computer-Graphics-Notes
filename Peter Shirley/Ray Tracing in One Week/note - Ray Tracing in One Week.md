@@ -60,6 +60,27 @@ int main()
   * 作者的代码 $\delta = 0$ 时hit返回false，测下来在这里貌似没有问题，不知道后面会不会有影响。（所以我就先自己补=号了qvq，坐等打脸）
 
 # <i class="fa fa-star"></i> Chapter 5: Surface	normals	and	multiple objects
+## **法线**
+* 法线贴图Normal Mapping中的`对法线的编码和解码`(A common trick used for visualizing normals)
+  * 设法线是单位向量，则其x, y, z值都在[-1, 1]之间。
+  * 和上节相同的手法，全部+1再/2则可将区间转化到[0, 1]。
+  * 然后*255.99即可将x, y, z映射到r, g, b。
+* 注意hit_sphere返回值
+  * 为了根据交点位置不同映射到不同的色值，所以要获取所求参数t具体数值
+  * 所以hit_sphere返回值从bool转为float，不然就在边界爆了个INT_MIN
+  * `话说返回值还是bool的时候，把INT_MIN的那行强行改成跟上一行一样的值得到的图也挺好看的不知道是啥图欸……`
+## **多物体**
+* 考虑场景中有多个物体，那么从观察者位置往某个方向看，如果当前的光线方向会命中很多物体……
+* 此时，程序会计算光线和所有物体的交点。但是最后产生的画面，只需要离观察者最近的交点信息即可。
+* 为此，建立`抽象的`命中类hitable，含纯虚函数（`继承类必须实现`）hit接受光线的命中和相关信息
+* `求最近交点`
+  * 当光射线与各种物体求交的过程中，会得到很多参数t的解
+  * `设置符合的范围[tmin, tmax]`，初始为参数合法范围[0, 1]。
+  * 当与某物体求交得到一个t后，由于要求离射线出发点最近的交点是观察者能看到的点，所以t应尽量小。
+  * 因此更新范围到[0, t]，并将这个tmax不断缩小，就能得到最近交点。
+## **代码实现**
+* 作者的github代码和那些博客里tmax上界都用的MAXFLOAT我真找不到……
+* 就用`<cfloat>`里的`FLT_MAX`了orz
 
 # <i class="fa fa-star"></i> Chapter 6:
 
@@ -102,6 +123,15 @@ int main()
 * straightforward adj. 简单的
 
 ## Chapter 5: Surface normals and multiple objects
+* shade n. 阴凉处，灯罩，色度 v. 给……遮挡（光线），画阴影
+* perpendicular adj. 垂直的 n. 垂直线
+* by convention 按照惯例
+* subtle adj. 不易察觉的，机智的，狡猾的
+* intuitive adj. 凭直觉得到的，易懂的
+* quandary n. 困惑
+* end up doing 结果变成做……
+* blur n. 模糊的东西 v. (使)变得模糊，难以区分
+* flaw n. 错误，缺点，瑕疵，弱点 v. 损害，削弱，使失效
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
