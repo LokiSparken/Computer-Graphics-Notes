@@ -82,7 +82,7 @@ int main()
 * 作者的github代码和那些博客里tmax上界都用的MAXFLOAT我真找不到……
 * 就用`<cfloat>`里的`FLT_MAX`了orz
 
-# <i class="fa fa-star"></i> Chapter 6:
+# <i class="fa fa-star"></i> Chapter 6: Antialiasing
 
 # <i class="fa fa-star"></i> Chapter 7:
 
@@ -132,6 +132,9 @@ int main()
 * end up doing 结果变成做……
 * blur n. 模糊的东西 v. (使)变得模糊，难以区分
 * flaw n. 错误，缺点，瑕疵，弱点 v. 损害，削弱，使失效
+
+## Chapter 6: Antialiasing
+* 
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
