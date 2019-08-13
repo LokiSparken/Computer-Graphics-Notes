@@ -83,8 +83,18 @@ int main()
 * 就用`<cfloat>`里的`FLT_MAX`了orz
 
 # <i class="fa fa-star"></i> Chapter 6: Antialiasing
+* 真实相机拍照时，边缘没有锯齿，边缘像素前景和背景进行了混合。
+* 可以通过平均多个像素的值达到一样的效果。
+* 代码里一个像素点是i、j遍历时step=1的变化，这样+0.x的话就可以在一个像素里对更多的点进行采样。
+## ray tracing的计算量
+* Peter Shirley大大在书里的代码用的一个像素采样100束光……
+* 这个对于一个像素来说好像已经很多了
+* 而本傻又试了1000和10000……讲道理肉眼上看不出更大的优化效果了
+* 但是计算量爆炸式up太真实了！！！
+* 当前像素才200x100！！！物体才两个球！！！我滴个老天鹅QAQ
+* 怪不得到处都说光线追踪计算量太狠……这已经狼火了好吧orz
 
-# <i class="fa fa-star"></i> Chapter 7:
+# <i class="fa fa-star"></i> Chapter 7: Diffuse Materials
 
 # <i class="fa fa-star"></i> Chapter 8:
 
@@ -134,6 +144,18 @@ int main()
 * flaw n. 错误，缺点，瑕疵，弱点 v. 损害，削弱，使失效
 
 ## Chapter 6: Antialiasing
+* jaggies 锯齿
+* stratification n. 分层
+* bother with 为……烦恼
+* controversial adj. 有争议的
+* tuck away 把……隐藏
+* infrastructure n. 基础设施
+* canonical adj. 经典的，最简洁的
+* yield v. 产生，提供，屈服，放弃 n. 产量，利润
+* encapsulate v. 概括，压缩
+* axis-aligned 轴对齐
+
+## Chapter 7: Diffuse Materials
 * 
 
 <i class="fa fa-star"></i>
