@@ -95,6 +95,18 @@ int main()
 * 怪不得到处都说光线追踪计算量太狠……这已经狼火了好吧orz
 
 # <i class="fa fa-star"></i> Chapter 7: Diffuse Materials
+## 漫反射
+* 漫反射：随机反射
+* 求漫反射光线方向
+  * 光线与物体交点p + 该处法向N = 球心坐标
+  * 以上一步的球心坐标为中心，作单位球体
+  * 在这个单位球体内部随机选取点，球心坐标 + 该随机点s = 漫反射光线途径点
+  * 漫反射光线途径点 - 交点p = 漫反射光线方向，当然漫反射光源即交点p
+* 这里总算发现之前建立的两个球其实是外切的，所以最后成图看起来就像是一个球放在一个弧面上，nice！
+## 伽马校正
+> The reason for this is that almost all image viewers assume that the image is `“gamma corrected”`, meaning `the 0 to 1 values have some transform before being stored as a byte.` There are many good reasons for that, but for our purposes we just need to be	aware of it. To a first approximation, we can use “gamma 2”	which means raising	the color to the power 1/gamma,	or in our simple case 1⁄2, which is just square-root
+* 讲道理没太看懂这块，Gamma原理好像是和亮度有关的一个参数？
+* Peter Shirley的意思貌似是，"Gamma x"表示把颜色开1/x次根号？所以这边用"Gamma 2"就开根号，然后就变亮了0。0
 
 # <i class="fa fa-star"></i> Chapter 8:
 
@@ -156,6 +168,13 @@ int main()
 * axis-aligned 轴对齐
 
 ## Chapter 7: Diffuse Materials
+* diffuse material 漫反射材质
+* procedural adj. 程序上的
+* emit v. 发射，发出
+* merely adv. 仅仅，只不过
+* modulate v. 调节
+* intrinsic adj. 固有的，内在的，本身的
+* absorb v. 吸收，吞并，理解掌握
 * 
 
 <i class="fa fa-star"></i>
