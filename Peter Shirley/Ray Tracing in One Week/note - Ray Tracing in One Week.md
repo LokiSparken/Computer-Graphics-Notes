@@ -115,7 +115,7 @@ int main()
 * 光线在matte surface上随机反射，每个方向反射的概率相同，各向同性，所以每个角度观察这个表面的效果相同。
 ## 光滑表面
 * 光滑表面发生镜面反射：反射角 = 入射角
-* 求反射向量
+* `求反射向量`
   * 作图，$\overrightarrow{I}$入射光，$\overrightarrow{N}$镜面法向，$\overrightarrow{R}$反射光
   * 可知$\overrightarrow{S}=-\frac{\overrightarrow{I}\cdot\overrightarrow{N}}{|\overrightarrow{N}|^2}\cdot\overrightarrow{N}$为入射光的反向向量在镜面法向的投影
   * 易得$\overrightarrow{R}=\overrightarrow{I}+2\cdot\overrightarrow{S}$
@@ -128,7 +128,49 @@ int main()
   * 先前求出的准确反射向量 + 随机单位球体内点*偏差程度（看作在反射向量指向处所作的球体半径大小，[0, 1]）
   * 偏差程度fuzz数值越大效果越模糊。
 
-# <i class="fa fa-star"></i> Chapter 9:
+# <i class="fa fa-star"></i> Chapter 9: Dielectrics
+## 折射Refraction
+* 斯涅尔定律Snell's law：几何光学基本实验定律，`适用于各向同性介质构成的静止界面`。
+  * ① 折射光线位于入射光线和界面法线所决定的平面内。
+  * ② 折射光线和入射光线位于法线两侧。
+  * ③ $n\sin\theta = n'\sin\theta'$
+  * 其中 $n$ 、$n'$ 为物质折射率
+  * 典型物质折射率：空气1，玻璃1.3-1.7，钻石2.4
+## `求折射向量`
+> 已知单位入射光线 $\overrightarrow{UI}$，单位法向量 $\overrightarrow{N}$，相对折射率 $\eta$  
+  求单位折射向量 $\overrightarrow{T}$
+* 设入射角 $\theta$，折射角 $\theta'$
+  * $cos\theta = \frac{-\overrightarrow{UI}\cdot\overrightarrow{N}}{|\overrightarrow{UI}|\cdot|\overrightarrow{N}|}=-\overrightarrow{UI}\cdot\overrightarrow{N}$
+  * $cos\theta' = \sqrt{1-sin\theta'^2} = \sqrt{1-(\frac{sin\theta}{\eta})^2} = \sqrt{1-\frac{1-cos\theta^2}{\eta^2}}$
+* 将 $\overrightarrow{UI}$、$\overrightarrow{T}$ 分别分解到 $\perp\overrightarrow{N}$ 的 $\overrightarrow{UI_1}$、$\overrightarrow{T_1}$ 和 $\parallel\overrightarrow{N}$ 的 $\overrightarrow{UI_2}$、$\overrightarrow{T_2}$
+* 求 $\overrightarrow{T_1}$
+  * $|\overrightarrow{UI_1}|=|\overrightarrow{UI}|\cdot\sin\theta=sin\theta$
+  * $|\overrightarrow{T_1}|=|\overrightarrow{T}|\cdot\sin\theta'=sin\theta'$
+  * 两者方向一致
+  * 因此 $\overrightarrow{T_1}=\frac{sin\theta}{sin\theta'}\cdot\overrightarrow{UI_1}=\frac{1}{\eta}\cdot\overrightarrow{UI_1}$ `①`
+  * 根据点积的几何意义，$\overrightarrow{UI_2}$ 为 $\overrightarrow{UI}$ 在 $\overrightarrow{N}$ 方向上的投影
+  * $\overrightarrow{UI_2}=\frac{\overrightarrow{UI}\cdot\overrightarrow{N}}{|\overrightarrow{N}|}\cdot\frac{\overrightarrow{N}}{|\overrightarrow{N}|}=\frac{|\overrightarrow{UI}|\cdot|\overrightarrow{N}|\cdot\cos(\pi-\theta)}{1}\cdot\frac{\overrightarrow{N}}{1}=-cos\theta\cdot\overrightarrow{N}$
+  * $\overrightarrow{UI_1}=\overrightarrow{UI}-\overrightarrow{UI_2}=\overrightarrow{UI}+\overrightarrow{N}\cdot\cos\theta$
+  * 把 $\overrightarrow{UI_1}$ 代入式子 `①`
+  * 得 $\overrightarrow{T_1}=\frac{1}{\eta}\cdot（\overrightarrow{UI}+\overrightarrow{N}\cdot\cos\theta）$
+* 求 $\overrightarrow{T_2}$
+  * 由勾股定理，$|\overrightarrow{T_1}|^2+|\overrightarrow{T_2}|^2=|\overrightarrow{T}|^2=1$
+  * 显然 $\overrightarrow{T_2}$ 与 $\overrightarrow{N}$ 反向
+  * 因此 $\overrightarrow{T_2}=-\overrightarrow{N}\cdot\sqrt{1-|\overrightarrow{T_1}|^2}=-\overrightarrow{N}\cdot\sqrt{1-sin\theta'^2}=-\overrightarrow{N}\cdot\cos\theta'$
+* <i class="fa fa-star"></i> 最后得到 $\overrightarrow{T}$
+  * $\overrightarrow{T}=\overrightarrow{T_1}+\overrightarrow{T_2}=\frac{1}{\eta}\cdot\overrightarrow{UI}+\frac{1}{\eta}\cdot\overrightarrow{N}\cdot\cos\theta-\overrightarrow{N}\cdot\cos\theta'$
+* 注意：当 $cos\theta'$ 式子中 $\sqrt{<0}$ 时 $\theta'$ 无意义
+  * 此时为`全反射现象`
+  * 发生条件：① 光密介质到光疏介质，② 入射角大于临界角（折射角90度时对应的入射角，也即 $\sqrt{=0}$ 的情况）
+* 代码实现
+  * `dielectric:scatter`中判断了入射角的角度，大于90度的情况为光线从电解质射入空气
+    * 不过我没想通这种情况什么时候产生欸……orz
+    * 虽然想想是应该要考虑的……吧=。=？
+  * `dielectric:scatter`中`attenuation`一开始以为`(1, 1, 1)`结果变成好多圈……其实是`(1, 1, 0)`orz（好的，然后中间圈变成绿色了，debug继续中）
+  * `material.h`中`refract`函数：作者公式打错了orz，改正后形状差不多对了……里面下面一大半还是绿的……
+  * 好棒哦，最后发现问题还是在`attenuation`，就是三个1没错，作者书里又打错了=。=
+## 反射系数
+## 负半径球体
 
 # <i class="fa fa-star"></i> Chapter 10:
 
@@ -203,6 +245,14 @@ int main()
 * circularity n. 环
 * perturbation n. 忧虑，微扰
 * graze n. 牧场 v. 放牧，擦伤
+
+## Chapter 9: Dielectrics
+* dielectric n. 电解质 adj. 非传导性的，诱电的
+* transmit v. 传送，发射，传播，透光，使通过
+* refractive indices 折射率（indices为index复数形式之一）
+* plausible adj. 有道理的
+* steep adj. 陡峭的，急剧的，过高的，不合理的 v. 泡，使充满
+* polynomial adj. 多项式的 n.多项式
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
