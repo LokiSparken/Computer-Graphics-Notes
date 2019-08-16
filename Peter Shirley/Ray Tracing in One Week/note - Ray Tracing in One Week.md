@@ -97,7 +97,7 @@ int main()
 # <i class="fa fa-star"></i> Chapter 7: Diffuse Materials
 ## 漫反射
 * 漫反射：随机反射
-* 求漫反射光线方向
+* 求漫反射光线方向（`Lambertian漫反射，理想散射模型：反射光线均匀向四面八方散射`）
   * 光线与物体交点p + 该处法向N = 球心坐标
   * 以上一步的球心坐标为中心，作单位球体
   * 在这个单位球体内部随机选取点，球心坐标 + 该随机点s = 漫反射光线途径点
@@ -108,7 +108,25 @@ int main()
 * 讲道理没太看懂这块，Gamma原理好像是和亮度有关的一个参数？
 * Peter Shirley的意思貌似是，"Gamma x"表示把颜色开1/x次根号？所以这边用"Gamma 2"就开根号，然后就变亮了0。0
 
-# <i class="fa fa-star"></i> Chapter 8:
+# <i class="fa fa-star"></i> Chapter 8: Metal
+## Lambertian
+* `Lambertian reflection is the property that defines an ideal "matte" or diffusely reflecting surface.`
+* matte surface不光滑物体的表面（磨砂质感），Lambertian reflectance是用来模拟这种不光滑物体表面的光线反射模型。
+* 光线在matte surface上随机反射，每个方向反射的概率相同，各向同性，所以每个角度观察这个表面的效果相同。
+## 光滑表面
+* 光滑表面发生镜面反射：反射角 = 入射角
+* 求反射向量
+  * 作图，$\overrightarrow{I}$入射光，$\overrightarrow{N}$镜面法向，$\overrightarrow{R}$反射光
+  * 可知$\overrightarrow{S}=-\frac{\overrightarrow{I}\cdot\overrightarrow{N}}{|\overrightarrow{N}|^2}\cdot\overrightarrow{N}$为入射光的反向向量在镜面法向的投影
+  * 易得$\overrightarrow{R}=\overrightarrow{I}+2\cdot\overrightarrow{S}$
+  * 由于$\overrightarrow{N}$为单位法向，化简可得
+  * $\overrightarrow{R}=\overrightarrow{I}-2 （\overrightarrow{I}\cdot\overrightarrow{N}）\overrightarrow{N}$
+## 代码实现
+* 注意在各处加了material材质这个量以后，实际的如球体类也要加上，hit命中时作记录
+## 反射光线的偏差
+* 给反射光线也加上随机的微量偏移
+  * 先前求出的准确反射向量 + 随机单位球体内点*偏差程度（看作在反射向量指向处所作的球体半径大小，[0, 1]）
+  * 偏差程度fuzz数值越大效果越模糊。
 
 # <i class="fa fa-star"></i> Chapter 9:
 
@@ -175,7 +193,16 @@ int main()
 * modulate v. 调节
 * intrinsic adj. 固有的，内在的，本身的
 * absorb v. 吸收，吞并，理解掌握
-* 
+
+## Chapter 8: Metal
+* zero out 清零
+* scattered adj. 分散的 v. 撒，散开
+* incident ray 入射光
+* attenuate v. 使减弱
+* stuff v. 填入
+* circularity n. 环
+* perturbation n. 忧虑，微扰
+* graze n. 牧场 v. 放牧，擦伤
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
