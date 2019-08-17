@@ -41,7 +41,7 @@ vec3 color(const ray &r, hitable *world, int depth)
 int main()
 {
     ofstream output;
-    output.open("chapter9-addnegativeball.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
+    output.open("chapter10-test3.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
 
     int nx = 200, ny = 100 , ns = 100;
     output << "P3\n" << nx << " " << ny << "\n255\n";
@@ -56,7 +56,7 @@ int main()
 
     hitable *world = new hitable_list(list, 5);
 
-    camera cam; // 建立观察者/相机
+    camera cam(vec3(-2,2,1), vec3(0,0,-1), vec3(0,1,0), 22.5, float(nx)/float(ny)); // 建立观察者/相机
 
     for (int j = ny-1; j >= 0; j--)
     {

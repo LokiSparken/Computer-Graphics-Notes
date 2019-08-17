@@ -188,6 +188,29 @@ int main()
 * 等全写完和作者的源码对拍一下吧orz
 
 # <i class="fa fa-star"></i> Chapter 10: Positionable camera
+## 相机视野
+* 张角`fov`
+  * 观察者指向视野上边界、指向视野下边界，两向量所成角
+  * 角度转弧度 $\theta=fov*\pi/180$
+  * 设观察者 $(0, 0, 0)$ ，看向 $z=-1$ 的平面，作图显然有 $h=tan(\theta/2)$
+* 画面宽高比`aspect`
+  * $aspect = \frac{width}{height}$
+## 任意视角
+* 引入参数
+  * 相机/观察者位置`lookfrom`
+  * 看向某点`lookat`（或看向某个方向`lookin`）
+  * 头顶指向方向`vup`（为了可以左右倾斜脑袋，绕鼻子旋转2333）
+* 观察者位置`lookfrom`
+  * `origin = lookfrom`
+* 确定画面所在平面：指向观察者正前方的向量（确定w）
+  * `w = unit_vector(lookfrom-lookat)`
+  * 即：`观察者看向-w方向`
+* 确定画面所在平面：在该平面上的向量（vup, w生成u，再得v）
+  * `u = unit_vector(cross(vup, w))`
+  * `v = cross(w, u)`
+* `uvw组成相机/观察者坐标系`
+## 代码实现
+* 第一张图ok，第二张图调张角`fov`测下来差不多`22.5`
 
 # <i class="fa fa-star"></i> Chapter 11:
 
@@ -197,13 +220,10 @@ int main()
 ## Chapter 0: Overview
 * staple adj. 主要的，基本的 n. 订书钉，基本食物 v. 用订书钉装订
 * preach v. 宣讲，说教
-
 ## Chapter 1: Output an image
-
 ## Chapter 2: The vec3 class
 * transparency n. 幻灯片，透明性，显而易见
 * suffice v. 足以，足够
-
 ## Chapter 3: Rays, a simple camera, and background
 * computation n. 计算
 * intersect v. 相交，贯穿
@@ -215,10 +235,8 @@ int main()
 * blend v. 混合 n. 混合物
 * linear blend/interpolation = lerp 线性插值
 * ray n. 射线，少量 v. 照射，发光
-
 ## Chapter 4: Adding a sphere
 * straightforward adj. 简单的
-
 ## Chapter 5: Surface normals and multiple objects
 * shade n. 阴凉处，灯罩，色度 v. 给……遮挡（光线），画阴影
 * perpendicular adj. 垂直的 n. 垂直线
@@ -229,7 +247,6 @@ int main()
 * end up doing 结果变成做……
 * blur n. 模糊的东西 v. (使)变得模糊，难以区分
 * flaw n. 错误，缺点，瑕疵，弱点 v. 损害，削弱，使失效
-
 ## Chapter 6: Antialiasing
 * jaggies 锯齿
 * stratification n. 分层
@@ -241,7 +258,6 @@ int main()
 * yield v. 产生，提供，屈服，放弃 n. 产量，利润
 * encapsulate v. 概括，压缩
 * axis-aligned 轴对齐
-
 ## Chapter 7: Diffuse Materials
 * diffuse material 漫反射材质
 * procedural adj. 程序上的
@@ -250,7 +266,6 @@ int main()
 * modulate v. 调节
 * intrinsic adj. 固有的，内在的，本身的
 * absorb v. 吸收，吞并，理解掌握
-
 ## Chapter 8: Metal
 * zero out 清零
 * scattered adj. 分散的 v. 撒，散开
@@ -260,7 +275,6 @@ int main()
 * circularity n. 环
 * perturbation n. 忧虑，微扰
 * graze n. 牧场 v. 放牧，擦伤
-
 ## Chapter 9: Dielectrics
 * dielectric n. 电解质 adj. 非传导性的，诱电的
 * transmit v. 传送，发射，传播，透光，使通过
@@ -272,9 +286,14 @@ int main()
 * nonconducting adj. 不传导的
 * coefficient n. 系数
 * hollow adj. 空心的 v. 挖 n. 洞
-
 ## Chapter 10: Positionable camera
-
+* incrementally adv. 渐进地
+* adjustable adj. 可调整的
+* field of view(FOV) 视野
+* portal n. 入口
+* specify v. 具体说明
+* radians 弧度制
+* sideways tilt 左右倾斜
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->

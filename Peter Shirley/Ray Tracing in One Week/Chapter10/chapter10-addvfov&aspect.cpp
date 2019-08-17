@@ -41,22 +41,30 @@ vec3 color(const ray &r, hitable *world, int depth)
 int main()
 {
     ofstream output;
-    output.open("chapter9-addnegativeball.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
+    output.open("chapter10-ok-addvfov&aspect.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
 
     int nx = 200, ny = 100 , ns = 100;
     output << "P3\n" << nx << " " << ny << "\n255\n";
 
-    // 新增两个球，原来的两个磨砂，小球左右各放个金属材质的，可以反射出中间小球的样子
-    hitable *list[5];   // 建立可命中的物体组，存为链表。抽象父类指向继承该父类的球体子类。
-    list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));      // 中间球，改性质了
-    list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0))); // 下面的大球
-    list[2] = new sphere(vec3(1, 0,-1), 0.5, new metal(vec3(0.8,0.6,0.2), 0.3));  // 右球
-    list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));  // 左球（折射率1.5，玻璃球）
-    list[4] = new sphere(vec3(-1,0,-1), -0.45, new dielectric(1.5));
+    camera cam(90, float(nx)/float(ny));
 
-    hitable *world = new hitable_list(list, 5);
+    float R = cos(M_PI/4);
+    hitable *list[2];
+    list[0] = new sphere(vec3(-R, 0, -1), R, new lambertian(vec3(0, 0, 1)));
+    list[1] = new sphere(vec3( R, 0, -1), R, new lambertian(vec3(1, 0, 0)));
+    hitable *world = new hitable_list(list,2);
 
-    camera cam; // 建立观察者/相机
+    // // 新增两个球，原来的两个磨砂，小球左右各放个金属材质的，可以反射出中间小球的样子
+    // hitable *list[5];   // 建立可命中的物体组，存为链表。抽象父类指向继承该父类的球体子类。
+    // list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));      // 中间球，改性质了
+    // list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0))); // 下面的大球
+    // list[2] = new sphere(vec3(1, 0,-1), 0.5, new metal(vec3(0.8,0.6,0.2), 0.3));  // 右球
+    // list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));  // 左球（折射率1.5，玻璃球）
+    // list[4] = new sphere(vec3(-1,0,-1), -0.45, new dielectric(1.5));
+
+    // hitable *world = new hitable_list(list, 5);
+
+    // camera cam; // 建立观察者/相机
 
     for (int j = ny-1; j >= 0; j--)
     {
