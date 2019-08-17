@@ -103,7 +103,7 @@ int main()
   * 在这个单位球体内部随机选取点，球心坐标 + 该随机点s = 漫反射光线途径点
   * 漫反射光线途径点 - 交点p = 漫反射光线方向，当然漫反射光源即交点p
 * 这里总算发现之前建立的两个球其实是外切的，所以最后成图看起来就像是一个球放在一个弧面上，nice！
-## 伽马校正
+## 伽马校正 【？】
 > The reason for this is that almost all image viewers assume that the image is `“gamma corrected”`, meaning `the 0 to 1 values have some transform before being stored as a byte.` There are many good reasons for that, but for our purposes we just need to be	aware of it. To a first approximation, we can use “gamma 2”	which means raising	the color to the power 1/gamma,	or in our simple case 1⁄2, which is just square-root
 * 讲道理没太看懂这块，Gamma原理好像是和亮度有关的一个参数？
 * Peter Shirley的意思貌似是，"Gamma x"表示把颜色开1/x次根号？所以这边用"Gamma 2"就开根号，然后就变亮了0。0
@@ -165,14 +165,29 @@ int main()
 * 代码实现
   * `dielectric:scatter`中判断了入射角的角度，大于90度的情况为光线从电解质射入空气
     * 不过我没想通这种情况什么时候产生欸……orz
-    * 虽然想想是应该要考虑的……吧=。=？
+    * 虽然想想是应该要考虑的……吧=。=【？】
   * `dielectric:scatter`中`attenuation`一开始以为`(1, 1, 1)`结果变成好多圈……其实是`(1, 1, 0)`orz（好的，然后中间圈变成绿色了，debug继续中）
   * `material.h`中`refract`函数：作者公式打错了orz，改正后形状差不多对了……里面下面一大半还是绿的……
   * 好棒哦，最后发现问题还是在`attenuation`，就是三个1没错，作者书里又打错了=。=
-## 反射系数
-## 负半径球体
+## 反射系数逼近公式 Christophe Schlick's approximation
+* Schlick逼近公式：$R(\theta)=R_0+(1-R_0)(1-cos\theta)^5$
+  * 其中，$R_0=\frac{(n-n')^2}{(n+n')^2}$为常数，$n$、$n'$为入射介质、折射介质的折射率
+  * 通常图形学中两介质总有一方为空气，因此 $n$ 近似取1，由于有平方，所以 $n$ 与 $n'$ 的减与被减可以任意。
+  * 当入射介质是玻璃等物体，在空气中折射时，传入 $cos\theta'$ 即可。
+* 加上反射系数以后的变化【？】
+  * emmm...有些地方感觉稍微暗了一点？（此时传入的`cosine`用的是作者的代码，看不懂orz）
+  * 把传入的 $cos\theta$ 改成用折射系数+平方关系求对应的 $cos\theta'$，和作者的代码效果好像一样……
+  * 好的，改完以后发现作者在gayhub上的代码也改成这样求的=。=
+  * 讲道理感觉变化真的就一丢丢……不知道什么情况下会明显一点qaq
+## 负半径球体 【？】
+* `dielectric`球里面套一个负半径的`dielectric`球会变成空心的泡泡耶！
+  * 内部球体的法向量会指向内侧
+  * 有点想不动……遗留一下=。=
+## 小结
+* 感觉代码应该没有啥问题，但我的效果为啥好多黑搓搓的……噪点？？？QAQ哭唧唧
+* 等全写完和作者的源码对拍一下吧orz
 
-# <i class="fa fa-star"></i> Chapter 10:
+# <i class="fa fa-star"></i> Chapter 10: Positionable camera
 
 # <i class="fa fa-star"></i> Chapter 11:
 
@@ -253,6 +268,13 @@ int main()
 * plausible adj. 有道理的
 * steep adj. 陡峭的，急剧的，过高的，不合理的 v. 泡，使充满
 * polynomial adj. 多项式的 n.多项式
+* specular reflection 镜面反射
+* nonconducting adj. 不传导的
+* coefficient n. 系数
+* hollow adj. 空心的 v. 挖 n. 洞
+
+## Chapter 10: Positionable camera
+
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->

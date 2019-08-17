@@ -17,18 +17,6 @@ vec3 random_in_unit_sphere()
 }
 
 /*
-    求反射系数。
-    Schlick's approximation公式。
-    参数：cos(入射角)，折射介质的折射系数。
-*/
-float schlick(float cosine, float ref_idx)
-{
-    float r0 = (1-ref_idx) / (1+ref_idx);
-    r0 = r0*r0;
-    return r0 + (1-r0)*pow((1-cosine), 5);
-}
-
-/*
     求光滑表面的镜面反射向量。
     作图，易知：反射向量R = 入射向量I + 2*入射向量在法向上的投影S，求投影并由单位向量化简可得。
     结论：R = I - 2dot(I,N)N
@@ -111,7 +99,7 @@ public:
 };
 
 /*
-    一些透明材质（不知道为啥叫它电解质）如玻璃等，有折射现象。
+    一些透明材质（不知道为啥叫它电解质），有折射现象。
 */
 class dielectric : public material
 {
@@ -124,42 +112,26 @@ public:
         float NI_over_NT;
         attenuation = vec3(1.0, 1.0, 1.0);  // 这种材质的衰减attenuation总是1，不吸收光。
         vec3 refracted;
-        float reflect_prob, cosine; // 反射系数和cos(入射角)
-        /* 考虑入射角的大小。 */
         if (dot(r_in.direction(), rec.normal) > 0)  // 入射角大于90度，光线从电解质射入空气了，？讲道理这情况怎么产生的
         {
             outward_normal = -rec.normal;   // 所以法向为外部法向的反向量
             NI_over_NT = ref_idx;           // 光线从电解质射入空气
-            // cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();   // 喵喵喵？
-            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();    // cos(入)
-            cosine = sqrt(1 - ref_idx*ref_idx*(1-cosine*cosine));   // 折射系数+平方关系求cos(入')
         }
         else    // 入射角小于等于90度的正常的情况
         {
             outward_normal = rec.normal;    // 外部法向即法向
             NI_over_NT = 1.0 / ref_idx;     // 光线从空气射入电解质
-            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();    // 正常情况入射角即-UI*N
         }
-        /* 发生部分折射时，求反射系数。 */
         if (refract(r_in.direction(), outward_normal, NI_over_NT, refracted))   // 发生折射现象
-        {
-            reflect_prob = schlick(cosine, ref_idx);
-        }
-        else    // 全反射现象，反射系数为1。
-        {
-            reflect_prob = 1.0;
-        }
-
-        // 随机数小于反射系数设为反射光线，否则设为折射光线
-        if (drand48() < reflect_prob)
-        {
-            scattered = ray(rec.p, reflected);
-        }
-        else
         {
             scattered = ray(rec.p, refracted);
         }
-        
+        else    // 全反射现象
+        {
+            scattered = ray(rec.p, reflected);  // ！！！这里别refracted噗
+            // return false;   // 上面refracted的时候这里return true就炸了噗，计算结果一堆INT_MIN
+            // reflected的时候return false黑了，注释掉就全绿了……=。=？？？
+        }
         return true;
     }
     float ref_idx;  // 材质特性：折射率
