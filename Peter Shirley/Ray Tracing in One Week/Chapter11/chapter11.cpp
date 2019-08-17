@@ -40,7 +40,7 @@ vec3 color(const ray &r, hitable *world, int depth)
 int main()
 {
     ofstream output;
-    output.open("chapter10-test3.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
+    output.open("chapter11.ppm");  // debug过程中左球效果一直和作者说的错误情况长得很像……嘤嘤嘤
 
     int nx = 200, ny = 100 , ns = 100;
     output << "P3\n" << nx << " " << ny << "\n255\n";
@@ -52,10 +52,13 @@ int main()
     list[2] = new sphere(vec3(1, 0,-1), 0.5, new metal(vec3(0.8,0.6,0.2), 0.3));  // 右球
     list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));  // 左球（折射率1.5，玻璃球）
     list[4] = new sphere(vec3(-1,0,-1), -0.45, new dielectric(1.5));
-
     hitable *world = new hitable_list(list, 5);
 
-    camera cam(vec3(-2,2,1), vec3(0,0,-1), vec3(0,1,0), 22.5, float(nx)/float(ny)); // 建立观察者/相机
+    vec3 lookfrom(3,3,2);
+    vec3 lookat(0,0,-1);
+    float dist_to_focus = (lookfrom-lookat).length();
+    float aperture = 2.0;
+    camera cam(lookfrom, lookat, vec3(0,1,0), 20, float(nx)/float(ny), aperture, dist_to_focus); // 建立观察者/相机
 
     for (int j = ny-1; j >= 0; j--)
     {
@@ -64,11 +67,11 @@ int main()
             vec3 col(0, 0, 0);  // 针对每个像素点，初始色值0
             for(int s = 0; s < ns; s++) // 每个像素点中用100束光线进行采样
             {
-                // 每束光线的具体横纵方向随机生成[0, 1)之间的数值进行随机采样
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
+                // 光线方向在camera中已设定好，这里生成的就是在成像平面上相对左下角，在宽高两方向上偏移的系数
+                float s = float(i + drand48()) / float(nx);
+                float t = float(j + drand48()) / float(ny);
                 // 对当前的采样值生成光线并映射到相应色值，累加
-                ray r = cam.get_ray(u, v);
+                ray r = cam.get_ray(s, t);
                 // vec3 p = r.point_at_parameter(2.0);  // 不明白这行有什么用？是不是作者忘记删了
                 col += color(r, world, 0);
             }
