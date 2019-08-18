@@ -68,10 +68,10 @@ int main()
             for(int s = 0; s < ns; s++) // 每个像素点中用100束光线进行采样
             {
                 // 光线方向在camera中已设定好，这里生成的就是在成像平面上相对左下角，在宽高两方向上偏移的系数
-                float s = float(i + drand48()) / float(nx);
-                float t = float(j + drand48()) / float(ny);
+                float offsetu = float(i + drand48()) / float(nx);
+                float offsetv = float(j + drand48()) / float(ny);
                 // 对当前的采样值生成光线并映射到相应色值，累加
-                ray r = cam.get_ray(s, t);
+                ray r = cam.get_ray(offsetu, offsetv);
                 // vec3 p = r.point_at_parameter(2.0);  // 不明白这行有什么用？是不是作者忘记删了
                 col += color(r, world, 0);
             }

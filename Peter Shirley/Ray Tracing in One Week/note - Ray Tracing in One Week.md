@@ -234,7 +234,14 @@ int main()
 * 光线向量生成的时候有个地方敲错了量，真的是调到天荒地老呢（……
 
 # <i class="fa fa-star"></i> Chapter 12: Where next?
+* 随机一堆小球，调整像素和采样点个数，先随便渲一渲
+  * `nx:1200, ny:800, ns:10. Time: 946s`
+  * `nx:2000, ny:1000, ns:100. Time: 16127s`
+* 测作者代码的时候总是找不到编译器头文件，最后发现又是没有`using namespace std;`嘤嘤嘤，我自己的在vec3里面写了一个……所以换了作者的头文件以后也不行:)日常把自己蠢死.jpg
+* 玻璃球里面太糊的原因：`光线和球交点求解的参数t范围tmin=0.0`，作者是`0.001`
 
+# Sum up
+* 最后渲了个1920x1080x100的高清版，很棒棒w。`Time: 15223.697755s`
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
@@ -319,7 +326,7 @@ int main()
 * lens n. 透镜
 * compound adj. 复合的 v. 使加重，混合，构成 n. 复合物
 ## Chapter 12: Where next?
-* 
+
 
 <i class="fa fa-star"></i>
 <!-- 使用FontAwesome -->
