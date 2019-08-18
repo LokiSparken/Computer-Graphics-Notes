@@ -1,4 +1,4 @@
-> # <i class="fa fa-star"></i> Peter Shirley - Ray Tracing in One Week
+> # <i class="fa fa-star"></i> Peter Shirley - Ray Tracing in One Weekend
 # <i class="fa fa-star"></i> Chapter 0: Overview
 
 # <i class="fa fa-star"></i> Chapter 1: Output an image 
