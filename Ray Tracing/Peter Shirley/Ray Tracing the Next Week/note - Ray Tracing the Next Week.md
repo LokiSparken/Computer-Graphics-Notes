@@ -6,6 +6,9 @@
 * 本书难点：BVH和Perling texture
 
 # Chapter 1: Motion Blur
+* Motion Blur运动模糊
+  * 相机快门开启的短暂时间间隔内，相机视野内物体发生位移，拍摄到的画面呈现出移动过程中像素的平均值。
+  * 
 
 # Word Box
 ## Chapter 0: Overview
@@ -20,6 +23,8 @@
 * endeavor n. 尽力，试图
 
 ## Chapter 1: Motion Blur
+* shutter n. 百叶窗，（相机的）快门
+* aperture n. （摄像机光圈）孔径
 * 
 
 <!-- 使用FontAwesome -->
