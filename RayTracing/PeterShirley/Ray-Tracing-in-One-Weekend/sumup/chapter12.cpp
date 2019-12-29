@@ -89,7 +89,7 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("perfect-1920x1080x100.ppm");
+    output.open("test.ppm");
 
     int nx = 1920, ny = 1080 , ns = 100;
     output << "P3\n" << nx << " " << ny << "\n255\n";

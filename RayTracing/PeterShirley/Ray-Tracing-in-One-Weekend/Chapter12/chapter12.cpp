@@ -89,7 +89,7 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("chapter12-1600x1000x100.ppm");
+    output.open("chapter12.ppm");
 
     int nx = 1600, ny = 1000 , ns = 100;
     output << "P3\n" << nx << " " << ny << "\n255\n";

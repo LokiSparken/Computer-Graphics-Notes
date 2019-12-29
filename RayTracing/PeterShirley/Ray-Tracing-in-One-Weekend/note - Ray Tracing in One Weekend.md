@@ -242,6 +242,8 @@ int main()
 
 # Sum up
 * 最后渲了个1920x1080x100的高清版，很棒棒w。`Time: 15223.697755s`
+* git clone to Windows: invalid filename
+  * contain characters like: <, >, :, ", /, \, |, ?, *
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
