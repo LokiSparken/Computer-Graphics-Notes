@@ -133,14 +133,17 @@ int main()
 
 # <i class="fa fa-star"></i> Chapter 9: Dielectrics
 ## 折射Refraction
+* 折射Debug：令全折射看效果（虽然我也不晓得咋看……？）
 * 斯涅尔定律Snell's law：几何光学基本实验定律，`适用于各向同性介质构成的静止界面`。
   * ① 折射光线位于入射光线和界面法线所决定的平面内。
   * ② 折射光线和入射光线位于法线两侧。
   * ③ $n\sin\theta = n'\sin\theta'$
   * 其中 $n$ 、$n'$ 为物质折射率
   * 典型物质折射率：空气1，玻璃1.3-1.7，钻石2.4
+* TIR：Total Internal Reflection全内反射
+  * 光密到疏时，若入射角大于某临界角，折射光线消失。（如在某角度下水面会变成镜面）
 ## `求折射向量`
-> 已知单位入射光线 $\overrightarrow{UI}$，单位法向量 $\overrightarrow{N}$，相对折射率 $\eta$  
+> 已知`单位入射光线` $\overrightarrow{UI}$，`单位法向量` $\overrightarrow{N}$，相对折射率 $\frac{\sin\theta'}{\sin\theta} = \frac{n}{n'} = \frac{1}{\eta}$  
   求单位折射向量 $\overrightarrow{T}$
 * 设入射角 $\theta$，折射角 $\theta'$
   * $cos\theta = \frac{-\overrightarrow{UI}\cdot\overrightarrow{N}}{|\overrightarrow{UI}|\cdot|\overrightarrow{N}|}=-\overrightarrow{UI}\cdot\overrightarrow{N}$
@@ -150,7 +153,8 @@ int main()
   * $|\overrightarrow{UI_1}|=|\overrightarrow{UI}|\cdot\sin\theta=sin\theta$
   * $|\overrightarrow{T_1}|=|\overrightarrow{T}|\cdot\sin\theta'=sin\theta'$
   * 两者方向一致
-  * 因此 $\overrightarrow{T_1}=\frac{sin\theta}{sin\theta'}\cdot\overrightarrow{UI_1}=\frac{1}{\eta}\cdot\overrightarrow{UI_1}$ `①`
+  * 因此 $\overrightarrow{T_1}=\frac{sin\theta'}{sin\theta}\cdot\overrightarrow{UI_1}=\frac{1}{\eta}\cdot\overrightarrow{UI_1}$ `①`，转化为求 $\overrightarrow{UI_1}$
+  * 此时 $\sin\theta$ 要用平方公式从 $\cos\theta$ 开根转化，而 $\cos\theta$ 可从点积直接求出，因此从 $\cos\theta$ 入手考虑
   * 根据点积的几何意义，$\overrightarrow{UI_2}$ 为 $\overrightarrow{UI}$ 在 $\overrightarrow{N}$ 方向上的投影
   * $\overrightarrow{UI_2}=\frac{\overrightarrow{UI}\cdot\overrightarrow{N}}{|\overrightarrow{N}|}\cdot\frac{\overrightarrow{N}}{|\overrightarrow{N}|}=\frac{|\overrightarrow{UI}|\cdot|\overrightarrow{N}|\cdot\cos(\pi-\theta)}{1}\cdot\frac{\overrightarrow{N}}{1}=-cos\theta\cdot\overrightarrow{N}$
   * $\overrightarrow{UI_1}=\overrightarrow{UI}-\overrightarrow{UI_2}=\overrightarrow{UI}+\overrightarrow{N}\cdot\cos\theta$
@@ -161,7 +165,11 @@ int main()
   * 显然 $\overrightarrow{T_2}$ 与 $\overrightarrow{N}$ 反向
   * 因此 $\overrightarrow{T_2}=-\overrightarrow{N}\cdot\sqrt{1-|\overrightarrow{T_1}|^2}=-\overrightarrow{N}\cdot\sqrt{1-sin\theta'^2}=-\overrightarrow{N}\cdot\cos\theta'$
 * <i class="fa fa-star"></i> 最后得到 $\overrightarrow{T}$
-  * $\overrightarrow{T}=\overrightarrow{T_1}+\overrightarrow{T_2}=\frac{1}{\eta}\cdot\overrightarrow{UI}+\frac{1}{\eta}\cdot\overrightarrow{N}\cdot\cos\theta-\overrightarrow{N}\cdot\cos\theta'$
+  * $\overrightarrow{T}=\overrightarrow{T_1}+\overrightarrow{T_2}$  
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    $=\frac{1}{\eta}\cdot\overrightarrow{UI}+\frac{1}{\eta}\cdot\overrightarrow{N}\cdot\cos\theta-\overrightarrow{N}\cdot\cos\theta'$  
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    $=\frac{1}{\eta}\cdot（\overrightarrow{UI}-\overrightarrow{N}\cdot（\overrightarrow{UI}\cdot\overrightarrow{N}））-\overrightarrow{N}\cdot\sqrt{1-\frac{1-\cos\theta'^2}{\eta^2}}$
 * 注意：当 $cos\theta'$ 式子中 $\sqrt{<0}$ 时 $\theta'$ 无意义
   * 此时为`全反射现象`
   * 发生条件：① 光密介质到光疏介质，② 入射角大于临界角（折射角90度时对应的入射角，也即 $\sqrt{=0}$ 的情况）
@@ -170,8 +178,9 @@ int main()
     * 不过我没想通这种情况什么时候产生欸……orz
     * 虽然想想是应该要考虑的……吧=。=【？】
   * `dielectric:scatter`中`attenuation`一开始以为`(1, 1, 1)`结果变成好多圈……其实是`(1, 1, 0)`orz（好的，然后中间圈变成绿色了，debug继续中）
-  * `material.h`中`refract`函数：作者公式打错了orz，改正后形状差不多对了……里面下面一大半还是绿的……
+  * `material.h`中`refract`函数：作者gayhub上公式打错了orz，改正后形状差不多对了……里面下面一大半还是绿的……
   * 好棒哦，最后发现问题还是在`attenuation`，就是三个1没错，作者书里又打错了=。=
+  * 2020/01/01 review：突然发现三个1作者在书里写了110是个bug但我当时又没有仔细看？？？呜呜咦呜呜
 ## 反射系数逼近公式 Christophe Schlick's approximation
 * Schlick逼近公式：$R(\theta)=R_0+(1-R_0)(1-cos\theta)^5$
   * 其中，$R_0=\frac{(n-n')^2}{(n+n')^2}$为常数，$n$、$n'$为入射介质、折射介质的折射率
@@ -185,13 +194,13 @@ int main()
 * 为什么用随机数和反射系数比较
   * 一个像素点在main中设置采样次数100
   * 这100次采样中反射光线的条数基本和反射系数成正相关，所以随机选取，在外面取均值时就能取到该像素点处反射光线和折射光线的叠加结果
-## 负半径球体 【？】
+## 负半径球体 trick【？】
 * `dielectric`球里面套一个负半径的`dielectric`球会变成空心的泡泡耶！
   * 内部球体的法向量会指向内侧
   * 有点想不动……遗留一下=。=
 ## 小结
-* 感觉代码应该没有啥问题，但我的效果为啥好多黑搓搓的……噪点？？？QAQ哭唧唧
-* 等全写完和作者的源码对拍一下吧orz
+* 感觉代码应该没有啥问题，但我的效果为啥好多黑搓搓的……噪点？？？QAQ哭唧唧。等全写完和作者的源码对拍一下吧orz
+  * 估计是因为那个0.001？
 
 # <i class="fa fa-star"></i> Chapter 10: Positionable camera
 ## 相机视野
@@ -256,7 +265,8 @@ int main()
 * 说起来不造为啥要给反射光也加随机偏移fuzz？chapter8
   * 《全反射光波在反射界面上的偏移和偏移时间》：光发生全反射时，入射光不是严格在界面上反射的，而是投射到第二种介质一定深度后被逐渐反射的。这样光在第二种介质中的入射点和出射点就有一定的偏移和一定的偏移时间。
   * 按Peter Shirley的意思，这个偏移导致的fuzz程度与球的半径有关？【待确认】
-* 
+* chpt9：`when there is a reflection ray the function returns false so there are no reflections`？啥意思？？？
+* chpt9：负半径电解质球体trick，为啥呢？？？
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
@@ -326,7 +336,12 @@ int main()
 ## Chapter 9: Dielectrics
 * dielectric n. 电解质 adj. 非传导性的，诱电的
 * transmit v. 传送，发射，传播，透光，使通过
+* refracted ray 折射光
+* transmitted ray 透射光
 * refractive indices 折射率（indices为index复数形式之一）
+* troublesome adj. 麻烦的
+* Total Internal Reflection 全（内）反射
+* submerge v. 淹没
 * plausible adj. 有道理的
 * steep adj. 陡峭的，急剧的，过高的，不合理的 v. 泡，使充满
 * polynomial adj. 多项式的 n.多项式
@@ -341,7 +356,11 @@ int main()
 * portal n. 入口
 * specify v. 具体说明
 * radians 弧度制
+* specify 指明
+* camera roll 胶卷
 * sideways tilt 左右倾斜
+* plane 水平面
+* orthogonal 正交的
 ## Chapter 11: Defocus Blur
 * defocus blur 散焦模糊（虚化、景深效果）
 * lens n. 透镜
