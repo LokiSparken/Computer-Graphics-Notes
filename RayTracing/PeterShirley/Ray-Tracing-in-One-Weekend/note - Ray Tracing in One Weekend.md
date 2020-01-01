@@ -242,6 +242,10 @@ int main()
 * 但也可以近似简化：
   * 光的起点：之前一直是观察者位置的一个`点光源`，现在引入`光圈`，即光源变成这个光圈上的任意一点，发出光射线。
   * 光的方向：仍然是指向当前想要渲染的图像上某个像素点，即成像平面上的某点。
+* 2020/01/02 01:35 review
+  * 所要渲染的成像图方向已由之前增加的参数 $lookfrom$、$lookat$ 确定，观察的旋转角度取决于 $\overrightarrow{vup}$ ，张角也为自设的 $fov$。
+  * 此处 $focus\_dist$ 决定了渲染图像到观察者/相机的距离。（之前一直设定看向 $z=-1$ 平面，因此一直固定为 $focus\_dist=1$ ）
+  * `因此` 到这一步，张角 $fov$ 结合成像距离 $focus\_dist$ 最终确定了渲染图像的大小
 ## 代码实现
 * 光线向量生成的时候有个地方敲错了量，真的是调到天荒地老呢（……
 
@@ -267,12 +271,14 @@ int main()
   * 按Peter Shirley的意思，这个偏移导致的fuzz程度与球的半径有关？【待确认】
 * chpt9：`when there is a reflection ray the function returns false so there are no reflections`？啥意思？？？
 * chpt9：负半径电解质球体trick，为啥呢？？？
+* chpt11：据说把点光源转成光圈这个feature是用来提高亮度的？等随机函数实现完渲个一样的图片看下对比。
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
 * staple adj. 主要的，基本的 n. 订书钉，基本食物 v. 用订书钉装订
 * preach v. 宣讲，说教
 ## Chapter 1: Output an image
+None.
 ## Chapter 2: The vec3 class
 * transparency n. 幻灯片，透明性，显而易见
 * suffice v. 足以，足够
@@ -364,11 +370,16 @@ int main()
 ## Chapter 11: Defocus Blur
 * defocus blur 散焦模糊（虚化、景深效果）
 * lens n. 透镜
+* aperture n. 光圈孔径
 * compound adj. 复合的 v. 使加重，混合，构成 n. 复合物
 ## Chapter 12: Where next?
+* explicitly adv. 明确地
+* implicitly adv. 不明显地
+* density n. 密度
 
 
-<i class="fa fa-star"></i>
+# The End.
+
 <!-- 使用FontAwesome -->
 <head> 
     <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/all.js"></script> 
