@@ -1,4 +1,4 @@
-> # <i class="fa fa-star"></i> Peter Shirley - Ray Tracing in One Weekend
+> # <i class="fa fa-book-open"></i> Peter Shirley - Ray Tracing in One Weekend
 # <i class="fa fa-star"></i> Chapter 0: Overview
 
 # <i class="fa fa-star"></i> Chapter 1: Output an image 
@@ -54,7 +54,7 @@ int main()
   * $t^2\overrightarrow{B}\cdot\overrightarrow{B} + 2t\overrightarrow{B}\cdot(\overrightarrow{A}-\overrightarrow{C}) + (\overrightarrow{A}-\overrightarrow{C})\cdot(\overrightarrow{A}-\overrightarrow{C}) - R^2 = 0$
   * 令 $a = \overrightarrow{B}\cdot\overrightarrow{B}, b=2\overrightarrow{B}\cdot(\overrightarrow{A}-\overrightarrow{C}), c=(\overrightarrow{A}-\overrightarrow{C})\cdot(\overrightarrow{A}-\overrightarrow{C})-R^2$
   * 求一元二次方程根的判别式 $b^2-4ac$ 
-  * $\delta < 0$时无交点，不光线没有照射到球上的这一点
+  * $\delta < 0$时无交点，即光线没有照射到球上的这一点
 * 本节问题：
   * 当圆心坐标设置在(0, 0, 1)时球位于相机背后，这里同样会显示，作者说后面解决。
   * 作者的代码 $\delta = 0$ 时hit返回false，测下来在这里貌似没有问题，不知道后面会不会有影响。（所以我就先自己补=号了qvq，坐等打脸）
@@ -127,6 +127,9 @@ int main()
 * 给反射光线也加上随机的微量偏移
   * 先前求出的准确反射向量 + 随机单位球体内点*偏差程度（看作在反射向量指向处所作的球体半径大小，[0, 1]）
   * 偏差程度fuzz数值越大效果越模糊。
+## 掠射光线Grazing Rays
+* 掠射：指光从光疏介质向光密介质传播，入射角接近于90度时。
+* 掠射或垂直入射，疏到密，`反射过程中会产生半波损失`。
 
 # <i class="fa fa-star"></i> Chapter 9: Dielectrics
 ## 折射Refraction
@@ -239,11 +242,21 @@ int main()
   * `nx:2000, ny:1000, ns:100. Time: 16127s`
 * 测作者代码的时候总是找不到编译器头文件，最后发现又是没有`using namespace std;`嘤嘤嘤，我自己的在vec3里面写了一个……所以换了作者的头文件以后也不行:)日常把自己蠢死.jpg
 * 玻璃球里面太糊的原因：`光线和球交点求解的参数t范围tmin=0.0`，作者是`0.001`
+  * 2019/12/30 review: chapter7最后已经提到了这个问题，当时竟然没注意我是不是瞎……
 
 # Sum up
 * 最后渲了个1920x1080x100的高清版，很棒棒w。`Time: 15223.697755s`
 * git clone to Windows: invalid filename
   * contain characters like: <, >, :, ", /, \, |, ?, *
+* drand48()只在Linux下有，the next week的时候再换吧前面量太多了，后面手撸或者srand一下。
+
+# ？？？
+* Gamma校正 chapter7
+* `world->hit(r, 0.0, MAXFLOAT, rec)`有精度问题，要近似到0.001（但是为啥呢Orz） chapter7
+* 说起来不造为啥要给反射光也加随机偏移fuzz？chapter8
+  * 《全反射光波在反射界面上的偏移和偏移时间》：光发生全反射时，入射光不是严格在界面上反射的，而是投射到第二种介质一定深度后被逐渐反射的。这样光在第二种介质中的入射点和出射点就有一定的偏移和一定的偏移时间。
+  * 按Peter Shirley的意思，这个偏移导致的fuzz程度与球的半径有关？【待确认】
+* 
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
@@ -255,9 +268,10 @@ int main()
 * suffice v. 足以，足够
 ## Chapter 3: Rays, a simple camera, and background
 * computation n. 计算
+* verbose adj. 冗长的
 * intersect v. 相交，贯穿
 * gradient n. 斜率，变化率
-* convection n. 对流
+* convention 惯例
 * traverse v. 穿过 n. 横越，可横越的地方
 * exactness n. 精确，正确
 * antialiasing 抗锯齿处理，边缘柔化
@@ -266,6 +280,9 @@ int main()
 * ray n. 射线，少量 v. 照射，发光
 ## Chapter 4: Adding a sphere
 * straightforward adj. 简单的
+* under the hood 在幕后
+* algebra 代数
+* quadratic 二次的
 ## Chapter 5: Surface normals and multiple objects
 * shade n. 阴凉处，灯罩，色度 v. 给……遮挡（光线），画阴影
 * perpendicular adj. 垂直的 n. 垂直线
@@ -292,18 +309,20 @@ int main()
 * procedural adj. 程序上的
 * emit v. 发射，发出
 * merely adv. 仅仅，只不过
+* take on 呈现
 * modulate v. 调节
 * intrinsic adj. 固有的，内在的，本身的
 * absorb v. 吸收，吞并，理解掌握
+* rejection method 剔除法
 ## Chapter 8: Metal
 * zero out 清零
 * scattered adj. 分散的 v. 撒，散开
 * incident ray 入射光
 * attenuate v. 使减弱
-* stuff v. 填入
+* stuff v. 填充
 * circularity n. 环
 * perturbation n. 忧虑，微扰
-* graze n. 牧场 v. 放牧，擦伤
+* grazing rays 掠射光线
 ## Chapter 9: Dielectrics
 * dielectric n. 电解质 adj. 非传导性的，诱电的
 * transmit v. 传送，发射，传播，透光，使通过
