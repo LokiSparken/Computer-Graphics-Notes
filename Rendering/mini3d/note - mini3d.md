@@ -1,4 +1,6 @@
-> # <i class="fa fa-book-open"></i> 
+> # <i class="fa fa-book-open"></i> Mini3D
+> A software renderer in 700 lines written by cpp.  
+> Source：https://github.com/skywind3000/mini3d
 # <i class="fa fa-star"></i> Chapter : 
 
 
