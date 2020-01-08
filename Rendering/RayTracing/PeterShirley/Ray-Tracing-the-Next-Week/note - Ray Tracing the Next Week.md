@@ -6,13 +6,51 @@
 ## **概率论基本概念回顾**
 * 
 ## **常见概率分布类型**
-### **① 伯努利分布（Bernoulli Distribution）**
-### **② 均匀分布（Uniform Distribution）**
-### **③ 二项分布（Binomial Distribution）**
-### **④ 正态分布（Normal Distribution）**
-### **⑤ 泊松分布（Poisson Distribution）**
-### **⑥ 指数分布（Exponential Distribution）**
+### **① 伯努利分布（Bernoulli）[两点分布/0-1分布，成功/失败]**
+* 定义：`只有两种可能结果的单次随机实验。`随机变量 $X$ 取值为 $1$ 代表成功，成功概率为 $p$ 。取值为 $0$ 代表失败，失败概率为 $q=1-p$ 。
+* 概率分布函数： $p^x(1-p)^{1-x}$，其中 
+### **② 二项分布（Binomial）**
+### **③ 均匀分布（Uniform）**
+### **④ 正态分布（Normal）**
+### **⑤ 泊松分布（Poisson）**
+### **⑥ 指数分布（Exponential）**
 ## **C++ 11随机数引擎的使用**
+* 据说C++ 11的随机数引擎很奈斯
+```cpp
+double my_random_real(double left, double right)
+{
+    random_device seed;
+    default_random_engine generator(seed());
+    uniform_real_distribution<double> distribution(left, right);
+    return distribution(generator);
+}
+```
+* 然鹅生成的随机数过于均匀orzzz太整齐了很恐怖（
+* srand也很整齐……
+* 怕了怕了，还是回到drand48()=。=
+* drand48()说明  
+    ![drand48](noteimg/drand48.gif)
+* 实现
+```cpp
+#define m 0x100000000LL
+#define c 0xB16
+#define a 0x5DEECE66DLL
+
+static unsigned long long seed = 1;
+
+double drand48(void)
+{
+	seed = (a * seed + c) & 0xFFFFFFFFFFFFLL;
+	unsigned int x = seed >> 16;
+    return 	((double)x / (double)m);
+	
+}
+
+void srand48(unsigned int i)
+{
+    seed  = (((long long int)i) << 16) | rand();
+}
+```
 
 # <i class="fa fa-star"></i> Chapter 0: Overview
 * Bounding Volume Hierarchy(BVH) 层次包围盒
