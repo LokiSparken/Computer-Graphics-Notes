@@ -84,7 +84,7 @@ public:
     virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const
     {
         vec3 target = rec.p + rec.normal + random_in_unit_sphere(); // 散射方向随机
-        scattered = ray(rec.p, target - rec.p); // 散射后的光线
+        scattered = ray(rec.p, target - rec.p, r_in.time); // 散射后的光线
         attenuation = albedo;   // 衰减，控制散射后光线强度
         return true; // 发生散射
     }

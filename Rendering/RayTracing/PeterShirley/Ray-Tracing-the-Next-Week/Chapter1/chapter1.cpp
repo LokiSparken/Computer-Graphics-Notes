@@ -2,6 +2,7 @@
 #include <cfloat>
 #include "camera.h"
 #include "sphere.h"
+#include "moving_sphere.h"
 #include "material.h"
 #include "hitable_list.h"
 #include <ctime>
@@ -59,9 +60,11 @@ hitable *random_scene()
             vec3 center(a+0.9*drand48(), 0.2, b+0.9*drand48());
             if ((center-vec3(4, 0.2, 0)).length() > 0.9)
             {
-                if (choose_mat < 0.8)   // 漫反射材质
+                if (choose_mat < 0.8)   // 漫反射材质。让哑光球移动。
                 {
-                    list[i++] = new sphere(center, 0.2, new lambertian(vec3(drand48()*drand48(), drand48()*drand48(), drand48()*drand48())));
+                    list[i++] = new moving_sphere( center, center + vec3(0, 0.5*drand48(), 0), 
+                                                    0.0, 1.0, 0.2, 
+                                                    new lambertian(vec3(drand48()*drand48(), drand48()*drand48(), drand48()*drand48())));
                 }
                 else if (choose_mat < 0.95) // 镜面反射材质
                 {
@@ -89,7 +92,7 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("ok.ppm");
+    output.open("test.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 
@@ -116,7 +119,10 @@ int main()
     vec3 lookat(0,0,0);
     float dist_to_focus = 10.0;
     float aperture = 0.1;
-    camera cam(lookfrom, lookat, vec3(0,1,0), 20, float(nx)/float(ny), aperture, dist_to_focus); // 建立观察者/相机
+    camera cam( lookfrom, lookat, vec3(0,1,0), 
+                20, float(nx)/float(ny), 
+                aperture, dist_to_focus, 
+                0.0, 0.5);
 
     printf("camera create ok\n");
 

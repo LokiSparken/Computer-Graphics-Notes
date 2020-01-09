@@ -61,7 +61,37 @@ void srand48(unsigned int i)
 # <i class="fa fa-star"></i> Chapter 1: Motion Blur
 * Motion Blur运动模糊
   * 相机快门开启的短暂时间间隔内，相机视野内物体发生位移，拍摄到的画面呈现出移动过程中像素的平均值。
-  * 
+  * 此处通过对一条光线，在不同时刻（时刻的选取随机）发射的沿途路径进行计算，取得与之相交的物体在那些时刻影响的像素平均值。
+* 实现
+  * 为相机类 `camera` 添加快门打开的时间段，以起始时刻和结束时刻两个量表示。
+  * 在样本时间段中随机时刻，发射光束。
+  * 添加正在移动的球体类 `moving_sphere` ，简单地进行线性移动，用起止时刻及起止位置来计算随机出的某个时刻时球心位置。   
+    设起始时刻 $t_0$ 、结束时刻 $t_1$ 及当前随机出的时刻 $t$ 球心位置分别为 $c_0$、$c_1$、$c$。  
+    则有
+    $$c = c_0 + \frac{t - t_0}{t_1 - t_0} \cdot （c_1 - c_0）$$
+    （看起来貌似还是匀速的……？不过时间间隔小的话就算变速也可以假装它匀速？）
+  * 关于静止球：如果将原来的球体类直接改成 `moving_sphere` ，可以不增加类数目，对于静止球体可设起止时刻相同，但是计算量显然增大。所以我选择类数目+1=。=
+* 调参侠启动——
+  * 感觉球移动速度太快了，缩短 `camera` 跟踪时间后好一点。
+
+# <i class="fa fa-star"></i> Chapter 2: Bounding Volume Hierarchies
+
+# <i class="fa fa-star"></i> Chapter 3: Solid Textures
+
+# <i class="fa fa-star"></i> Chapter 4: Perlin Noise
+
+# <i class="fa fa-star"></i> Chapter 5: Image Texture Mapping
+
+# <i class="fa fa-star"></i> Chapter 6: Rectangles and Lights
+
+# <i class="fa fa-star"></i> Chapter 7: Instances
+
+# <i class="fa fa-star"></i> Chapter 8: Volumes
+
+# <i class="fa fa-star"></i> Chapter 9: A Scene Testing All New Features
+
+# Sum up
+* chapter1 `moving_sphere`效果感觉……是不是应该残影在某端比较凝实，但当前效果貌似是中间比较凝实？
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
@@ -78,7 +108,28 @@ void srand48(unsigned int i)
 ## Chapter 1: Motion Blur
 * shutter n. 百叶窗，（相机的）快门
 * aperture n. （摄像机光圈）孔径
-* 
+* intersection guts 交叉线
+* stationary adj. 静止的
+* on the fence 不确定
+* trade-off n. 权衡
+
+## Chapter 2: Bounding Volume Hierarchies
+
+## Chapter 3: Solid Textures
+
+## Chapter 4: Perlin Noise
+
+## Chapter 5: Image Texture Mapping
+
+## Chapter 6: Rectangles and Lights
+
+## Chapter 7: Instances
+
+## Chapter 8: Volumes
+
+## Chapter 9: A Scene Testing All New Features
+
+# The End.
 
 <!-- 使用FontAwesome -->
 <head> 

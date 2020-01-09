@@ -7,7 +7,7 @@ class ray
 {
 public:
     ray() {}
-    ray(const vec3 &a, const vec3 &b) { A = a; B = b; }
+    ray(const vec3 &a, const vec3 &b, float ti = 0.0) { A = a; B = b; time = ti;}
     vec3 origin() const { return A; }
     vec3 direction() const { return B; }
     vec3 point_at_parameter(float t) const { return A + t*B; }
@@ -23,6 +23,7 @@ public:
         其中令 (x0, y0, z0) = A即ray类中光源位置。
         又令 (a, b, c) = B即射线方向向量。
     */
+   float time;
 };
 
 #endif
