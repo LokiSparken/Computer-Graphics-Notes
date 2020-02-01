@@ -59,22 +59,40 @@ void srand48(unsigned int i)
 * 本书难点：BVH和Perling texture
 
 # <i class="fa fa-star"></i> Chapter 1: Motion Blur
-* Motion Blur运动模糊
-  * 相机快门开启的短暂时间间隔内，相机视野内物体发生位移，拍摄到的画面呈现出移动过程中像素的平均值。
-  * 此处通过对一条光线，在不同时刻（时刻的选取随机）发射的沿途路径进行计算，取得与之相交的物体在那些时刻影响的像素平均值。
-* 实现
-  * 为相机类 `camera` 添加快门打开的时间段，以起始时刻和结束时刻两个量表示。
-  * 在样本时间段中随机时刻，发射光束。
-  * 添加正在移动的球体类 `moving_sphere` ，简单地进行线性移动，用起止时刻及起止位置来计算随机出的某个时刻时球心位置。   
-    设起始时刻 $t_0$ 、结束时刻 $t_1$ 及当前随机出的时刻 $t$ 球心位置分别为 $c_0$、$c_1$、$c$。  
-    则有
-    $$c = c_0 + \frac{t - t_0}{t_1 - t_0} \cdot （c_1 - c_0）$$
-    （看起来貌似还是匀速的……？不过时间间隔小的话就算变速也可以假装它匀速？）
-  * 关于静止球：如果将原来的球体类直接改成 `moving_sphere` ，可以不增加类数目，对于静止球体可设起止时刻相同，但是计算量显然增大。所以我选择类数目+1=。=
-* 调参侠启动——
-  * 感觉球移动速度太快了，缩短 `camera` 跟踪时间后好一点。
+## **Motion Blur运动模糊**
+* 相机快门开启的短暂时间间隔内，相机视野内物体发生位移，拍摄到的画面呈现出移动过程中像素的平均值。
+* 此处通过对一条光线，在不同时刻（时刻的选取随机）发射的沿途路径进行计算，取得与之相交的物体在那些时刻影响的像素平均值。
+## **实现**
+* 为相机类 `camera` 添加快门打开的时间段，以起始时刻和结束时刻两个量表示。
+* 在样本时间段中随机时刻，发射光束。
+* 添加正在移动的球体类 `moving_sphere` ，简单地进行线性移动，用起止时刻及起止位置来计算随机出的某个时刻时球心位置。   
+  设起始时刻 $t_0$ 、结束时刻 $t_1$ 及当前随机出的时刻 $t$ 球心位置分别为 $c_0$、$c_1$、$c$。  
+  则有
+  $$c = c_0 + \frac{t - t_0}{t_1 - t_0} \cdot （c_1 - c_0）$$
+  （看起来貌似还是匀速的……？不过时间间隔小的话就算变速也可以假装它匀速？）
+* 关于静止球：如果将原来的球体类直接改成 `moving_sphere` ，可以不增加类数目，对于静止球体可设起止时刻相同，但是计算量显然增大。所以我选择类数目+1=。=
+## **调参侠启动——**
+* 感觉球移动速度太快了，缩短 `camera` 跟踪时间后好一点。
 
 # <i class="fa fa-star"></i> Chapter 2: Bounding Volume Hierarchies
+## 包围盒
+* 简单地生成光线与世界中所有物体相交的时间复杂度是线性的，
+## 代码实现
+* C语言复习orz
+```c
+const void *p;
+/* 指向的数据类型暂时不确定，使用时进行强制转换。 */
+```
+* Debug
+  * Segmentation fault一万年以后：发现`bvh_node::hit`中递归两子结点的时候一直把当前的rec传下去了。
+  * 也就是说rec从头到尾没有赋到东西，你不炸谁炸？
+  * 错误定位还是可以的，就是眼睛瘸了一万年，看不见它就是看不见它:)
+
+## **效果**
+  * 1280x720x10的规格下，优化前后时间对比
+    优化前 | 优化后
+    :-----:|:----:
+    `841.143s`|`377.215`
 
 # <i class="fa fa-star"></i> Chapter 3: Solid Textures
 
@@ -92,6 +110,8 @@ void srand48(unsigned int i)
 
 # Sum up
 * chapter1 `moving_sphere`效果感觉……是不是应该残影在某端比较凝实，但当前效果貌似是中间比较凝实？
+## 延伸资料
+* Chapter 2 page9：Ingo Wald's paper about `vectorization`
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview
@@ -114,6 +134,25 @@ void srand48(unsigned int i)
 * trade-off n. 权衡
 
 ## Chapter 2: Bounding Volume Hierarchies
+* involved adj. 复杂难懂的
+* refactor 重构
+* logarithmic 对数的
+* code up 编码
+* primitive 原语
+* compact 紧凑
+* interval 区间
+* succinctly 简洁地
+* caveat 警告
+* slab 平面
+* vectorization 向量化
+* SIMD Single Instruction Multiple Data 单指令多数据流
+* on the fly
+  * 在运行中
+  * 动态产生/发生的
+  * 即时生成的
+  * On The Fly 高速数据传输错误纠正
+* explicitly 明确地
+* figure v. 盘算
 
 ## Chapter 3: Solid Textures
 

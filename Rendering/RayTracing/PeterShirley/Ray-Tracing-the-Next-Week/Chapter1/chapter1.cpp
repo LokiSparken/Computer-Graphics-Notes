@@ -92,11 +92,11 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("test.ppm");
+    output.open("test-before.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 
-    int nx = 1200, ny = 800 , ns = 10;
+    int nx = 1280, ny = 720 , ns = 10;
     output << "P3\n" << nx << " " << ny << "\n255\n";
 
     end = clock();
@@ -157,5 +157,6 @@ int main()
     end = clock();
     double second = (double)(end-start) / CLOCKS_PER_SEC;
     printf("Run time: %fs\n", second);
+    system("pause");
     return 0;
 }
