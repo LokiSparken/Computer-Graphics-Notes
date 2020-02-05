@@ -83,6 +83,8 @@ void srand48(unsigned int i)
 const void *p;
 /* 指向的数据类型暂时不确定，使用时进行强制转换。 */
 ```
+* 记得把`random_scene`生成场景返回的`hittable_list`改为生成`bvh_node`
+  * 总想把这个`node`再抽一层`tree`出来啊orz【TO DO】
 * Debug
   * Segmentation fault一万年以后：发现`bvh_node::hit`中递归两子结点的时候一直把当前的rec传下去了。
   * 也就是说rec从头到尾没有赋到东西，你不炸谁炸？
@@ -95,6 +97,7 @@ const void *p;
     `841.143s`|`377.215`
 
 # <i class="fa fa-star"></i> Chapter 3: Solid Textures
+## 
 
 # <i class="fa fa-star"></i> Chapter 4: Perlin Noise
 
@@ -155,6 +158,9 @@ const void *p;
 * figure v. 盘算
 
 ## Chapter 3: Solid Textures
+* synthesis 综合
+* trig 触发
+* shader network 着色网络
 
 ## Chapter 4: Perlin Noise
 
