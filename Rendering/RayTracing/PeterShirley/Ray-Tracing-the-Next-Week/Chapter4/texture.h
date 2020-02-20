@@ -2,6 +2,7 @@
 #define TEXTUREH
 
 #include "mymath.h"
+#include "perlin.h"
 
 class texture
 {
@@ -42,6 +43,26 @@ public:
     }
 
     texture *odd, *even;    // 两种固定颜色纹理
+};
+
+// 噪点纹理
+class noise_texture : public texture
+{
+public:
+    noise_texture() {}
+
+    // add scale
+    noise_texture(float sc) : scale(sc) {}
+
+    virtual vec3 value(float u, float v, const vec3 &p) const
+    {
+        // return vec3(1,1,1) * noise.noise(p * scale); // 5. to ranvec时不造为啥猛炸qaq
+        // return vec3(1,1,1) * noise.turb(p * scale); // 6. add turb
+        return vec3(1,1,1) * 0.5 * (1 + sin(scale*p.z() + 10*noise.turb(p)));   // 7. 用sin函数使条纹均衡波动？？？
+    }
+
+    perlin noise;
+    float scale;
 };
 
 #endif

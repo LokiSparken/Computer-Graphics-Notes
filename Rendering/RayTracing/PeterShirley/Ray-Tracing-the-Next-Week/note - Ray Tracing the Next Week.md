@@ -101,6 +101,7 @@ const void *p;
 
 # <i class="fa fa-star"></i> Chapter 4: Perlin Noise
 
+
 # <i class="fa fa-star"></i> Chapter 5: Image Texture Mapping
 
 # <i class="fa fa-star"></i> Chapter 6: Rectangles and Lights
@@ -113,8 +114,13 @@ const void *p;
 
 # Sum up
 * chapter1 `moving_sphere`效果感觉……是不是应该残影在某端比较凝实，但当前效果貌似是中间比较凝实？
+* chapter4 Perlin Noise懵逼orz需要更多基础资料
+  * https://zhuanlan.zhihu.com/p/77596796
+  * https://zhuanlan.zhihu.com/p/77628759
+  * 到时候先研究下这两篇吧QAQ
 ## 延伸资料
 * Chapter 2 page9：Ingo Wald's paper about `vectorization`
+* review的时候可以仔细看看这个：https://zhuanlan.zhihu.com/p/80108202
 
 # <i class="fa fa-star"></i> Word Box
 ## Chapter 0: Overview

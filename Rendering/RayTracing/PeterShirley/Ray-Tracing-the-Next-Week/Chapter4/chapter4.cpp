@@ -13,7 +13,7 @@
 /* 【功能】获取当前打印像素点所需颜色色值。 */
 /*
     接受参数: <观察者光线>，<所有可命中物体组构成的世界>，<递归层数>。
-    对散射进行递归，
+    对散射进行递归
 */
 vec3 color(const ray &r, hittable *world, int depth)
 {
@@ -44,61 +44,12 @@ vec3 color(const ray &r, hittable *world, int depth)
     }
 }
 
-hittable *random_scene()
+hittable *two_perlin_sphere()
 {
-    int n = 500;    // 要生成的球个数
-    hittable **list = new hittable*[n+1]; // 开链表存储
-    texture *checker = new checker_texture( new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(checker)); // 底下放个漫反射大球当地板，大球棋盘纹理
-    int i = 1;
-    for (int a = -11; a < 11; a++)
-    {
-        for (int b = -11; b < 11; b++)
-        {
-            float choose_mat = random_double();   // 生成随机数决定当前产生的小球材质
-            /*
-                为了把小球都显示在大球上面，高度y差不多定在0.2。
-                x和z坐标在(-11, 11)的样子，0.9*(0,1)=(0,0.9)
-                而(4, 0.2, 0)应该是(4,1,0)的镜面反射大球和当地板的球接触的地方，避免有小球黏在那里不好看所以加这个限制吧。
-            */
-            vec3 center(a+0.9*random_double(), 0.2, b+0.9*random_double());
-            if ((center-vec3(4, 0.2, 0)).length() > 0.9)
-            {
-                if (choose_mat < 0.8)   // 漫反射材质。让哑光球移动。
-                {
-                    list[i++] = new moving_sphere( center, center + vec3(0, 0.5*random_double(), 0), 
-                                                    0.0, 1.0, 0.2, 
-                                                    new lambertian(new constant_texture(vec3(random_double()*random_double(), random_double()*random_double(), random_double()*random_double()))));
-                }
-                else if (choose_mat < 0.95) // 镜面反射材质
-                {
-                    list[i++] = new sphere(center, 0.2, new metal(vec3(0.5*(1+random_double()), 0.5*(1+random_double()), 0.5*(1+random_double())),0.5*random_double()));
-                }
-                else    // 玻璃球
-                {
-                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
-                }
-            }
-        }
-    }
-
-    // 固定参数生成中间的三个大球
-    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));    // 中间玻璃球
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));   // 里面漫反射球
-    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));    // 靠外镜面反射球
-
-    // return new hittable_list(list, i);
-    return new bvh_node(list, i, 0.0, 0.5);
-}
-
-hittable *two_sphere()
-{
-    texture *checker = new checker_texture( new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-    int n = 5;
-    
-    hittable **list = new hittable*[n+1];
-    list[0] = new sphere(vec3(0, -10, 0), 10, new lambertian( checker ));
-    list[1] = new sphere(vec3(0,  10, 0), 10, new lambertian( checker ));
+    texture *pertext = new noise_texture(4);
+    hittable **list = new hittable*[2];
+    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian( pertext ));
+    list[1] = new sphere(vec3(0,  2, 0), 2, new lambertian( pertext ));
 
     return new hittable_list(list, 2);
 }
@@ -109,7 +60,7 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("chapter3-4-twosphere.ppm");
+    output.open("chapter4-7-sin.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 
@@ -120,8 +71,7 @@ int main()
     printf("test time: %fs\n",(double)(end-start)/CLOCKS_PER_SEC);
 
     printf("\n[create bvh tree]\n");
-    // hittable *world = random_scene();
-    hittable *world = two_sphere();
+    hittable *world = two_perlin_sphere();
     printf("\n[world create ok]\n");
 
     vec3 lookfrom(13,2,3);
@@ -133,7 +83,6 @@ int main()
                 vfov, float(nx)/float(ny), 
                 aperture, dist_to_focus, 
                 0.0, 0.5);
-
     printf("camera create ok\n");
 
     for (int j = ny-1; j >= 0; j--)
