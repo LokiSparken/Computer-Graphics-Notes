@@ -88,7 +88,8 @@ public:
     {
         vec3 target = rec.p + rec.normal + random_in_unit_sphere(); // 散射方向随机
         scattered = ray(rec.p, target - rec.p, r_in.time()); // 散射后的, r_in.time()光线
-        attenuation = albedo->value(0, 0, rec.p);   // 衰减，控制散射后光线强度
+        // attenuation = albedo->value(0, 0, rec.p);   // 衰减，控制散射后光线强度
+        attenuation = albedo->value(rec.u, rec.v, rec.p);
         return true; // 发生散射
     }
     virtual int print_material() const

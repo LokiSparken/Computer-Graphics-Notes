@@ -42,6 +42,7 @@ bool sphere::hit(const ray &r, float tmin, float tmax, hit_record &rec) const
         {
             rec.t = temp;                           // 记录所求参数值t
             rec.p = r.point_at_parameter(rec.t);    // 由点在光线上求得交点位置坐标
+            get_sphere_uv((rec.p-center)/radius, rec.u, rec.v); // 将球面坐标映射到贴图坐标
             rec.normal = (rec.p - center) / radius; // 法向即交点减球心所得向量，除以长度即球半径
             rec.mat_ptr = mat_ptr;  // 记录命中物体材质
             return true;
@@ -52,6 +53,7 @@ bool sphere::hit(const ray &r, float tmin, float tmax, hit_record &rec) const
         {
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);    // 由点在光线上求得交点位置坐标
+            get_sphere_uv((rec.p-center)/radius, rec.u, rec.v); // 将球面坐标映射到贴图坐标
             rec.normal = (rec.p - center) / radius; // 法向即交点减球心所得向量，除以长度即球半径
             rec.mat_ptr = mat_ptr;  // 记录命中物体材质
             return true;
