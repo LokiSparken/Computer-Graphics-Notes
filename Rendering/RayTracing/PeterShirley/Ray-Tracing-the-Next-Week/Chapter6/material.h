@@ -75,6 +75,7 @@ public:
     virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const = 0;
     /* 【Debug】 */
     virtual int print_material() const = 0;
+    virtual vec3 emitted(float u, float v, const vec3 &p) const { return vec3(0, 0, 0); }
 };
 
 /*
@@ -182,6 +183,24 @@ public:
     }
 
     float ref_idx;  // 材质特性：折射率
+};
+
+/* 自发漫反射光材质。 */
+class diffuse_light : public material
+{
+public:
+    diffuse_light(texture *a) : emit(a) {}
+    virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const { return false; }
+    virtual vec3 emitted(float u, float v, const vec3 &p) const
+    {
+        return emit->value(u, v, p);
+    }
+    virtual int print_material() const
+    {
+        return 444;
+    }
+
+    texture *emit;
 };
 
 #endif

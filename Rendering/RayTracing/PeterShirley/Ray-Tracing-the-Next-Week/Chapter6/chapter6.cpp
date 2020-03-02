@@ -14,6 +14,8 @@
 #include "stb_image.h"
 #include "surface_texture.h"
 
+#include "rectangle.h"
+
 /* 【功能】获取当前打印像素点所需颜色色值。 */
 /*
     接受参数: <观察者光线>，<所有可命中物体组构成的世界>，<递归层数>。
@@ -27,29 +29,49 @@ vec3 color(const ray &r, hittable *world, int depth)
     {
         ray scattered;      // 散射/反射后光线
         vec3 attenuation;   // 衰减
-        // 手动设置递归层数小于50层，并发生散射/反射后，用新产生的光线继续emmmm...射出去撞东西？最后各向综合起来的才是最终观察到的颜色。
-        // 递归层数是防止光线在一个只有反射面的盒子里，递归到爆
-        // int material_monitor = rec.mat_ptr->print_material();
+        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
-            return attenuation * color(scattered, world, depth+1);  // 根据命中的材质特性，光线被吸收多少，相应衰减多少强度
+            return emitted + attenuation * color(scattered, world, depth+1);  // 根据命中的材质特性，光线被吸收多少，相应衰减多少强度
         }
-        else // 层数到了或者衰减到一定程度就莫有了，(0, 0, 0)黑色
-        {
-            return vec3(0, 0, 0);
-        }
+        else
+            return emitted;
     }
-    else    // 无交点
-    {
-        // 那就是原来的背景色！
-        vec3 unit_direction = unit_vector(r.direction());
-        float t = 0.5*(unit_direction.y() + 1.0);
-        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
-        // for image texture: black background
-        // return vec3(0, 0, 0);
-    }
+    else    // 无交点，背景色
+        return vec3(0, 0, 0);
 }
 
+hittable *simple_light()
+{
+    texture *pertext = new noise_texture(4);
+    hittable **list = new hittable *[4];
+    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian( pertext ));   // 依然是大球当地板
+    list[1] = new sphere(vec3(0, 2, 0), 2, new lambertian( pertext ));  // 中间小球
+    list[2] = new xy_rect(3, 5, 1, 3, -2, new diffuse_light( new constant_texture(vec3(4,4,4))));   // 右侧矩形光源
+    list[3] = new sphere(vec3(0, 7, 0), 2, new diffuse_light( new constant_texture(vec3(9,9,9))));  // 顶上亮球
+    // return new hittable_list(list, 3);
+    return new hittable_list(list, 4);
+}
+
+hittable *cornell_box()
+{
+    hittable **list = new hittable *[6];
+    int i = 0;
+    material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+    material *white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+    material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+    material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+
+    // 该视角：左x轴正向，上y轴正向，纸内z轴正向，前方的墙z坐标555.
+    list[i++] = new flip_normal(new yz_rect(0, 555, 0, 555, 555, green));   // 左
+    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);                        // 右
+    list[i++] = new xz_rect(213, 343, 227, 332, 554, light);                // 小灯
+    // list[i++] = new xz_rect(113, 443, 127, 432, 554, light);             // 大灯
+    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);                      // 底
+    list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));   // 顶
+    list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));   // 前
+    return new hittable_list(list, i);
+}
 
 int main()
 {
@@ -57,25 +79,33 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("chapter6.ppm");
+    output.open("chapter6-cornell-flip.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 
-    int nx = 800, ny = 800 , ns = 100;
+    int nx = 800, ny = 800 , ns = 20;
     output << "P3\n" << nx << " " << ny << "\n255\n";
 
     end = clock();
     printf("test time: %fs\n",(double)(end-start)/CLOCKS_PER_SEC);
 
-    printf("\n[create bvh tree]\n");
-    // hittable *world = earth();
+    printf("\n[create world]\n");
+    // hittable *world = simple_light();
+    hittable *world = cornell_box();
     printf("\n[world create ok]\n");
 
-    vec3 lookfrom(13,2,3);
-    vec3 lookat(0,0,0);
+    // simplelight
+    // vec3 lookfrom(13,2,3);
+    // vec3 lookat(0,0,0);
+    // float dist_to_focus = 10.0;
+    // float aperture = 0.0;
+    // float vfov = 60.0;
+    // cornell
+    vec3 lookfrom(278, 278, -800);
+    vec3 lookat(278, 278, 0);
     float dist_to_focus = 10.0;
     float aperture = 0.0;
-    float vfov = 20.0;
+    float vfov = 60.0;
     camera cam( lookfrom, lookat, vec3(0,1,0), 
                 vfov, float(nx)/float(ny), 
                 aperture, dist_to_focus, 

@@ -266,6 +266,7 @@ int main()
 # ？？？
 * Gamma校正 chapter7
 * `world->hit(r, 0.0, MAXFLOAT, rec)`有精度问题，要近似到0.001（但是为啥呢Orz） chapter7
+  * 【？是酱紫吗】https://www.cnblogs.com/SeekHit/p/9911978.html：当tmin设0的时候会导致，遍历hitlist时候，ray的t求解出来是0，hit的时候全走了else，导致递归到50层的时候，最后return的是0，* attenuation结果还是0。距离越远，散射用到random_in_unit_sphere生成的ray误差越大，就像上面的图一样。所以cornel 距离5，600的时候，场景中的lambert就全黑了。
 * 说起来不造为啥要给反射光也加随机偏移fuzz？chapter8
   * 《全反射光波在反射界面上的偏移和偏移时间》：光发生全反射时，入射光不是严格在界面上反射的，而是投射到第二种介质一定深度后被逐渐反射的。这样光在第二种介质中的入射点和出射点就有一定的偏移和一定的偏移时间。
   * 按Peter Shirley的意思，这个偏移导致的fuzz程度与球的半径有关？【待确认】
