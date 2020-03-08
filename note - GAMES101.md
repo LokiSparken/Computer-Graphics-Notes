@@ -288,7 +288,7 @@
   * 平行线会相交，近大远小的视觉效果。人眼的成像是透视投影，以眼睛（或相机）为点，连出一个四棱锥，从四棱锥的一个深度到另一深度称为frostum。透视投影就是将frostum这块区域的所有东西显示出来，投影到相机近处的平面上。
   * 操作分解：  
     ① $frustum \stackrel{squish}{\Longrightarrow} cuboid$。先把四棱锥“挤压”成长方体（压进近平面的视野范围）。显然，近平面上所有点固定不动，远平面上所有点 $z$ 值不变，且棱锥的轴心线上所有点固定不动。
-    1. 考虑棱锥侧面投影的上半部分是一个三角形，在近平面处分割得到一个小三角形。易得两个三角形相似。设近平面最高点 $(x',y',z'=n)$ ，需挤压的面最高点 $(x,y,z)$ 。可得 $y'=\frac{n}{z}y$，同理观察棱锥俯视图可得 $x'=\frac{n}{z}x$。  
+    1. 考虑棱锥侧面投影的上半部分是一个三角形，在近平面处分割得到一个小三角形。易得两个三角形相似。设近平面最高点 $(x',y',z'=n)$ ，需挤压的面最高点 $(x,y,z)$ 。  </br> &nbsp;  ![](/note&#32;-&#32;image/GAMES101/img1-persp.png)  &nbsp;</br> 可得 $y'=\frac{n}{z}y$，同理观察棱锥俯视图可得 $x'=\frac{n}{z}x$。  
     2. 用齐次坐标表示：  
         $$ \left( \begin{matrix}x \\ y \\ z \\ 1\end{matrix} \right) \stackrel{squish}{\Longrightarrow} \left( \begin{matrix} \frac{n}{z}x \\ \frac{n}{z}y \\ unknown \\ 1 \end{matrix} \right) \stackrel{\times z}{\longrightarrow} \left( \begin{matrix} nx \\ ny \\ unknown2 \\ z \end{matrix} \right) $$
     3. 此时整理即有  
@@ -309,8 +309,79 @@
     ② 转化成长方体后，就转化为正交投影问题，因此透视投影变换矩阵
     $$ M_{persp}=M_{ortho}\cdot M_{persp->ortho} $$
   * 问题：除了近平面与远平面，中间的平面被挤压后 $z$ 值趋向近平面还是趋向远平面？
+    * 盲猜趋向远平面！
+    * 
 
 # Lecture 05 Rasterization 1 (Triangles)
+## 定义视锥frostum
+* Step
+  * 定义`近平面的宽高比` $Aspect\ Ratio = \frac{width}{height}$。
+  * 定义`垂直可视角度` $Vertical\ Field\ of\ View（fovY）$：视点到近平面上下沿的两条连线夹角。
+  * 回到棱锥侧面图  
+    
+    &nbsp;![](note&#32;-&#32;image/GAMES101/img2-fov.png)
+    
+  * 看图说话即有
+    $$ \tan\frac{fovY}{2}=\frac{t}{|n|} $$
+  * 近平面的中心即视角中心，根据定义即有
+    $$ aspect=\frac{r}{t} $$
+  * 所以定义宽高比和垂直可视角就能推及 $r、t、n$ 三个坐标方向。
+## Canonical Cube to Screen
+* after MVP（Model/View/Projection），把变换所得 $[-1,1]^3$ 呈现到画面。
+* 定义屏幕Screen
+  * 图形学中定义：元素是像素的二维数组
+  * raster：德语中的screen，rasterize：画到屏幕上
+  * pixel（"picture element"的缩写）：暂时抽象为纯色小方块，RGB三值表示。
+* 定义屏幕空间  
+
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![](note&#32;-&#32;image/GAMES101/img3-screen.png)
+  * 像素以 $(x, y)$ 表示， $x, y$ 均为整数
+  * 像素表示范围 $(0, 0)$ 到 $(width-1, height-1)$
+  * 像素 $(x, y)$ 的中心为 $(x+0.5, y+0.5)$
+  * 屏幕覆盖范围 $(0, 0)$（左下角） 到 $(width, height)$（右上角）
+* 把 $xy$ 面的 $[-1,1]\times[-1,1]$ 变换到 $[0, width]\times[0, height]$
+  * 暂时忽略 $z$ 坐标
+  * 作视口变换 $M_{viewport}$ ：把 $2$ 分别拉伸到 $width、height$ 。
+    $$ M_{vireport}=\left(\begin{matrix}\frac{width}{2} & 0&0&\frac{width}{2}\\0&\frac{height}{2}&0&\frac{height}{2}\\0&0&1&0\\0&0&0&1\end{matrix}\right) $$
+    注意左下角之前在 $[-1, 1]$ ，拉伸后在 $[-\frac{width}{2}, \frac{height}{2}]$ ，所以还要把左下角平移到原点。
+* 至此，变换完成，得到点在屏幕空间下的坐标。
+## 光栅化
+* 接下来将模型等拆成像素显示到屏幕，即光栅化过程。
+* 光栅显示设备
+  * 示波器
+  * 阴极射线管CRT：控制电子击中位置。隔行扫描法，一帧画奇数行，下一帧画偶数行，视觉滞留效应。但对高速运动画面会有撕裂现象。
+  * 当代显示器：将显存中的一块区域，映射到屏幕上。
+  * 视网膜屏幕：分辨率超过人眼视网膜的分辨率。
+  * 液晶显示器Liquid Crystal Display（LCD）：利用液晶的原理控制显示器的显示内容。它会通过自己的排布影响光的极化。光通过光栅，会筛选掉与光栅震动方向不同的那部分光的能量。液晶可以通过自己本身的震动来影响光的波动。
+  * 发光二极管Light Emitting Diode（LED）
+  * 墨水屏：刷新慢
+## **Drawing to Raster Displays**
+* 三角形Triangles - Fundamental Shape Primitives
+  * 三角形为最基础的多边形，任何其它不同的多边形都可以拆成三角形。
+  * 任意给定三点连成`三角形`，`一定是平面`图形。
+  * 三角形的`内部外部定义明确`。
+  * 定义三角形的三个顶点的不同属性，可以在三角形内部做插值渐变。
+* 问题：三角形的边穿过像素格子时，部分被覆盖。因此要判定像素是否在三角形内。
+* 简单做法：Sampling采样
+  * 对一个连续函数，取点求值，离散化。
+  * 此处采样：利用像素中心对屏幕空间进行采样。（看定义在屏幕空间上的函数，在不同的像素中心，其值为多少。）
+* Sample if each pixel center is inside triangle
+  * 定义函数 `inside(t, x, y)`：给出三角形和屏幕上点坐标（可以非整数），判断点是否在三角形内。
+    $$ inside(t,\ x,\ y) = \left\{ \begin{array}{rcl}
+      1 &  & point (x, y)\ in\ triangle\ t \\
+      0 &  & otherwise
+    \end{array} \right.$$
+  * 再遍历屏幕空间，check每个像素是否inside。
+  * 判断方法：按顺序与三顶点形成的向量作叉积，三正三负在其内。
+    * `corner case`：本课程当“像素中点”在三角形边上时，看自己心情。
+  * 优化：画一个三角形时不用遍历整个屏幕空间，遍历包围盒内的像素。
+    * AABB包围盒：取各坐标方向上最小值到最大值之间的所有像素点。
+* 真实的LCD屏幕像素  
+  &nbsp;&nbsp;![](note&#32;-&#32;image/GAMES101/img4-realpix.png)
+  
+  * 三星屏幕的像素RGB形成的图案：bayer pattern，这种分布方法能使RGB均匀分布在屏幕上。绿色的数量最多，因为人眼对绿色敏感度最高。相机中的感光元件也有这样的应用。
+  * 彩色打印机上的RGB分布更迷幻。减色系统：加的颜色越多，越黑。
+* 以像素中心采样，会产生锯齿Jaggies，造成走样Aliasing现象。
 
 # Lecture 06 Rasterization 2 (Antialiasing and Z-Buffering)
 
@@ -362,3 +433,12 @@ $$
     \end{matrix}
     \right)
 $$
+
+<!-- 图片示例 -->
+![][<tag>]
+[<tag>]:<BASE64STR>
+
+<!-- 题注 -->
+一个题注[^1]
+
+[^1]:cannotaddspace失败的题注示例
