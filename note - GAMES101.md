@@ -386,10 +386,10 @@
 # Lecture 06 Rasterization 2 (Antialiasing and Z-Buffering)
 ## Antialiasing
 ### **采样理论Sample theory**
-* Sampling is ubiquitous in CG 采样在CG中无处不在
+* Sampling is ubiquitous in CG. 采样在CG中无处不在
   * 动画是对时间的采样
   * 采样产生的问题也是无处不在的
-* Sampling Artifacts (Errors/Mistakes/Inaccuracies) in CG
+* Sampling Artifacts (Errors/Mistakes/Inaccuracies) in CG.
   * 锯齿Jaggies、摩尔纹Moire Patterns（去掉奇数行奇数列的情况）、Wagon Wheel Illusion(False Motion)逆转的轮子（人眼在时间上的采样跟不上轮子运动的速度）……
   * 产生问题的原因：Signals are changing too fast (high frequency), but sampled too slowly. 信号/函数的变化太快，采样速度跟不上。
 * Antialiasing Idea: Blurring (Pre-Filtering) Before Sampling
@@ -430,7 +430,7 @@
     * 冲激函数的取样性质：一个连续时间信号 $x(t)$ 与冲激函数相乘，并在时间域 $(-\infin,+\infin)$ 上积分，其结果为信号 $x(t)$ 在 $t=t_0$ 时的函数值 $x(t_0)$ 。可以理解为冲激函数作用于 $x(t)$ ，结果瞬间趋向无穷大，又趋于稳态时最终作用的结果是 $x(t_0)$ 。
   * 冲激函数傅立叶变换到频域上变成另一种冲激函数。
   * 根据卷积定理，时域相乘，在频域上就是卷积。而信号与冲激函数在频域上的卷积结果是：信号的频谱在频域上被“复制粘贴”。 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img13-sampling.png) &nbsp;
-  * 并且，在时域上的采样速度越慢（采样点距离越大），对应到频域上，信号的频谱被“复制粘贴”的间隔就越小。 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img14-fmixed.png) &nbsp;
+  * 并且，在时域上的采样速度越慢（采样点距离越大），对应到频域上，信号的频谱被“复制粘贴”的间隔就越小。 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img14-fmixed.png) &nbsp;  
     可以看出，造成信号频谱发生重叠，导致走样。
 * 如何降低走样问题
   * 增加采样率：终极法2333。但受到屏幕的物理限制，分辨率不是你想加想加就能加qvq。
@@ -450,39 +450,128 @@
   * 将 $512\times512$ 的图拉伸到 $1k\times1k$ 而产生锯齿。
   * 与走样类似，都是要解决样本不足的问题。
   * 方法：DLSS（Deep Learning Super Sampling）深度学习。
-## 可见性Visibility/遮挡occlusion（in Lecture 7）
-* 
+## 可见性Visibility/遮挡occlusion（in Lecture 07）
+* 当有多个物体重叠在一起时，要显示较近的物体。
+* 画家算法Painter's Algorithm（指油画家）
+  * 从远到近层层覆盖。
+  * 定义观测点到物体的距离，即深度。但深度的定义有时比较困难。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img16.png)  &nbsp;</br></br>
+  * 复杂度分析：时间复杂度 $O(nlogn)$ ，主要为排序时间。
+* Z-Buffer
+  * 对物体远近排序比较困难，所以针对像素解决。
+  * 思想
+    * 记录像素离视点的最近距离
+    * 同时生成：  
+      ① frame buffer stores color values 最终渲染结果图  
+      ② depth buffer (z-buffer) stores depth 任意像素对应深度图（该深度在渲染过程中，不断更新为覆盖到这个像素的物体，在这个像素点上离视点的距离，最近的那个）
+  * 注意
+    * 此处为了便于理解，认为 $z$ 为正。（实际上视点仍在观测 $-\overrightarrow{Z}$）
+    * 对单个像素内进行多次采样的时候，对采样点做深度缓存。
+    * 深度相同时的处理本课程不讨论。
+    * 无法处理透明物体。
+  * 深度图 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img17.png) &nbsp;</br>
+    离视点越近的像素深度越小，反应到色值上颜色越黑。
+  * 复杂度分析： $O(n)$
 
 # Lecture 07 Shading 1 (Illumination, Shading and Graphics Pipeline)
+## Shading
+### **着色**
+* 着色：对不同的物体应用不同材质的过程。
+* 高光specular highlights、漫反射Diffuse reflection、间接（环境）光照Ambient lighting
+* 定义着色点 $Shading\ point\ p$（极小范围认为是平面，存在法向 $\overrightarrow{n}$ ）、观察方向 $Viewer\ direction\ \overrightarrow{v}$ 、光照方向 $Light\ direction\ \overrightarrow{l} = p_光 - p$ 、物体表面参数 $Surface\ parameters（color、shininess...）$ </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img18.png) &nbsp;</br>
+  * 都指单位向量。
+* Shading is local. 只关注局部，不考虑其它物体的存在。即如果有物体遮挡了光，应该产生阴影，暂时先不考虑。
+### **A Simple Shading Model - Blinn-Phong Reflectance Model**
+* 漫反射Diffuse Reflection：光线击中物体表面某点时，均匀反射到各个不同方向。
+  * 相同的表面，当入射光的入射角度不同时，产生不同的明暗效果。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img19.png) &nbsp;</br>  
+    由图可知，设平行光，关注单个shading point时，只考虑它附近单位面积的表面，显然表面倾斜时接收到的光就少。  
+    从能量的角度，通过明暗可以感知光的能量的多少。  
+    而类似地球的四季变化，可知接受到的能量与入射光和该点法向的夹角有关。
+  * 朗伯余弦定律 $Lambert's\ cosine\ law$ ：接收到的能量，和光线方向及法向夹角的余弦 $cos\theta = \overrightarrow{l} \cdot \overrightarrow{n}$ 成正比。  </br>&nbsp;![](img) &nbsp;</br>  
+  * 光能来源
+    * 假设一个点光源，认为它时刻在往周围的球壳发光。再假设真空中传播没有能量损失，考虑能量守恒，随着时间的推移，某时刻所发的光向外扩散，能量总量不变，辐射面积变大。
+    * 此处暂时先定义到光源单位距离的球壳上光强 $I$ ，传播到距离为 $r$ 的球壳上。  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img21.png) &nbsp;</br>
+      总能量应为 $I \cdot \pi \cdot 1^2 = I_r \cdot \pi \cdot r^2$  
+      所以 $I_r = \frac{I}{r^2}$  
+      说明：考虑单位面积所能接收到的能量，与光线传播的距离的平方成反比。
+  * Lambertian Diffuse Shading
+    * $L_d = k_d \cdot (\frac{I}{r^2} \cdot max（0, \overrightarrow{n}\cdot\overrightarrow{l}）$
+    * 其中，  
+      ① $L_d$ ：漫反射光强  
+      ② $k_d$ diffuse coefficient：漫反射的出射能量占入射能量的比例。人看到某点的颜色，是因为该点会吸收一部分光，从而产生颜色。当完全吸收时就是黑色，按常识理解即可。所以将该系数定义为三通道的RGB值，分别为 $[0,1]$ ，就能产生一种颜色。比如说映射到 $[0,255]$ 。  
+      ③ $\frac{I}{r^2}$ ：到达着色点处的能量  
+      ④ $max（0, \overrightarrow{n}\cdot\overrightarrow{l}）$ ：着色点处接收到的能量。点积与 $0$ 取大是因为点乘为负时是从背面来的光，对结果没有贡献。
+    * 即 $漫反射的出射能量=漫反射的出射能量占入射能量比例\times入射能量=比例\times到达的能量\times接收的能量$
+    * 由于漫反射均匀反射到各方向，因此漫反射的结果与观察方向无关。
+    * 概念辨析  
+      查Diffuse Coefficient的时候注意到的一点。  
+      ① $Albedo$ ：光的出射能量占入射能量的比例。  
+      ② $Diffuse Coefficient$ ：光的漫反射的出射能量占入射能量的比例。  
+      光击中物体的时候还会有折射光等，这里只涉及漫反射。
+* 高光项Specular Term：理想光滑平面上是镜面反射，而比较光滑但又不接近理想的光滑平面，反射光的方向应在镜面反射光的附近。当观察方向接近这些反射光的时候，能观察到高光。  （in Lecture 08）
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img22.png) &nbsp;</br>
+
+  * 定义入射光与观察方向的半程向量 
+    $$h\ =\ bisector（\overrightarrow{v}, \overrightarrow{l}） = \frac{\overrightarrow{v}+\overrightarrow{l}}{|\overrightarrow{v}+\overrightarrow{l}|}$$
+    而入射光与反射光的半程向量是法向 $\overrightarrow{n}$ ，所以反射光与观察方向的邻近可以近似用它们与入射光的半程向量的邻近替换。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img23.png) &nbsp;</br>  
+    类似漫反射，得到高光反射光
+    $$\begin{aligned}
+       L_s &=& k_s \cdot \frac{I}{r^2} \cdot max（0,\ cos\alpha）^p \\
+           &=& k_s \cdot \frac{I}{r^2} \cdot max（0, \overrightarrow{n}\cdot \overrightarrow{h}）^p
+    \end{aligned}$$
+      * 与漫反射相比，增加了观察方向的影响。【？为什么用 $\cos\alpha$ ：陷入茫然-1s，但是想想：一与夹角相关，二随夹角增大而减小，又方便好算的可不就是余弦么=。=】
+      * 指数 $p$ ：单纯的余弦函数变化趋势对高光来说还是过于平缓，所以要加快它的变化趋势。乘上系数的话还是很慢，就用指数。一般在Blinn-Phong模型下用 $p = 100-200$ 。</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img24.png) &nbsp;</br> 随着指数的变化，看到的高光范围变小。  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img25.png) &nbsp;</br>
+      * 此处不考虑吸收的能量是在该模型下被简化了。
+      * 不使用半程向量作近似，直接考虑理想镜面反射光与观察方向的夹角，就是 Phong模型，与这种近似相比，计算量较大。
+* 环境光照项Ambient Term
+  * 大胆假设！所有点接收到的环境光都相同，强度为 $I_a$。
+  * 大胆近似！得到环境光 $L_a=k_a \cdot I_a$
+    * 与直接光照、观察方向、法线方向都无关。
+    * 具体表现就是点本身的颜色。
+    * 环境光的作用：保证没有地方全黑。
+  * 小心求真：参见全局光照技术。
+* Blinn-Phong Reflection Model = Diffuse + Specular + Ambient
+  $$ \begin{aligned} L &= L_d + L_s + L_a \\ &= k_d \cdot \frac{I}{r^2} \cdot max（0,\ \overrightarrow{n} \cdot \overrightarrow{l}）+\ k_x \cdot \frac{I}{r^2} \cdot max（0, \ \overrightarrow{n} \cdot \overrightarrow{h}）^p \ +\ k_a \cdot I_a \end{aligned} $$
+* 巨巨们的Q Time
+  * Q：为什么不考虑观察点到着色点的距离对能量损耗的影响？
+    * A：实际上计算得出的东西不再是光的能量，而是Radiance。而它具有和距离无关的特性。现实中离得远觉得暗是其它原因造成的。
 
 # Lecture 08 Shading 2 (Shading, Pipeline and Texture Mapping)
+## Shading
+### **着色频率Shading Frequencies**
+* 对四边形着色 $\rightarrow$ 对四边形的顶点也着色 $+$ 插值 $\rightarrow$ 对每个像素着色</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img26.png) &nbsp;</br>
+* 不同的着色频率
+  * 逐三角形Shade each triangle （平面着色flat shading）：三角形为平面，两条边作叉积可得单一法向，然后根据光照等进行计算。  
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img27.png) &nbsp;</br>  
 
-# Lecture 09
+  * 逐顶点Shade each vertex （双线性光强插值法Gourand shading）：求顶点法向，对顶点着色，三个顶点构成的三角形内部通过插值生成颜色。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img28.png) &nbsp;</br>
+  * 逐像素Shade each pixel （Phong Shading）：三角形的三个顶点求出各自的法线，在三角形内部每个像素上插值出其自己的法向，再对每个像素进行着色。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img29.png) &nbsp;</br>
+  * 一般情况下 Phong Shading 的表现较好。</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img30.png) &nbsp;</br>
+    * 具体的效果和效率要看定义的几何体上三角形、顶点、像素个数为多少。  
+    * 当几何体本身定义复杂，表面上三角形个数极多，平面着色的效果也不错。
+    * 如果表面三角形个数比像素数量还多，平面着色的效率也可能比 Phong Shading 低。
 
+# Lecture 09 Shading 3 ()
 # Lecture 10
-
 # Lecture 11
-
 # Lecture 12
-
 # Lecture 13
-
 # Lecture 14
-
 # Lecture 15
-
 # Lecture 16
-
 # Lecture 17
-
 # Lecture 18
-
 # Lecture 19
-
 # Lecture 20
 
 
 # 备用
+</br>&nbsp;![] &nbsp;</br>
+
 $$
     \left\{
     \begin{aligned}
