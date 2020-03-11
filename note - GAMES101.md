@@ -474,7 +474,7 @@
   * 复杂度分析： $O(n)$
 
 # Lecture 07 Shading 1 (Illumination, Shading and Graphics Pipeline)
-## Shading
+## 着色Shading
 ### **着色**
 * 着色：对不同的物体应用不同材质的过程。
 * 高光specular highlights、漫反射Diffuse reflection、间接（环境）光照Ambient lighting
@@ -539,7 +539,7 @@
     * A：实际上计算得出的东西不再是光的能量，而是Radiance。而它具有和距离无关的特性。现实中离得远觉得暗是其它原因造成的。
 
 # Lecture 08 Shading 2 (Shading, Pipeline and Texture Mapping)
-## Shading
+## 着色Shading
 ### **着色频率Shading Frequencies**
 * 对四边形着色 $\rightarrow$ 对四边形的顶点也着色 $+$ 插值 $\rightarrow$ 对每个像素着色</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img26.png) &nbsp;</br>
 * 不同的着色频率
@@ -554,8 +554,37 @@
     * 具体的效果和效率要看定义的几何体上三角形、顶点、像素个数为多少。  
     * 当几何体本身定义复杂，表面上三角形个数极多，平面着色的效果也不错。
     * 如果表面三角形个数比像素数量还多，平面着色的效率也可能比 Phong Shading 低。
+    * 求解顶点法向：对顶点所关联的面的法向作加权（面积）平均。
+    * 求解像素法向：重心插值（参见下文）。
+## 图形管线Graphics （Real-time Rendering） Pipeline 
+![](note&#32;-&#32;image/GAMES101/img31.png)
+* 实时渲染管线：输入三维空间中的顶点，经过变换（MVPV）投影到屏幕空间，这些顶点在屏幕上形成三角形，通过光栅化（采样、深度测试）把三角形离散化成像素点，结合光照、材质和观察方向等进行着色，输出。
+  * 该流程已固化入GPU，有些设定允许其中一部分为可编程。
+  * 决定顶点和像素如何处理的代码即Shader。
+* Shader Programs
+  * Shader只需考虑如何处理单个着色点。
+  * Shader类别：顶点着色器Vertex Shader（对顶点的操作）、片段/像素着色器Fragment/Pixel Shader（对像素的操作）
+  * 若对像素操作，主要求出最后的颜色，并输出。
+  * GLSL，OpenGL的一种语言。
+  * `Shadertoy`：http://shadertoy.com/view/ld3Gz2
+## 现代图形学发展
+* Geometry Shader几何着色器：可以定义几何的操作。
+* Compute Shader：可以做任何形式的通用计算，General Purpose GPU。
+## 纹理映射Texture Mapping
+* 纹理：用以定义着色点的属性。
+  * 三维物体的表面是二维的，即可以映射到一张图。
+  * 着色点和纹理点的对应：把模型展开贴到纹理的对应位置（美工的开发任务），在展开时保证大小不扭曲、不产生间隙（几何研究 parameterization参数化）
+* 定义纹理上的坐标系 $(u,v)$
+  * 约定： $u,\ v \in [0,1]$
+* Tilable纹理：应用到瓷砖上可以平铺时自然衔接的纹理。
+  * 这种纹理的设计需要各种算法，如“Wang Tile”。
+
 
 # Lecture 09 Shading 3 ()
+## Interpolation Across Triangles: 重心坐标Barycentric Coordinates
+* 三角形的三个顶点各自拥有不同的属性，插值可以在三角形内部对每个点平滑地生成过渡属性。
+* 
+
 # Lecture 10
 # Lecture 11
 # Lecture 12
@@ -570,6 +599,10 @@
 
 
 # 备用
+
+$$ \mathop{\Join}\limits_{i\ \theta\ j} $$
+
+
 </br>&nbsp;![] &nbsp;</br>
 
 $$
