@@ -580,10 +580,75 @@
   * 这种纹理的设计需要各种算法，如“Wang Tile”。
 
 
-# Lecture 09 Shading 3 ()
+# Lecture 09 Shading 3 (Texture Mapping Cont.)
 ## Interpolation Across Triangles: 重心坐标Barycentric Coordinates
 * 三角形的三个顶点各自拥有不同的属性，插值可以在三角形内部对每个点平滑地生成过渡属性。
-* 
+  * 插值内容：定义在顶点上的任意属性。颜色、法线等。
+* 重心坐标：定义在一个特定三角形上的坐标系统 $(\alpha,\ \beta,\ \gamma)$。
+  * 三角形所形成的平面内任意一点，都可以用三个顶点坐标的线性组合表示。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img32.png) &nbsp;</br>
+    $$ (x,y) = \alpha A + \beta B + \gamma C ,\\ \alpha+\beta+\gamma=1$$
+  * 注意三者相加为1表示“平面内任意一点”，三者都非负即 $\alpha,\ \beta,\ \gamma \geqslant 0$表示“三角形内的点”。
+  * 可以用顶点对面的三角形面积与总面积之比求出 $\alpha、\beta、\gamma$ 。
+  * 重心的重心坐标 $(\frac{1}{3},\ ,\frac{1}{3},\ \frac{1}{3})$ 。
+  * 任意点的重心坐标计算（但没有必要记哟[doge]）
+    $$ \alpha = \frac{-(x-x_B)(y_c-y_B)+(t-t_B)(x_C-x_B)}{-(x_A-x_B)(y_C-y_B)+(y_A-y_B)(x_C-x_B)} \\ \beta = \frac{-(x-x_C)(y_A-y_C)+(y-y_C)(x_A-x_C)}{-(x_B-x_C)(y_A-y_C)+(y_B-y_C)(x_A-x_C)} \\ \gamma = 1-\alpha-\beta $$
+  * 参考重心坐标，三角形内任意一点的属性也可以通过三个顶点的属性线性表示。
+    $$ V=\alpha V_A+\beta V_B +\gamma V_C $$
+  * 注意经过投影后重心坐标会改变，因此比如光栅化深度做插值时，要使用三维状态下的信息（逆变换回去）。
+## 纹理的应用Applying Texture
+### **基本使用**
+* Simple Texture Mapping - Diffuse Color：算出屏幕上采样点的位置，所对应的插值出的 $(u,v)$ ，对应到纹理坐标上的某个颜色，来作为采样点的漫反射系数 $k_D$ 。
+### **纹理放大Texture Magnification - Easy Case**
+* 问题：纹理很小，映射后被拉大。即像素pixel对应到的纹理元素texel坐标非整数。
+* 简单处理
+  * 四舍五入取整。
+  * 但附近相邻的一块都会取到相同的属性，变成一格一格的。
+* 双线性插值Bilinear Interpolation
+  * 取邻近四个点中两对平行方向的点分别线性插值出结果，对两个插值结果再作垂直向的线性插值。
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img33.png) &nbsp;</br>
+    黑点为纹素，红点为采样点对应到的纹素坐标表示的点。
+  * 通过这两个方向的线性插值，可以得到比较平滑的结果。
+* Bicubic插值：取邻近的十六个，每次用四个点作立方插值。
+### **纹理放大Texture Magnification - Hard Case**
+* 问题直观感受图：  
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img35.png) &nbsp;</br>  
+  纹理太大时，近处屏幕像素和远处屏幕像素在纹理坐标上所占区域大小不同。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img34.png) &nbsp;</br>
+  此时认为采样点代表一大块区域显然不合理。
+* 简单处理
+  * 类似抗锯齿时的方法，在像素点内使用超采样。  
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img36.png) &nbsp;</br>  
+  一个像素内采样 $512$ 个点的结果。
+  * 效果不错，但效率太低。
+* 分析问题
+  * 回忆走样问题的原因：采样速度跟不上信号变化的频率。在上图已经体现。所以超采样的方法可以起效。
+  * 所以走样其实是由采样引起的，就可以考虑不采样，看能不能直接得到那一块区域的属性均值（范围查询问题）。
+* 点查询问题和范围查询问题 Point Query vs. (Avg.) Range Query
+  * 点查询问题：如线性插值。
+  * 范围查询问题：如此处所需范围均值，或范围最大最小值等。（脑内弹幕爆炸刷屏：？？？线段树？？？是你吗线段树？？？）
+### **Hard Case的处理1 - Mipmap**
+* 作用：做快速、近似、正方形的范围查询。
+* 思想
+  * 预处理从纹理原图 $Level\ 0\ (a \times a)$ 生成 $Level\ 1\ (\frac{a}{2} \times \frac{a}{2})$ 的新一层次图。
+  * 直到生成 $Level\ log_a\ (1 \times 1)$ 。
+* 复杂度分析
+  * 空间损耗为 $1+\frac{1}{4}+\frac{1}{16}+\frac{1}{64}+... = \frac{4}{3}$ ，仅为原图的 $\frac{1}{3}$ 。
+* 获取屏幕像素映射到纹理坐标后，覆盖区域范围的近似
+  * 取采样点周围两个像素映射到纹理坐标并与采样点映射位置相连，以两线段中最长的长度作边长 $L=max(\sqrt{(\frac{du}{dx})^2+\frac{dv}{dx}},\ \sqrt{(\frac{du}{dy})^2+(\frac{dv}{dy})^2})$ 的正方形，近似认为是采样点的覆盖范围。
+  * 如果边长为 $1 \times 1$，即在Mipmap的原图上取该像素；$4 \times 4$则在第二层上取该像素。也就是在 $D = log_2 L$上取对应位置像素。
+  * 当对应到非整数层时，作三线性插值Trilinear Interpolation：先在上下两层分别作双线性插值（对应非整数层时必然在这两层都不能直接取到某个纹理元素），再对两层的双线性插值结果作线性插值。
+* 局限性  
+  * 远处的细节过于模糊overblur。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img37.png) &nbsp;</br>  
+    因为Mipmap只能近似查询正方形范围，并且三线性插值又做了多次近似。  
+    而且Mipmap在缩图过程中，取得的图长宽比一直是固定的，但有些情况下可能只压缩了水平或垂直方向，而Mipmap不能获得不均匀的压缩结果。
+* 对overblur的优化
+  * 屏幕空间实际对应到纹理空间后，一个屏幕像素覆盖的范围可能是长条形的，此时用正方形近似取到的范围比实际要大很多。
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img38.png) &nbsp;</br>  
+  * 解决方法
+    * 各向异性过滤Anisotropic Filtering（也叫Ripmap）可以取到矩形范围，但对斜向的长条也没用。空间损耗为原来的三倍。
+    * EWA Filtering：将任意不规则形状，分解为多个不同的圆形，多次查询。
 
 # Lecture 10
 # Lecture 11
