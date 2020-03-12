@@ -44,7 +44,7 @@ vec3 color(const ray &r, hittable *world, int depth)
 
 hittable *cornell_box()
 {
-    hittable **list = new hittable *[6];
+    hittable **list = new hittable *[8];
     int i = 0;
     material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material *white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
@@ -61,8 +61,8 @@ hittable *cornell_box()
     list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));   // 前
 
     // add two box
-    list[i++] = new box(vec3(130, 0, 65), vec3(295, 165, 230), white);
-    list[i++] = new box(vec3(265, 0, 295), vec3(430, 330, 460), white);
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265, 0, 295));
 
     return new hittable_list(list, i);
 }
@@ -73,7 +73,7 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("chapter7-.ppm");
+    output.open("chapter7-2-rotate.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 

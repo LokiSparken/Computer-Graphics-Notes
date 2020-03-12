@@ -33,7 +33,7 @@ box::box(const vec3 &p0, const vec3 &p1, material *ptr)
     list[3] = new flip_normal(new xz_rect(p0.x(), p1.x(), p0.z(), p1.z(), p0.y(), ptr));
 
     list[4] = new yz_rect(p0.y(), p1.y(), p0.z(), p1.z(), p1.x(), ptr);
-    list[5] = new flip_normal(new yz_rect(p0.y(), p1.y(), p0.z(), p1.z(), p1.x(), ptr));
+    list[5] = new flip_normal(new yz_rect(p0.y(), p1.y(), p0.z(), p1.z(), p0.x(), ptr));
 
     list_ptr = new hittable_list(list, 6);
 }
