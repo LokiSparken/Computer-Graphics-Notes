@@ -50,6 +50,7 @@
   * trade off以A换B
   * 目前的实时光线追踪
 * 动画模拟Animation/Simulation
+
 ### Out of the Course
 * API：OpenGL/DirectX/Vulcan
 * 3D Model：Maya/3DS MAX/Blender
@@ -116,6 +117,7 @@
 ## Why study transformation
 * Modeling模型变换：相机的移动、人物部位旋转、动画由各种变换组成
 * Viewing视图变换：3D to 2D projection投影变换
+
 ## 2D Transforms二维变换
 * Scale缩放、Shear切变/错切、Rotate旋转（默认绕原点、逆时针）
 * Linear Transforms = Matrices (of the same dimension)
@@ -125,6 +127,7 @@
     $$ \left( \begin{matrix} x' \\ y' \end{matrix} \right)
         = \left( \begin{matrix} a & b \\ c & d  \end{matrix} \right)
         \cdot \left( \begin{matrix} x \\ y \end{matrix} \right) = M \cdot \left( \begin{matrix} x \\ y \end{matrix} \right) , M为变换矩阵 $$
+
 ## Homogeneous Coordinates齐次坐标
 * 引入齐次坐标的原因：平移变换
     $$ \left\{ \begin{aligned} x' & = & x + t_x \\ y' & = & y + t_y  \end{aligned} \right. $$
@@ -134,38 +137,7 @@
   * 2D point = （$x, y,$ `1`$）^T$
   * 2D vector = （$x, y,$ `0`$）^T$
   * 于是平移可以表示为
-    $$
-        \left(
-        \begin{matrix}
-            x' \\
-            y'
-        \end{matrix}
-        \right)
-        =
-        \left(
-        \begin{matrix}
-            1 & 0 & t_x \\
-            0 & 1 & t_y \\
-            0 & 0 & 1
-        \end{matrix}
-        \right)
-        \cdot
-        \left(
-        \begin{matrix}
-            x \\
-            y \\
-            1
-        \end{matrix}
-        \right)
-        =
-        \left(
-        \begin{matrix}
-            x+t_x \\
-            y+t_y \\
-            1
-        \end{matrix}
-        \right)
-    $$
+    $$ \left( \begin{matrix} x' \\ y' \end{matrix} \right) = \left( \begin{matrix} 1 & 0 & t_x \\ 0 & 1 & t_y \\ 0 & 0 & 1 \end{matrix} \right) \cdot \left( \begin{matrix} x \\ y \\ 1 \end{matrix} \right) = \left( \begin{matrix} x+t_x \\ y+t_y \\ 1 \end{matrix} \right) $$
 * 区分点、向量的原因：  
   * ① 向量具有平移不变性，增加的一维为0时平移前后相同  
   * ② 从几何意义来看，$point=1$，$vector=0$  
@@ -204,7 +176,9 @@
     \end{matrix} \right)$$
 * 齐次形式的代价：扩充维度
 * 注意：当表示二维情况下的仿射变换时，最后一行才都是 $(0, 0, 1)$
+
 ## Inverse Transform逆变换
+
 ## Composite Transform复合变换
 * 复合变换可由简单变换组成
 * 变换顺序与矩阵乘法一样不可交换
@@ -214,6 +188,7 @@
   * 若绕任意点 $C$ 进行旋转，步骤：① 整体平移回原点 ② 旋转 ③ $C$ 点平移回原处
   * 即（从右到左叠加）
     $$ T(c) \cdot R(\alpha) \cdot T(-c) $$
+
 ## 3D Transforms三维变换 I
 * 基本的部分简单从二维扩充即可
 * 注意：齐次形式的变换矩阵，因为是由仿射变换而来，所以一定是先线性（左上角）再平移（右上角），这种顺序的二者可以直接写在一起。
@@ -229,6 +204,7 @@
   * 其中，$\alpha、\beta、\gamma$ 被称为`欧拉角`
   * `Rodrigues' Rotation Formula罗德里格斯旋转公式`：定义了默认旋转轴（过原点），扩展到绕任意轴则叠加两次平移即可。
 * 四元数：处理旋转与旋转之间的插值。如2D情况下旋转25度、旋转15度，不能简单相加取均值（20度）得到中间情况。
+
 ## Viewing Transformation
 * 以拍照过程作为例子
   拍照阶段 | 对应变换
@@ -237,6 +213,7 @@
   调整相机位置、角度|View Transformation
   拍摄|Projection Transformation
   * 三种变换简称MVP变换。（Not Most valuable player XD）
+
 ### View/Camera Transformation视图变换
 * Step
   * 定义相机的`位置Position` $\overrightarrow{e}$。
@@ -263,6 +240,7 @@
         0 & 0 & 0 & 1 \end{matrix} \right) $$
 * 相机根据 $M_{view}$ 变换后，根据相对运动，其它物体也统一作一次该变换。【？这样看到的东西不就一直不变了吗orz?】
   * MV变换都应用到物体，经常放在一起，称模型视图变换。
+
 ### Projection Transformation投影变换
 * Orthographic projection正交投影
   * 常用于工程制图，可看作是透视投影的相机处于无限远。
@@ -326,6 +304,7 @@
   * 近平面的中心即视角中心，根据定义即有
     $$ aspect=\frac{r}{t} $$
   * 所以定义宽高比和垂直可视角就能推及 $r、t、n$ 三个坐标方向。
+
 ## Canonical Cube to Screen
 * after MVP（Model/View/Projection），把变换所得 $[-1,1]^3$ 呈现到画面。
 * 定义屏幕Screen
@@ -345,6 +324,7 @@
     $$ M_{vireport}=\left(\begin{matrix}\frac{width}{2} & 0&0&\frac{width}{2}\\0&\frac{height}{2}&0&\frac{height}{2}\\0&0&1&0\\0&0&0&1\end{matrix}\right) $$
     注意左下角之前在 $[-1, 1]$ ，拉伸后在 $[-\frac{width}{2}, \frac{height}{2}]$ ，所以还要把左下角平移到原点。
 * 至此，变换完成，得到点在屏幕空间下的坐标。
+
 ## 光栅化
 * 接下来将模型等拆成像素显示到屏幕，即光栅化过程。
 * 光栅显示设备
@@ -355,6 +335,7 @@
   * 液晶显示器Liquid Crystal Display（LCD）：利用液晶的原理控制显示器的显示内容。它会通过自己的排布影响光的极化。光通过光栅，会筛选掉与光栅震动方向不同的那部分光的能量。液晶可以通过自己本身的震动来影响光的波动。
   * 发光二极管Light Emitting Diode（LED）
   * 墨水屏：刷新慢
+
 ## **Drawing to Raster Displays**
 * 三角形Triangles - Fundamental Shape Primitives
   * 三角形为最基础的多边形，任何其它不同的多边形都可以拆成三角形。
@@ -396,6 +377,7 @@
   * 在采样前，先做模糊/滤波。
   * 如上述三角形，对像素中心采样之前，先把原来的三角形变“模糊”：边缘处变成略淡的颜色。这样采样采到边界的点颜色冲突就不那么明显。
   * 先采样再模糊：Blurred Aliasing。把走样模糊了，但是达不到反走样的效果。
+
 ### **原理分析**
 * 频率和周期：如$cos(2f\pi)$，$T = \frac{1}{f}$
   * 傅立叶级数展开Fourier Transform：任何一个周期函数，都可以把它分解成不同的频率（写成一系列正弦和余弦函数的线性组合），以及一个常数项。（通过上下平移、叠加不同频率的正余弦函数，逼近周期函数）
@@ -450,6 +432,7 @@
   * 将 $512\times512$ 的图拉伸到 $1k\times1k$ 而产生锯齿。
   * 与走样类似，都是要解决样本不足的问题。
   * 方法：DLSS（Deep Learning Super Sampling）深度学习。
+
 ## 可见性Visibility/遮挡occlusion（in Lecture 07）
 * 当有多个物体重叠在一起时，要显示较近的物体。
 * 画家算法Painter's Algorithm（指油画家）
@@ -475,12 +458,14 @@
 
 # Lecture 07 Shading 1 (Illumination, Shading and Graphics Pipeline)
 ## 着色Shading
-### **着色**
+
+### **概念**
 * 着色：对不同的物体应用不同材质的过程。
 * 高光specular highlights、漫反射Diffuse reflection、间接（环境）光照Ambient lighting
 * 定义着色点 $Shading\ point\ p$（极小范围认为是平面，存在法向 $\overrightarrow{n}$ ）、观察方向 $Viewer\ direction\ \overrightarrow{v}$ 、光照方向 $Light\ direction\ \overrightarrow{l} = p_光 - p$ 、物体表面参数 $Surface\ parameters（color、shininess...）$ </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img18.png) &nbsp;</br>
   * 都指单位向量。
 * Shading is local. 只关注局部，不考虑其它物体的存在。即如果有物体遮挡了光，应该产生阴影，暂时先不考虑。
+
 ### **A Simple Shading Model - Blinn-Phong Reflectance Model**
 * 漫反射Diffuse Reflection：光线击中物体表面某点时，均匀反射到各个不同方向。
   * 相同的表面，当入射光的入射角度不同时，产生不同的明暗效果。  
@@ -540,6 +525,7 @@
 
 # Lecture 08 Shading 2 (Shading, Pipeline and Texture Mapping)
 ## 着色Shading
+
 ### **着色频率Shading Frequencies**
 * 对四边形着色 $\rightarrow$ 对四边形的顶点也着色 $+$ 插值 $\rightarrow$ 对每个像素着色</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img26.png) &nbsp;</br>
 * 不同的着色频率
@@ -556,6 +542,7 @@
     * 如果表面三角形个数比像素数量还多，平面着色的效率也可能比 Phong Shading 低。
     * 求解顶点法向：对顶点所关联的面的法向作加权（面积）平均。
     * 求解像素法向：重心插值（参见下文）。
+
 ## 图形管线Graphics （Real-time Rendering） Pipeline 
 ![](note&#32;-&#32;image/GAMES101/img31.png)
 * 实时渲染管线：输入三维空间中的顶点，经过变换（MVPV）投影到屏幕空间，这些顶点在屏幕上形成三角形，通过光栅化（采样、深度测试）把三角形离散化成像素点，结合光照、材质和观察方向等进行着色，输出。
@@ -567,9 +554,11 @@
   * 若对像素操作，主要求出最后的颜色，并输出。
   * GLSL，OpenGL的一种语言。
   * `Shadertoy`：http://shadertoy.com/view/ld3Gz2
+
 ## 现代图形学发展
 * Geometry Shader几何着色器：可以定义几何的操作。
 * Compute Shader：可以做任何形式的通用计算，General Purpose GPU。
+
 ## 纹理映射Texture Mapping
 * 纹理：用以定义着色点的属性。
   * 三维物体的表面是二维的，即可以映射到一张图。
@@ -596,9 +585,11 @@
   * 参考重心坐标，三角形内任意一点的属性也可以通过三个顶点的属性线性表示。
     $$ V=\alpha V_A+\beta V_B +\gamma V_C $$
   * 注意经过投影后重心坐标会改变，因此比如光栅化深度做插值时，要使用三维状态下的信息（逆变换回去）。
-## 纹理的应用Applying Texture
+
+## 纹理的应用Applying Texture 1
 ### **基本使用**
 * Simple Texture Mapping - Diffuse Color：算出屏幕上采样点的位置，所对应的插值出的 $(u,v)$ ，对应到纹理坐标上的某个颜色，来作为采样点的漫反射系数 $k_D$ 。
+
 ### **纹理放大Texture Magnification - Easy Case**
 * 问题：纹理很小，映射后被拉大。即像素pixel对应到的纹理元素texel坐标非整数。
 * 简单处理
@@ -610,6 +601,7 @@
     黑点为纹素，红点为采样点对应到的纹素坐标表示的点。
   * 通过这两个方向的线性插值，可以得到比较平滑的结果。
 * Bicubic插值：取邻近的十六个，每次用四个点作立方插值。
+
 ### **纹理放大Texture Magnification - Hard Case**
 * 问题直观感受图：  
   </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img35.png) &nbsp;</br>  
@@ -627,6 +619,7 @@
 * 点查询问题和范围查询问题 Point Query vs. (Avg.) Range Query
   * 点查询问题：如线性插值。
   * 范围查询问题：如此处所需范围均值，或范围最大最小值等。（脑内弹幕爆炸刷屏：？？？线段树？？？是你吗线段树？？？）
+
 ### **Hard Case的处理1 - Mipmap**
 * 作用：做快速、近似、正方形的范围查询。
 * 思想
@@ -650,7 +643,81 @@
     * 各向异性过滤Anisotropic Filtering（也叫Ripmap）可以取到矩形范围，但对斜向的长条也没用。空间损耗为原来的三倍。
     * EWA Filtering：将任意不规则形状，分解为多个不同的圆形，多次查询。
 
-# Lecture 10
+## 纹理的应用Applying Texture 2 (in Lecture 10)
+### 概述
+* In modern GPUs, texture = memory + range query (filtering)
+* Environment Map环境光照/环境贴图
+  * 经典模型：犹他茶壶，斯坦福兔子与龙，Cornell's Box
+* 记录环境光
+  * Spherical Environment Map 将环境光记录在球上，展开
+    * 问题：在球面上会扭曲，纬度高的部分看起来小，导致展开后不均匀
+  * Cube Map 环境光记录在球的包围盒上
+* 凹凸贴图Bump/法线贴图Normal mapping：用贴图在物体表面定义相对高度，高度的不同导致法线不同，着色结果会有明暗变化，体现凹凸感。
+  * 不改变几何形体，对法线作扰动。
+  * 如何扰动（flatland case）
+    * 原来的法线 $\overrightarrow{n_p} = (0,\ 1)$
+    * 扰动后的法线  
+      </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img39.png) &nbsp;</br>  
+      ① 某点处高度函数的切线（导数，近似） 
+      $$ dp = c \cdot [h(p+1) - h(p)] （令\Delta x = 1）$$  
+      其中 $c$ 为引入的常数：表示凹凸贴图的影响，作简单的缩放。
+      ② 用向量将切线表示为 $(1,\ dp)$  
+      ③ 再将切线逆时针旋转九十度 $(x,\ y) \rightarrow (-y,\ x)$ 。  
+      ④ 最后单位化得新的法线
+      $$ \overrightarrow{n_p} = (-dp,\ 1).normalized() $$
+  * 如何扰动（3D case）
+    * 原来的法线 $\overrightarrow{n_p} = (0,\ 0,\ 1)$
+    * 扰动后的法线  
+      ① 分别求某点在纹理坐标 $(u,\ v)$ 的水平方向（ $\overrightarrow{u}$ 方向）的切线，以及在 $\overrightarrow{v}$ 方向的切线
+      $$ \begin{aligned} \frac{dp}{du} = c_1 \cdot [h(u+1) - h(u)] \\ \\ \frac{dp}{dv} = c_2 \cdot [h(v+1) - h(v)] \end{aligned} $$
+      ② 类比推导可得新法线
+      $$ \overrightarrow{n_p} = (-\frac{dp}{du},\ -\frac{dp}{dv},\ 1).normalized() $$
+  * 上述原法线坐标为设定局部坐标系后的默认值，实际应用时要加入与世界坐标的转换。
+  * 问题：虽然产生了凹凸的感觉，但是没有“某点的凸起会给其它部分带来的阴影”。
+* 位移贴图Displacement mapping
+  * 改变了几何形体上的顶点。
+  * 相比凹凸/法线效果更好，但要求几何形体本身三角形够“精细”（三角形的顶点间隔比纹理定义的频率高），否则顶点三角形内部无法改变，也就得不到更好的效果。
+  * DirectX的方法：动态曲面细分Dynamic Tessellation，先定义粗糙的模型，应用位移贴图的过程中检测是否需要更精细的模型，在过程中再细分。
+* 3D Procedural Noise + Solid Modeling
+  * 三维噪声纹理：用三维空间中的噪声函数定义空间中每个点的值。
+  * 作二值化或其它变化等。
+  * 如Perlin Noise。
+* 记录信息
+  * 如Ambient Occlusion环境光遮蔽，可以预计算后写进纹理。将着色结果乘上预计算的信息得到最后结果。
+* 体渲染
+
+# Lecture 10 Geometry 1 (Introduction)
+## 几何形体
+* 例子
+  * 布料：纤维fiber $\rightarrow$ 股线ply $\rightarrow$ 棉毛丝线thread
+  * 水滴入水溅起的涟漪
+  * 城市远景：树、草地、建筑等。如何存储，如何渲染。
+  * 动物毛发
+  * 细胞内部
+* 在图形学中的分类
+  * Implicit Geometry隐式几何
+  * Explicit Geometry显式几何
+* Implicit Geometry隐式几何
+  * 不给出实际的点，把点作归类，给出关系式。如球体： $x^2+y^2+z^2=1$ ，更一般的 $f(x,\ y,\ z)=0$
+  * 缺点：难以知道“面上有哪些点”，不直观。
+  * 优点：容易判断点是否在面上，容易与光线求交，容易严格描述物体。
+* Explicit Geometry显式几何
+  * 直接给出点坐标，或通过参数映射方法定义。  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img40.png) &nbsp;</br>  
+  * 优点：对于映射方法的定义，遍历 $u、v$ 即可得到所有点。
+  * 缺点：难以判断点是否在面上。
+## More Implicit Geometry
+* 代数方法
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img41.png) &nbsp;</br>
+* CSG （Constructive Solid Geometry构造实体几何）：通过基本几何的布尔运算，定义新的几何，并写成布尔表达式。（目前使用非常广泛）
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img42.png) &nbsp;</br>
+* Distance Functions 距离函数：不描述几何的表面，描述空间上任意一点到几何表面的最近距离。
+  * 应用例子：Lecture 10 63:30（用距离函数作混合）
+  * 恢复成表面：找距离函数为0处即表面。
+* Level Set Methods 水平集：将距离函数写在二维格子/三维空间上。（无脑OS：距离函数的离散形式？）
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img43.png) &nbsp;</br>
+* Fractals 分形：如雪花、Romenasco（西兰花的一种）。
+  * 分形几何容易引起严重走样。
+
 # Lecture 11
 # Lecture 12
 # Lecture 13
@@ -697,3 +764,14 @@ $$
 一个题注[^1]
 
 [^1]:cannotaddspace失败的题注示例
+
+* 为了自动生成的目录格式，设置EOL的换行符号改成了\n，原auto
+  * 不同系统换行符制定不同
+
+    系统 | 换行符
+    :---:|:---:
+    Windows|\n\r
+    Unix|\n
+    Mac|\r
+
+* Lecture 4罗德里格斯闫老师的推导还没看，记得去看一下
