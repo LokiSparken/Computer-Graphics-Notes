@@ -213,6 +213,7 @@
   调整相机位置、角度|View Transformation
   拍摄|Projection Transformation
   * 三种变换简称MVP变换。（Not Most valuable player XD）
+  * 其中模型变换即在模型空间中做平移、旋转、缩放等基本变换。
 
 ### View/Camera Transformation视图变换
 * Step
@@ -303,7 +304,7 @@
     $$ \tan\frac{fovY}{2}=\frac{t}{|n|} $$
   * 近平面的中心即视角中心，根据定义即有
     $$ aspect=\frac{r}{t} $$
-  * 所以定义宽高比和垂直可视角就能推及 $r、t、n$ 三个坐标方向。
+  * 设 $l=-r$，$b=-t$ 则定义宽高比和垂直可视角就能推及 $r、t、n$ 三个方向的坐标范围。
 
 ## Canonical Cube to Screen
 * after MVP（Model/View/Projection），把变换所得 $[-1,1]^3$ 呈现到画面。
@@ -800,15 +801,159 @@
   * 在两个方向上分别需要参数 $u、v$ 。
   * 更多的参考胡事民老师课程w。
 ### **网格操作：几何处理**
-* 网格细分Mesh subdivision：三角网格更密集，使物体表面更光滑。
-* 网格简化Mesh simplification：用更少的三角网格描述，节省存储。（细分的逆过程）
-* 网格正规化Mesh regularization：使三角形趋向于正三角形，避免尖细三角形，会有较好的性质。
+* 网格细分Mesh subdivision：三角网格更密集，使物体表面更光滑，细节更丰富。
+* 网格简化Mesh simplification：用更少的三角网格描述，节省存储。当模型复杂但成像距离较远，不需要太多细节时也要简化。但简化时要维持连接关系。（细分的逆过程）
+* 网格正规化Mesh regularization：使三角形趋向于正三角形，避免尖细三角形，会有较好的性质。改进三角形质量时不能丢失物体本身的质量。
 
-# Lecture 12 
+# Lecture 12 Surfaces and Shadows
 ## Surfaces
-### 
+### **Mesh Subdivision（upsampling）**
+* 细分三角形后还要进行位置的变化，否则不能改变形状。
+* **Loop Subdivision**
+  * 增加三角形数量：取三角形的三边中点相连，从一个增加到四个。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img46.png) &nbsp;</br>
 
-# Lecture 13
+  * 调整三角形位置：即调整顶点位置。
+    * 将顶点分为原有顶点和新增顶点。
+    * 调整新顶点：新的顶点必然在原来三角形的边上，且通常情况下非物体边界的顶点必然被多个三角形共享。  
+      </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img47.png) &nbsp;</br>
+
+      将两三角形的共享中点位置调整到周围几个旧顶点值的平均：$\frac{3}{8}\cdot (A+B) + \frac{1}{8}\cdot (C+D)$
+    * 调整旧顶点：考虑自己本身的原位置和周围旧顶点的位置。  
+      </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img48.png) &nbsp;</br>
+
+      定义顶点的度 $n$ （与几条边相关），以及一个与顶点的度相关的量 $u = \frac{1}{n}[\frac{5}{8}-(\frac{3}{8}+\frac{1}{4}\cos\frac{2\pi}{n})^2]$  
+      将旧顶点位置调整到：$(1-n\cdot u)\cdot pos_{old} + u\cdot pos_{old\_neighbor\_sum}$
+  * 只适用于三角形网格。
+* **Catmull-Clark Subdivision（General Mesh）**
+  * 适用于任意网格。
+  * 定义 Quad face四边形面，Non-quad face非四边形面，Extraordinary vertex奇异点（度不为4的点）。
+  * Step
+    * 取每条边的中点、每个面的中心并相连。  
+      性质：在非四边形的面内新增的点，由于要与各边相连，所以该点必然是奇异点。并且这些非四边形的面都会被细分为四边形面，再作细分不会新增奇异点。即“Catmull-Clark细分在第一次细分，增加非四边形面数的奇异点后，所有非四边形面被细分为四边形面，之后的细分不会再新增奇异点个数。”
+    * 调整点的位置，分为三类点：面中心点Face point、边中点Edge point、原有旧顶点Vertex point  
+      ① </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img49.png) &nbsp;</br>
+        $$f=\frac{v_1+v_2+v_3+v_4}{4}$$
+      ② </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img50.png) &nbsp;</br>
+        $$e=\frac{v_1+v_2+f_1+f_2}{4}$$
+      ③ </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img51.png) &nbsp;</br>
+        $$v=\frac{f_1+f_2+f_3+f_4+2(m_1+m_2+m_3+m_4)+4p}{16}$$
+
+### **Mesh Simplification（downsampling）**
+* 不同情况下选用不同程度的复杂模型。
+  * 问题：网格的复杂程度，近处精细远处粗略。何时变化？过渡时不能被人眼明显察觉。“几何的层次结构”问题，不好解决。
+* **边坍缩Edge Collapse**
+  * 直观感受如图</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img52.png) &nbsp;</br>
+  * 二次误差度量Quadric Error Metrics：衡量坍缩、保留哪些边。找到一个点，最小化二次误差。（二次误差：类似L2距离，找点到原来相关面的距离平方和最小。）
+  * Step
+    * 对原模型的每一条边，考虑其坍缩成点，其处于最优位置上时，二次误差最小值。
+    * 从所有边中二次误差最小的，从小到大依次坍缩。
+    * 由于坍缩时会引起附近其它边的变化，因此实际操作时，将受影响的边二次误差值进行更新。
+  * 由于从局部优化到整体，所以实际上是贪心算法。（为啥可行呢，因为效果看起来害整挺好（
+
+### **Mesh Regularization（same #triangles）**
+* 无
+
+## Shadows
+* 之前所说的着色都是考虑局部的单个点，而考虑到全局中其它物体，应该要有阴影产生。光栅化方法中解决阴影的办法：Shadow Mapping。
+### **Shadow Mapping**
+* 图像空间算法Image-space Algorithm
+  * 特点
+    * 生成阴影时不需要知道场景中的几何信息
+    * 会产生走样问题
+  * 思想
+    * 不在阴影里的点，说明摄像机和光源都能感知到该点。而阴影里的点，摄像机能看到，但光源看不到。
+  * 这里介绍点光源产生的硬阴影（有明显边界）。
+* Step
+  * Render from Light. 从光源方向出发，渲染场景中像素点的深度图。（不着色）
+  * Render from Eye. 从摄像机出发，渲染场景像素点时投影到深度图上，看此时的深度是否与深度图一致，若比深度图深，则说明光源对该点的照射应被其它东西遮挡。
+    
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img53.png) &nbsp;</br>
+
+* 问题
+  * 判断“是否与深度图一致”时，涉及到浮点数判等，以及两步Render时像素位置差等，导致判等精度问题很大。从而产生了各种优化办法：不判相等判大小，加上极小量后判大小等。
+  * 两次Render的分辨率问题，深度图分辨率高消耗大，分辨率低容易走样。
+* 软阴影：当光源有一定大小，从光源的不同处Render会产生不同的深度图。
+  * 对阴影的理解：完全看不到光源处umbra本影，部分看到光源penumbra半影。软阴影就是本影到半影到光亮处的过渡。
+* 对于阴影有很多的研究，但仍难以解决全局上的光照问题。
+
+# Lecture 13 Ray Tracing （Whitted-Style）
+* 光栅化的局限
+  * 对全局效果表示比较困难，如软阴影Soft shadows、光泽反射Glossy reflection（类似古代铜镜）、间接光照Indirect illumination
+  * 速度很快，但效果只是一些近似，质量比较低
+## 定义光线（图形学中）
+* 光线沿直线传播。（忽略波动性）
+* 光线不发生碰撞。（忽略相向传播发生的干涉现象）
+* 光线从光源出发，到达人眼。
+  * 利用光路的可逆性reciprocity，进行光线追踪。
+## 几种类型
+* 光线投射Ray Casting
+  * Step
+    * 相机到场景点：向成像屏幕的每个像素投射光线。
+    * 场景点到光源：判断像素是否被光线照亮/被其它物体遮挡。
+  * 发生反射和折射，但不递归跟踪。
+* Recursive (Whitted-Style) Ray Tracing
+  * `"An improved illumination model for shaded display" T.Whitted, CACM 1980`
+  * 光线传播过程中，每个弹射点都向光源连线检查是否被照亮并加和到像素值。所以最终得到的像素颜色，结合了所有“经过这个像素后，所有能到达光源的情况”，逆向来说也就是考虑了“光源往各个方向发射的光线，经弹射后，能到达相机的所有情况”。
+  * 光线归类
+    * 刚从相机出发的光线：`eye ray/primary ray`
+    * 经过一次弹射之后的光线：`secondary rays`
+    * 连向光源判定可见性的连线：`shadow rays`
+## 光与物体表面交点Ray-Surface Intersection
+### **与隐式表面求交**
+* 定义光线（数学中）
+  * 光源 $O$ ，方向 $d$
+  * 光射线方程 $r(t) = O + td, 0 \leqslant t < \infty$
+* 定义球体（隐函数形式）
+  * 点 $P$ 在球上方程 $(X_P-X_C)^2+(Y_P-Y_C)^2+(Z_P-Z_C)^2-R^2=0$
+  * 其中三项平方部分可以写成 $\overrightarrow{P-C}\cdot \overrightarrow{P-C}$ 的形式
+* 两物体交点：同时在两物体上
+  * 将光的表示形式代入球体方程 $\overrightarrow{r(t)-C}\cdot \overrightarrow{r(t)-C}-R^2=0$
+  * 完全展开后为关于参数 $t$ 的一元二次方程
+  * 注意点
+    * 为满足光射线的物理意义，求出的 $t$ 结果只能取非负，也必须是实数，即判别式非负
+    * 取最近交点，较小的根
+* 与一般的隐式表示形式的表面求交都类似，解得参数 $t$ 即可。
+### **与显式表面求交**
+* 光线与三角网格求交（简化方法）
+  * 将问题分解为
+    * 光线和平面求交
+    * 判定交点是否在三角形内
+  * **光线和平面求交**
+    * 定义平面：一个法线 $\overrightarrow{N}$ 和平面上的一个点 $P'$
+    * 点 $P$ 在平面上方程 $\overrightarrow{P-P'}\cdot \overrightarrow{N} = 0$
+    * 设参数代入展开后可整理得一般平面方程 $ax+by+cz+d=0$ 
+    * 将点 $P$ 用光线的参数形式代入
+      $$ (\overrightarrow{O}+t\cdot \overrightarrow{d}-\overrightarrow{P'})\cdot \overrightarrow{N} = 0 $$
+      $$ \overrightarrow{O}\cdot \overrightarrow{N} +t\overrightarrow{d}\cdot \overrightarrow{N}-\overrightarrow{P'}\cdot \overrightarrow{N}=0 $$
+      $$ t = \frac{\overrightarrow{P'}\cdot \overrightarrow{N}-\overrightarrow{O}\cdot \overrightarrow{N}}{\overrightarrow{d}\cdot \overrightarrow{N}} $$
+      最后同样注意 $t$ 的取值。
+* 光线与三角网格求交（直接求法）
+  * Möller Trumbore Algorithm（MT算法）
+    * 用三角形重心坐标表示平面上的点
+      $$ \overrightarrow{O}+t\overrightarrow{d}=(1-b_1-b_2)\overrightarrow{P_0}+b_1\overrightarrow{P_1}+b_2\overrightarrow{P_2} $$
+    * 有三个未知数 $t、b_1、b_2$，而方程中为三维向量，可列出 $x、y、z$ 三个维度上的三个方程组，即可得一个线性方程组。
+    * 解线性方程组：`Cramer's Rule`克拉默法则
+      $$ \left[\begin{matrix} t \\ b_1 \\ b_2 \end{matrix}\right] = \frac{1}{\overrightarrow{S_1}\cdot \overrightarrow{E_1}}\left[\begin{matrix} \overrightarrow{S_2}\cdot \overrightarrow{E_2} \\ \overrightarrow{S_1}\cdot\overrightarrow{S} \\ \overrightarrow{S_2} \cdot \overrightarrow{D} \end{matrix}\right] $$
+      其中，$\overrightarrow{E_1} = \overrightarrow{P_1}-\overrightarrow{P_0}$，$\overrightarrow{E_2} = \overrightarrow{P_2}-\overrightarrow{P_0}$，$\overrightarrow{S}=\overrightarrow{O}-\overrightarrow{P_0}$，$\overrightarrow{S_1}=\overrightarrow{D}\times\overrightarrow{E_2}$，$\overrightarrow{S_2}=\overrightarrow{S}\times\overrightarrow{E_1}$
+    * 判断解的合理性：重心坐标的三个参数非负。
+### **光线与三角网格求交的优化**
+* 包围盒Bounding Box思想
+  * 用简单的形体把场景中的物体完全包围住
+  * 如果光线与包围盒不相交，那么一定也不会与物体相交
+* Axis-Aligned Bounding Box（AABB，轴对齐包围盒）
+  * 长方体包围盒，所有轴都与坐标轴对齐
+* 光线与Axis-Aligned Box求交
+  * 考虑二维 $xy$ 平面下，光线穿过构成矩形的四条直线，可以看成光线分别和 $x=x_0、x=x_1、y=y_0、y=y_1$ 有四个交点。并且根据所得参数 $t$ 的大小，与平行 $x$ 轴和平行 $y$ 轴的直线，如图可得两组 $t_{min}、t_{max}$  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img54.png) &nbsp;</br>
+    注意：此时 $t$ 可能存在负值（光线在包围盒内）
+  * 转化到三维，即将构成矩形的四条直线，看作空间中的平面板。
+  * 判断“光线进入包围盒”，由于AAB的轴都与坐标轴对齐，那么光点在包围盒内时应有其投影在矩形六个面内，也因为与坐标轴对齐，六个面可分为三组。所以对每组都在面内时，光线就在包围盒内。
+  * 从数值上看，即取 $t_{enter} = max(t_{xmin}, t_{ymin}, t_{zmin})、t_{exit} = min(t_{xmax}, t_{ymax}, t_{zmax})$ 之间的时间，为光线在包围盒内的参数范围。
+    * 当 $t_{exit} < 0$ ，未击中包围盒，不相交
+    * 当 $t_{exit} \geqslant 0$ 且 $t_{enter}<0$ 时，光线在包围盒中，必然相交
+    * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时
+
 # Lecture 14
 # Lecture 15
 # Lecture 16
@@ -816,6 +961,40 @@
 # Lecture 18
 # Lecture 19
 # Lecture 20
+
+# Experiment
+## 环境配置
+* Windows10 + 
+* 主机和WSL数据交换
+  * `cp -a /mnt/f/balabala /home/balabala`
+* opencv在windows下解压再塞进去会报错，保险起见放进去再解压
+* 作业压缩包解压出来文件夹带中文会乱码
+  * 删除乱码名文件夹
+    * `ls -i`获取文件夹数字ID
+    * `find . -inum <numid> -exec rm {} -rf \;` 或 `find ./ -inum <numid> -print -exec rm {} -rf \;`
+  * 直接Windows摸到`C:\Users\<username>\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu18.04onWindows_79rhkp1fndgsc\LocalState\rootfs\home\balabala`去解压hhhhh然鹅发现WSL里并不改变（……怕了怕了把状态还原回去了
+  * Windows下生成的zip文件中编码GBK/GB2312等，在Linux下默认解压用UTF-8所以会乱码。可以`unzip -O CP936 xxx.zip`。
+* 编译
+  * 在main.cpp目录下
+  * `mkdir build`
+  * `cd build`
+  * `cmake ..`
+  * `make`编译
+  * `./Transformation`可执行文件名，在CMakeLists.txt中可修改
+## HW1
+* 框架里main函数里的两个输入给出的zNear, zFar是正，由于看向-z轴所以应该改为负数。
+* 绕任意轴旋转敲罗德里格斯的时候注意对偶矩阵
+
+## FAQ
+### HW3
+* bump mapping 部分的 h(u,v)=texture_color(u,v).norm, 其中 u,v 是 tex_coords, w,h 是 texture 的宽度与高度  
+* rasterizer.cpp 中 v = t.toVector4()  
+* get_projection_matrix 中的 eye_fov 应该被转化为弧度制  
+* bump 与 displacement 中修改后的 normal 仍需要 normalize  
+* 可能用到的 eigen 方法：norm(), normalized(), cwiseProduct()  
+* 实现 h(u+1/w,v) 的时候要写成 h(u+1.0/w,v)  
+* 正规的凹凸纹理应该是只有一维参量的灰度图，而本课程为了框架使用的简便性而使用了一张 RGB 图作为凹凸纹理的贴图，因此需要指定一种规则将彩色投影到灰度，而我只是「恰好」选择了 norm 而已。为了确保你们的结果与我一致，我才要求你们都使用 norm 作为计算方法。
+* bump mapping & displacement mapping 的计算的推导日后将会在光线追踪部分详细介绍，目前请按照注释实现。
 
 # More
 * B样条 www.bilibili.com/video/av66548502
@@ -851,9 +1030,9 @@ $$
 [<tag>]:<BASE64STR>
 
 <!-- 题注 -->
-一个题注[^1]
+一个题注[1]$^{[1]}$
 
-[^1]:cannotaddspace失败的题注示例
+[1]:cannotaddspace失败的题注示例
 
 * 为了自动生成的目录格式，设置EOL的换行符号改成了\n，原auto
   * 不同系统换行符制定不同
@@ -865,3 +1044,14 @@ $$
     Mac|\r
 
 * Lecture 4罗德里格斯闫老师的推导还没看，记得去看一下
+
+光线与长方体求交
+* 考虑三维光线与二维平面矩形求交点  
+  设在 $xOy$ 平面上作平面矩形，令其 $z=k$ ， $x \in [x_0, x_1]$ ， $y \in [y_0, y_1]$  
+  由光线（空间直线）参数形式可知
+  $$ \overrightarrow{P(t)} = \overrightarrow{a} + t\cdot \overrightarrow{b}$$
+  拆分到三维
+  $$ \left\{\begin{aligned} x_t &=& x_a+t\cdot x_b \\ y_t &=& y_a+t\cdot y_b \\ z_t &=& z_a+t\cdot z_b \end{aligned}\right.$$
+  其中已令 $z_t = k$ ，可得参数 $t=\frac{k-z_a}{z_b}$  
+  将 $t$ 代入上两式求得 $x_t、y_t$  
+  最后检验是否分别在 $[x_0,x_1]、[y_0,y_1]$ 范围内
