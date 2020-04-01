@@ -355,6 +355,8 @@
     \end{array} \right.$$
   * 再遍历屏幕空间，check每个像素是否inside。
   * 判断方法：按顺序与三顶点形成的向量作叉积，三正三负在其内。
+    * 二维向量叉积
+      $$ \overrightarrow{a}\times\overrightarrow{b} = \left|\begin{aligned} x_a\ &\ y_a \\ x_b\ &\ y_b \end{aligned}\right| = x_ay_b+x_by_a$$
     * `corner case`：本课程当“像素中点”在三角形边上时，看自己心情。
   * 优化：画一个三角形时不用遍历整个屏幕空间，遍历包围盒内的像素。
     * AABB包围盒：取各坐标方向上最小值到最大值之间的所有像素点。
@@ -877,7 +879,7 @@
   * 对阴影的理解：完全看不到光源处umbra本影，部分看到光源penumbra半影。软阴影就是本影到半影到光亮处的过渡。
 * 对于阴影有很多的研究，但仍难以解决全局上的光照问题。
 
-# Lecture 13 Ray Tracing （Whitted-Style）
+# Lecture 13 Ray Tracing 1（Whitted-Style）
 * 光栅化的局限
   * 对全局效果表示比较困难，如软阴影Soft shadows、光泽反射Glossy reflection（类似古代铜镜）、间接光照Indirect illumination
   * 速度很快，但效果只是一些近似，质量比较低
@@ -935,7 +937,7 @@
     * 有三个未知数 $t、b_1、b_2$，而方程中为三维向量，可列出 $x、y、z$ 三个维度上的三个方程组，即可得一个线性方程组。
     * 解线性方程组：`Cramer's Rule`克拉默法则
       $$ \left[\begin{matrix} t \\ b_1 \\ b_2 \end{matrix}\right] = \frac{1}{\overrightarrow{S_1}\cdot \overrightarrow{E_1}}\left[\begin{matrix} \overrightarrow{S_2}\cdot \overrightarrow{E_2} \\ \overrightarrow{S_1}\cdot\overrightarrow{S} \\ \overrightarrow{S_2} \cdot \overrightarrow{D} \end{matrix}\right] $$
-      其中，$\overrightarrow{E_1} = \overrightarrow{P_1}-\overrightarrow{P_0}$，$\overrightarrow{E_2} = \overrightarrow{P_2}-\overrightarrow{P_0}$，$\overrightarrow{S}=\overrightarrow{O}-\overrightarrow{P_0}$，$\overrightarrow{S_1}=\overrightarrow{D}\times\overrightarrow{E_2}$，$\overrightarrow{S_2}=\overrightarrow{S}\times\overrightarrow{E_1}$
+      其中，$\overrightarrow{E_1} = \overrightarrow{P_1}-\overrightarrow{P_0}$，$\overrightarrow{E_2} = \overrightarrow{P_2}-\overrightarrow{P_0}$，$\overrightarrow{S}=\overrightarrow{O}-\overrightarrow{P_0}$，$\overrightarrow{S_1}=\overrightarrow{d}\times\overrightarrow{E_2}$，$\overrightarrow{S_2}=\overrightarrow{S}\times\overrightarrow{E_1}$
     * 判断解的合理性：重心坐标的三个参数非负。
 ### **光线与三角网格求交的优化**
 * 包围盒Bounding Box思想
@@ -954,8 +956,117 @@
     * 当 $t_{exit} \geqslant 0$ 且 $t_{enter}<0$ 时，光线在包围盒中，必然相交
     * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时
 
-# Lecture 14
-# Lecture 15
+# Lecture 14 Ray Tracing 2（Acceleration & Radiometry）
+## 包围盒的利用
+### 预处理包围盒网格
+* Step
+  * 对包围盒`均匀划分`网格
+  * 标记网格中是否有物体
+  * 光线追踪时，先求与包围盒网格交点，网格标记有物体再与该物体求交
+* 注意点
+  * 包围盒网格的划分疏密程度要取平衡
+  * 这并不是个实际被应用的方法（x
+  * 对于场景中某些部分物体多、某些部分很空的情况下比较不理想
+### 空间划分Spatial Partitions
+* 几种空间划分结构
+  * 八叉树Oct-Tree：把包围整个三维场景的包围盒，在空间中三刀切八份。（二维两刀四叉树，一维二叉树）递归划分，直到块内无物体或者比较少
+  * KD-Tree：与维度无关，每次只按一个轴向作一次划分，所以每层是二叉树。可以每层按方向循环切，或者设定一种比较平衡的划分方式。
+  * BSP-Tree：每次选一个方向切，与KD-Tree不同，可以歪着切。在维度高的时候比较难以计算。
+* **KD-Tree**
+  * 预处理时进行构造
+  * 数据结构（每个结点维护的信息）
+    * split axis：当前结点的子树按照 $x、y、z$ 哪个轴进行划分
+    * split position：在轴的哪个位置进行划分
+    * children：指向子结点的指针
+    * list of objects：实际包围的物体，只存储在叶子结点，分支结点中不含该信息
+  * 遍历查询
+    * 从根结点开始，判定是否与根结点相交
+    * 与根结点相交，递归与两个子结点求 $t_{min}、t_{max}$
+    * 直到叶子结点，与其中所有物体求交
+  * 问题
+    * 三角形与AABB是否有交集，判断比较困难
+    * 一个物体会出现在多个叶子结点
+### 物体划分Object Partitions & Bounding Volume Hierarchy（BVH）
+* 思想
+  * 把场景中所有物体按某个方向划分成两部分
+  * 性质
+    * 一个物体只出现在一个划分中，避免了KD-Tree的问题。
+* 构造
+  * 对每个结点，选择一个维度进行切分
+    * Heuristic 1：总是选择最长的维度
+    * Heuristic 2：某个维度上，选择按维度排序的第 $\frac{n}{2}$ 个物体划分  
+      可以用三角形重心来排序，或者不排序，直接用“在乱序数中 $O(n)$ 查第x大的数”`快速选择算法`。
+    * 总之，尽量保证树的平衡性能
+  * 终止标准termination criteria
+    * 结点包含的物体数少到某个值以下
+  * 问题
+    * 运动场景：重新求BVH
+* 数据结构
+  * 分支结点维护信息：包围盒、子结点指针
+  * 叶子结点维护信息：包围盒、包围的物体列表
+## 辐射度量学Basic radiometry
+### **Motivation**
+* 问题
+  * 回顾Blinn-Phong光照模型中暂述的光强 $I$ ，但“光强”的称呼在物理上是不正确的，它有实际的更准确的物理意义
+  * 之前的一些效果其实是incorrect results，而在radiometry中会精确地定义光，描述光与物体表面如何作用，光源、材质、传播方法等。同时也是路径追踪path tracing的基础。
+* Radiometry
+  * Measurement system and units for illumination
+  * 精确度量了光在空间上的属性the spatial properties of light
+    * 仍然基于几何光学，即直线传播、无波动性
+    * 定义的属性：Radiant flux、intensity、irradiance、radiance
+  * perform lighting calculations in a physically correct manner
+### **Radiant Energy and Flux（Power）**
+* 定义：`Radiant energy` is the energy of electromagnetic radiation. 电磁辐射的能量。 It is measured in units of joules, and denoted by the symbol 
+  $$ Q\ [J=Joule] $$
+  * 中文名可能叫辐射能量。
+* 定义：`Radiant flux/power` is the energy emitted, reflected, transmitted or received, per unit time. 单位时间的能量，即功率。
+  $$ \Phi \equiv \frac{dQ}{dt} \ [W=Watt]\ [lm=lumen]* $$
+  * 中文名可能叫辐射通量、光通量。
+  * $\equiv$：恒等号。
+  * lumen流明：光通量单位。
+  * 直观理解：人眼感受到的亮度。
+### **Important Light Measurements of Interest**
+#### 辐射/发光强度 Radiant/Luminous Intensity
+* 定义：The radiant (luminous) intensity is `the power per unit solid angle` emitted by a point light source. 每单位立体角的能量。
+  $$ I(\omega) \equiv \frac{d\Phi}{d\omega} $$
+  $$ [\frac{W}{sr}][\frac{lm}{sr}=cd=candela] $$
+  * 坎德拉candela是国际标准单位。
+* 立体角Solid Angle
+  * 二维圆的弧度Angle：由圆心拉出两根半径所得扇形，总是对应一段圆弧，整个圆有 $2\pi$ 弧度。
+    $$ \theta=\frac{l}{r} $$
+  * 三维球的立体角Solid Angle：由球心作一圆锥，总是对应一块球面积，整个球的立体角 $4\pi$ 。
+    $$ \Omega=\frac{A}{r^2} $$
+  * 微分立体角Differential Solid Angles：
+    * 在三维坐标系下，设与 $z$ 轴夹角 $\theta \in [0, \pi]$ ，再绕 $z$ 轴旋转 $\phi \in [0, 2\pi]$ ，可以确定一个球面方向。
+    * 当方向分别夹 $z$ 轴改变 $d\theta$，绕 $z$ 轴改变 $d\phi$ 时，会在球面上划出两道，以它们为邻边作平行四边形，由于极小，近似看作矩形，其面积表示为
+      $$ dA = (r\ d\theta)\cdot(r\ sin\theta\ d \phi) = r^2\ sin\theta\ d\theta\ d\phi$$
+    * 根据立体角定义，可得`单位立体角`
+      $$ d\omega = \frac{dA}{r^2} = sin\theta\ d\theta\ d\phi $$
+      由此可以看出，球面上近极点处和近纬线处，相同的 $\theta$ 变化量引起的立体角变化量是不同的，不是均匀变化。
+    * 对于整个球而言，对所有单位立体角进行积分
+      $$\begin{aligned}
+       \Omega &= \int_{S^2}d\omega \\ &= \int_{0}^{2\pi} \int_{0}^{\pi} sin\theta\ d\theta\ d\phi \\ &= 4\pi\end{aligned}$$
+       此处插播积分的复习
+       $$ 三角函数积分公式 \int sin\theta\ d\theta = -cos\theta+C $$
+       $$ 定积分不需要+C，代入公式，上界减下界 $$
+       $$ \int_{0}^{\pi}\ sin\theta = -cos\pi - (-cos0) = 2 $$
+       $$ 2\cdot \int_{0}^{2\pi}d\phi = 2\cdot (2\pi-0)=4\pi $$
+* 回到对辐射/发光强度 Radiant/Luminous Intensity定义的理解
+  * 之前定义了光本身的总能量Radiant Flux/Power $\Omega$
+  * 所以其在某个方向上的能量，看作一块极小区域的能量，为 $d\Phi$
+  * 又有极小区域的面积，即单位立体角 $d\omega$
+  * 因此，该物理量表示“在某个方向上的光的能量”，即单位立体角的能量。
+  * 显然，所有方向上的能量积分起来可以得到总能量
+    $$ \begin{aligned} \Phi &= \int_{S^2}I\ d\omega \\ &= 4\pi I \end{aligned} $$
+    所以，当光源往各个方向均匀放出能量时，任意方向上应有 
+    $$ I=\frac{\Phi}{4\pi} $$
+
+# Lecture 15 Ray Tracing 3（Light Transport & Global Illumination）
+#### Irradiance
+* 物体表面接收到多少光的能量
+#### Radiance
+* 光在传播过程中度量能量
+
 # Lecture 16
 # Lecture 17
 # Lecture 18
@@ -964,7 +1075,7 @@
 
 # Experiment
 ## 环境配置
-* Windows10 + 
+* Windows10 + vscode + wsl(ubuntu 18.04LTS)
 * 主机和WSL数据交换
   * `cp -a /mnt/f/balabala /home/balabala`
 * opencv在windows下解压再塞进去会报错，保险起见放进去再解压
@@ -973,7 +1084,8 @@
     * `ls -i`获取文件夹数字ID
     * `find . -inum <numid> -exec rm {} -rf \;` 或 `find ./ -inum <numid> -print -exec rm {} -rf \;`
   * 直接Windows摸到`C:\Users\<username>\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu18.04onWindows_79rhkp1fndgsc\LocalState\rootfs\home\balabala`去解压hhhhh然鹅发现WSL里并不改变（……怕了怕了把状态还原回去了
-  * Windows下生成的zip文件中编码GBK/GB2312等，在Linux下默认解压用UTF-8所以会乱码。可以`unzip -O CP936 xxx.zip`。
+  * Windows下生成的zip文件中编码GBK/GB2312等，在Linux下默认解压用UTF-8所以会乱码。可以`unzip -O CP936 xxx.zip`。但是会生成很XX的文件夹名。
+  * ……作业还是在windows里解压好把文件夹拉进去安全
 * 编译
   * 在main.cpp目录下
   * `mkdir build`
@@ -984,6 +1096,27 @@
 ## HW1
 * 框架里main函数里的两个输入给出的zNear, zFar是正，由于看向-z轴所以应该改为负数。
 * 绕任意轴旋转敲罗德里格斯的时候注意对偶矩阵
+## HW2
+* `std::transform(l, r, res, op)`
+  * 将`(l, r)`范围内的每个元素作为`op`的第一参数调用`op`，结果存入`res`开头的范围内
+  * `op`：函数指针、函数对象或lambda表达式
+* MSAA
+  * 维护四倍大小的sample_frame_buf和sample_depth_buf
+  * 四个采样点采样完根据四个采样色值resolve该像素点的颜色
+## HW5
+* primary ray生成
+  * https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays
+  * 主要是根据设定的像素平面比例，确定视线看向的点在实际成像面上是什么
+    * 遍历像素 `x: [0, width-1], y: [0, height-1]`
+    * 取到像素中心 `+0.5`
+    * 转化到 `[0, 1]`，分别除以 `width` 和 `height`
+    * 考虑视线 `(0, 0)` 看向成像面中心，所以 `*2-1` 转化到 `[-1, 1]`
+    * 然后分别 `*scale` 、 `*scale*AspectRatio` 拉伸
+  * 注意点
+    * 图片原点(0, 0)于左上角，成像空间原点在图片中心，y值取负
+* 射线与三角网格相交
+  * 虽然学的时候感觉分解成与平面相交，再判交点是否在三角形内感觉很友好
+  * 事实证明写代码的时候不用推导，数学就是代码简化之光啊（……
 
 ## FAQ
 ### HW3
@@ -998,13 +1131,23 @@
 
 # More
 * B样条 www.bilibili.com/video/av66548502
+* GTC GPU Technology Conference Nvidia 
+  * DLSS 2.0：无损精度和消耗放大图片 知乎文刀秋二
+  * RTXGI 全局光照 https://developer.nvidia.com/rtxgi
+* YLQ's way of learning things
+  * WHY, WHAT, then HOW
+  * 为什么学、这啥玩意、到底咋整的（如何运作）
 
 # 备用
+</br>&nbsp;![] &nbsp;</br>
 
 $$ \mathop{\Join}\limits_{i\ \theta\ j} $$
 
+$$\begin{aligned}
+       L_s &=  \\
+           &= 
+    \end{aligned}$$
 
-</br>&nbsp;![] &nbsp;</br>
 
 $$
     \left\{
@@ -1055,3 +1198,23 @@ $$
   其中已令 $z_t = k$ ，可得参数 $t=\frac{k-z_a}{z_b}$  
   将 $t$ 代入上两式求得 $x_t、y_t$  
   最后检验是否分别在 $[x_0,x_1]、[y_0,y_1]$ 范围内
+
+三角函数积分公式  
+∫sin x dx = -cos x + C  
+∫ cos x dx = sin x + C  
+∫tan x dx = ln |sec x | + C  
+∫cot x dx = ln |sin x | + C  
+∫sec x dx = ln |sec x + tan x | + C  
+∫csc x dx = ln |csc x – cot x | + C  
+∫sin ²x dx =1/2x -1/4 sin 2x + C  
+∫ cos ²x dx = 1/2+1/4 sin 2x + C  
+∫ tan²x dx =tanx -x+ C  
+∫ cot ²x dx =-cot x-x+ C  
+∫ sec ²x dx =tanx + C  
+∫ csc ²x dx =-cot x+ C  
+∫arcsin x dx = xarcsin x+√（1-x²）+C  
+∫arccosx dx = xarccos x-√（1-x²）+C  
+∫arctan x dx = xarctan x-1/2ln（1+x²）+C  
+∫arc cot x dx =xarccot x+1/2ln（1+x²）+C  
+∫arcsec xdx =xarcsec x-ln│x+√（x²-1）│+C  
+∫arccsc x dx =xarccsc x+ln│x+√（x²-1）│+C  
