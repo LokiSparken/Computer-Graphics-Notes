@@ -1062,16 +1062,119 @@
     $$ I=\frac{\Phi}{4\pi} $$
 
 # Lecture 15 Ray Tracing 3（Light Transport & Global Illumination）
-#### Irradiance
-* 物体表面接收到多少光的能量
-#### Radiance
-* 光在传播过程中度量能量
+#### 辐照度/辐射通量密度 Irradiance
+* 定义：The irradiance is the `power per` (perpendicular/projected) `unit area` incident on a surface point.单位面积上的能量。
+  $$ E(x) \equiv \frac{d\Phi(x)}{dA} $$
+  $$ [\frac{W}{m^2}]\ [\frac{lm}{m^2}=lux] $$
+  * 与入射光线相垂直的单位面积接收到的能量，如果不垂直，则计算投影到垂直面上的部分接收到的能量值（即 $*cos\theta$ ）。（在Lambert's Cosine Law中有体现）
+* 修正之前对点光源传播的相关概念的理解
+  * 之前说光传播过程中 $I \rightarrow \frac{I}{r^2}$
+  * 其实，对于Intensity来讲，作为“单位立体角上的能量”，无论远近，其上的能量是不变的，只是在近处，立体角对应的面积块比较小，远处对应的面积块比较大。
+  * 而我们对“包围点光源的球壳”考虑的是“单位面积上的能量”，也即Irradiance $E$ 。
+  * 那么在单位球壳上，由于均匀发射能量，应有
+    $$ E=\frac{\Phi}{4\pi r^2}=\frac{\Phi}{4\pi} $$
+  * 在较远处距离球心点光源 $r$ 处的单位面积能量则为
+    $$ E'=\frac{\Phi}{4\pi r^2}=\frac{E}{r^2} $$
+  * 因此单位面积上的能量，是按 $r^2$ 衰减的。
+#### 辐亮度 Radiance
+* 定义：The radiance (luminance) is the `power` emitted, reflected, transmitted or reveived by a surface, `per unit solid angle, per projected unit area`.单位立体角且单位面积上的能量。
+  $$ L(p,\ \omega) \equiv \frac{d^2\Phi(p,\ \omega)}{d\omega\ dA\ cos\theta} $$
+  $$ [\frac{W}{sr\ m^2}]\ [\frac{cd}{m^2}=\frac{lm}{sr\ m^2}]=nit $$
+  * [自己的理解] $p$ 是指`per projected unit area`的`projected`投影面积
+  * 用来描述“光线”的属性，渲染总是在计算“Radiance”。
+  * 两个单位：分别在立体角和投影面积上做两次微分。
+  * 物理理解：某单位面积上的能量，往某个方向（立体角）辐射的那部分能量。而光线也是从某个微小表面，往各个方向辐射出去的，再具体到一个特定方向，就能考虑到单束光线。
+  * 也可以从上述已有概念延伸，考虑为Irradiance per solid angle或Intensity per projected unit area。
+  * Incident Radiance：Incident radiance is the `irradiance per unit solid angle` arriving at the surface.
+    $$ L(p,\ \omega)=\frac{dE(p,\ \omega)}{d\omega\ cos\theta} $$
+    * 到达某单位面积上的能量中，从某方向辐射来，接收到的那部分能量。
+  * Exiting Radiance：Exiting surface radiance is the `intensity per unit projected area` leaving the surface.
+    $$ L(p,\ \omega)=\frac{dI(p,\ \omega)}{dA\ cos\theta} $$
+    * 从某单位面积辐射出去的能量中，具体往某方向去的那部分能量。
+#### 辐照度Irradiance vs. 辐亮度Radiance
+Irradiance：total power received by area $dA$  
+Radiance：power received by area $dA$ from "direction" $d\omega$  
+&nbsp;![](note&#32;-&#32;image/GAMES101/img55.png) &nbsp;</br>
+用式子来表示，可以从Radiance对立体角进行积分（即对各方向的能量求和）来回到Irradiance小块面积的总能量。
+$$ \begin{aligned}
+      dE(p,\ \omega) &= L_i(p,\ \omega)\ cos\theta\ d\omega \\
+        E(p) &= \int_{H^2}L_i(p,\ \omega)\ cos\theta\ d\omega
+  \end{aligned}$$
+其中， $H^2$ 为Unit Hemisphere。因为小块面积与在单位半球范围内的方向，垂直向投影面积在 $[0, area]$ 之间变化，可以接收到能量，对这小块面积的总能量有贡献。
+
+## 双向反射分布函数Bidirectional Reflectance Distribution Function（BRDF）
+### **用辐射度量学解释反射** Reflection at a Point
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![](note&#32;-&#32;image/GAMES101/img56.png) &nbsp;</br>
+* Radiance from direction $\omega_i$ turns into the power $E$ that $dA$ receives. 从某方向 $\omega_i$ 辐射进来的能量被一微表面 $dA$ 吸收为这微表面的Irradiance $E$。
+  $$ dE(\omega_i)=L(\omega_i)\ cos\theta_i\ d\omega_i $$
+* Then power $E$ will become the radiance to any other direction $\omega_o$. 然后能量再从微表面 $dA$ 往某方向 $\omega_o$ 辐射出去，变成每个方向上的 radiance $L$。
+  $$ dL_r(\omega_r) $$
+* 问题：从 $\omega_i$ 来的能量，经过微表面反射后辐射出去的每个方向 $\omega_o$ 上有多少能量？或者说微表面接收到能量后，往各个方向辐射出能量，那么这些能量在各个方向上是如何分配的？
+* BRDF：The Bidirectional Reflectance Distribution Function (BRDF) represents how much light is reflected into each outgoing direction $\omega_r$ from each incoming direction. 定义了微表面 $dA$ 从一方向 $\omega_i$ 接收到的 irradiance ，会如何反射到另一个方向 $\omega_r$ 。
+
+  $$ f_r(\omega_i\rightarrow\omega_r) = \frac{dL_r(\omega_r)}{dE_i(\omega_i)}=\frac{dL_r(\omega_r)}{L_i(\omega_i)\ cos\theta_i\ d\omega_i} [\frac{1}{sr}] $$
+
+  [自己的理解] 也就是描述了反射到出射方向 $\omega_r$ 上的能量与微表面从入射方向 $\omega_i$ 接收到的能量之比。  
+  所以BRDF其实就是描述光线和物体是如何作用的，通过BRDF定义了物体的材质。
+* **反射方程 The Reflection Equation**
+  $$ L_r(p,\omega_r) = \int_{H^2}f_r(p,\ \omega_i\rightarrow\omega_r)\ L_i(p,\ \omega_i)\ cos\theta_i\ d\omega_i $$
+  * 任何一个着色点在不同光照环境下，任意入射方向对某出射方向的能量贡献。
+  * 式子理解：$经过微表面反射到某出射方向的能量 = BRDF\times 微表面从各入射方向接收到的能量之和\int_{H^2}L_i(p,\ \omega_i)\ cos\theta_i\ d\omega_i$
+  * 注意反射方程的入射项也包含其它物体的出射能量，不止光源。有递归性。
+
+## **渲染方程 The Rendering Equation**
+$$ L_o(p,\ \omega_o)=L_e(p,\ \omega_o) + \int_{\Omega^+}L_i(p,\ \omega_i)\ f_r(p,\ \omega_i,\ \omega_o)\ (n\cdot \omega_i)\ d\omega_i $$
+* 考虑会发光物体，加上物体本身能够发出的能量 $L_e(p,\ \omega_o)$ 。
+* $\Omega^+$ 与 $H^2$ 相同，也表示半球。当然另半球没有贡献不考虑。
+* 为了便利，虽然 $\omega_i$ 是入射方向，但也作向外方向来考虑。
+* 显然，单位向量的情况下，$cos\theta_i = n\cdot \omega_i$。
+* 所有物体表面的光线传播满足该方程。
+* 渲染方程的发表paper："The Rendering Equation."
+### 解渲染方程
+* 方程右部的 $L_i(p,\ \omega_i)$ 含有从经过其它物体弹射来的出射能量时，为未知项。
+* 先将其它已知项，用算子/操作符operator形式，在数学上简写为
+  $$ L=E+KL $$
+  * 其中 $K$ 为反射操作符。
+* 用这样的形式来解得递归定义的 $L$。
+  $$ L=E+KL $$
+  $$ IL-KL=E $$
+  $$ L=(I-K)^{-1}E $$
+* 【？？？】经过算子 $K$ 的某种性质，可以展开为
+  $$ L=(I+K+K^2+K^3+...)\cdot E $$
+  $$ L=E+KE+K^2E+K^3E+... $$
+  * $E$ 表示光源直射，$K^nE$ 表示光经过 $n$ 次反射
+  * 即将光线根据弹射次数进行了分解
+  * 对弹射一次的 $KE$ 称`直接光照Direct Illumination`，弹射两次的 $K^2E$ 称`间接光照Indirect Illumination`。而 $KE+K^2E+K^3E+...$ 的总和，即为`全局光照Global Illumination`。
+  * 在光栅化过程中，将物体投影到屏幕空间后进行着色，比较容易实现的是光源的直射以及弹射一次的直接光照。但是对于多次弹射的光线就比较难处理，因此在这方面光线追踪具有优越性。
+  * 弹射多次后画面效果会收敛，亮度几乎感觉不到变化。因为能量守恒，不会无限增加。而相机快门的曝光是由于快门持续打开，能量会积累起来，最终导致曝光。而渲染中关注的则是“单位时间”的能量。
+## 概率论Probability
+### 随机变量
+* $x$ ：随机变量 Random Variable. Represents a distribution of potential values.
+* $p(x)$ ：概率 Probability. 随机变量取 $x$ 值的可能性大小。
+  * $p \geqslant 0$
+  * $\mathop{\Sigma}\limits_{i=1}^np_i=1$
+* $X \sim p(x)$ ：概率密度函数 Probability density function(PDF). Describes relative probability of a random process choosing value $x$. 
+### 期望
+* $E$ ：期望 Excepted value of a Random Variable. The average value that one obtains if repeatedly drawing samples from the random distribution. 不断取随机变量，得到的均值。
+  $$ E[X]= \mathop{\Sigma}\limits_{i=1}^nx_ip_i $$
+### 连续型随机变量的概率密度函数Probability Density Function
+* 概率密度函数 Probability density function(PDF). 该函数曲线图中， $x$ 轴为随机变量取值，取微元 $dx$ 的邻域往函数曲线作垂线，所得近似梯形区域的面积即为随机变量取邻域范围内值的概率。
+  * $\int p(x)\ dx=1$，面积即积分，随机事件概率和为 $1$。
+  * $E[X]=\int x\ p(x)\ dx$，离散的求和扩展到连续的积分。
+  * 题外：概率密度函数为分布函数的导函数。因此概率密度函数上的一点为概率在该点的变化率（导数）。
+### 随机变量函数Function of a random variable
+* 若随机变量 $Y=f(X)$ 本身是一个关于随机变量 $X \sim p(x)$ 的函数
+* 那么它的期望为
+  $$ E[Y]=E[f(X)]=\int f(x)\ p(x)\ dx $$
 
 # Lecture 16
 # Lecture 17
 # Lecture 18
 # Lecture 19
 # Lecture 20
+# Lecture 21
+# Lecture 22
+
 
 # Experiment
 ## 环境配置
@@ -1140,6 +1243,8 @@
 
 # 备用
 </br>&nbsp;![] &nbsp;</br>
+
+$\leqslant \geqslant$
 
 $$ \mathop{\Join}\limits_{i\ \theta\ j} $$
 
