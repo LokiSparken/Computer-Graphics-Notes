@@ -1206,6 +1206,10 @@ $$ L_o(p,\ \omega_o)=L_e(p,\ \omega_o) + \int_{\Omega^+}L_i(p,\ \omega_i)\ f_r(p
 * MSAA
   * 维护四倍大小的sample_frame_buf和sample_depth_buf
   * 四个采样点采样完根据四个采样色值resolve该像素点的颜色
+
+## HW3
+* `rasterizer.cpp: rasterize_triangle()`里`view_pos`是经过变换以后的三角顶点坐标，所以对着色点坐标做插值的时候用`view_pos`
+
 ## HW5
 * primary ray生成
   * https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays

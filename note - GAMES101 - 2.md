@@ -287,7 +287,201 @@ $$ L_o(p,\ \omega_o)=L_e(p,\ \omega_o) + \int_{\Omega^+}L_i(p,\ \omega_i)\ f_r(p
 * 那么它的期望为
   $$ E[Y]=E[f(X)]=\int f(x)\ p(x)\ dx $$
 
-# Lecture 16
+# Lecture 16 Ray Tracing 4（）
+## 蒙特卡洛积分Monte Carlo Integration
+* 问题：求某函数 $f(x)$ 在 $[a,\ b]$ 间的定积分，但函数 $f(x)$ 的形式比较复杂，难以写出解析式。
+* 黎曼积分：将 $[a,\ b]$ 拆分为微小区间的多份，每份可认为是小长方形，再求和。
+* 蒙特卡洛积分：在积分域内随机点 $x_i$ ，每次随机点的值 $f(x_i)$ 作参考，求长为 $[a,\ b]$ ，高为 $f(x_i)$ 的长方形面积，多次随机并求均值作为积分值。
+  * 定义：定积分 $\int_a^bf(x)dx$ ，随机变量遵循 $X_i \sim p(x)$ ，其值可以近似为 Monte Carlo Estimator 
+    $$ F_N=\frac{1}{N}\mathop{\Sigma}\limits_{i=1}^{N}\frac{f(X_i)}{p(X_i)} $$
+* 均匀分布采样 Uniform Monte Carlo Estimator ： $X_i \sim p(x)=C(constant)$
+  * 则有 $\int_a^bp(x)\ dx=1$ ，代入得 $\int_a^bC\ dx=1$ ，因此 $C=\frac{1}{b-a}$
+  * 代入 Monte Carlo estimator 有 $F_N=\frac{b-a}{N}\mathop{\Sigma}\limits_{i=1}^Nf(X_i)$，就是在域内采样，求和，并求平均
+* 结论：以一种 $PDF$ 进行采样，知道采样点的函数值 $f(X_i)$ 及对应概率密度 $p(X_i)$ ，然后相除求和取平均即可。
+  * 显然，采样越多，越接近真实值。
+  * 积分域在 $PDF$ 中体现，因此蒙特卡洛本身不需要考虑积分域。
+  * 积分域定义在什么值，就只能对什么值采样。
+
+## 路径追踪Path Tracing
+### Motivation
+* Whitted-style ray tracing
+  * Always perform specular reflections / refractions  
+    光遇到光滑物体，作反射及折射
+  * Stop bouncing at diffuse surfaces  
+    遇到漫反射物体停止弹射
+* Whitted-style的一些问题
+  * 完全镜面反射的材质：(pure) specular，略带镜面高光又有点糊：glossy。对于glossy材质，反射光仍然沿镜面反射方向，这是不正确的
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img57.png) &nbsp;</br>
+    模型：The Utah teapot
+  * 遇到漫反射物体就直接进行着色，不考虑漫反射光线的继续弹射，因此漫反射物体之间的光线交互都没了。
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img58.png) &nbsp;</br>
+    模型：The Cornell box，真实存在的模型。被广泛用来测试全局光照效果，因为没有全局光照效果天花板就是黑的，并且全是漫反射物体。  
+    The Cornell box中墙体颜色染到盒子上的现象称为 Color Bleeding 。
+* 考虑物理正确的渲染方程 $L_o(p,\omega_o)=L_e(p,\omega_o)+\int_{\Omega^+}L_i(p,\omega_i)\ f_r(p,\omega_i,\omega_o)\ (n\cdot \omega_i)\ d\omega_i$ 的两个问题
+  * 需要用到半球上所有方向的radiance，解积分
+  * 每个半球的积分都需要递归使用到其它半球的积分结果
+
+### **A Simple Monte Carlo Solution（直接光照）**
+* 考虑简单场景中一个点（自身不发光）的直接光照：场景中含面光源，一些其它物体（可能挡住光）
+  * 那么需要求解的方程为
+    $$ L_o(p,\omega_o)=\int_{\Omega^+}L_i(p,\omega_i)f_r(p,\omega_i,\omega_o)(n\cdot \omega_i)\ d\omega_i $$
+  * 且暂时只考虑直接光照，即仅从光源来的光，那么就可以使用蒙特卡洛积分直接求解。
+* compute the radiance at p towards the camera
+  * $f(x) = L_i(p,\omega_i)f_r(p,\omega_i,\omega_o)(n\cdot \omega_i)$
+  * 如何对半球采样：均匀采样 $p(\omega_i)=\frac{1}{2\pi}$
+  * 因此近似为 
+    $$ L_o(p,\omega_o) \approx \frac{1}{N}\mathop{\Sigma}\limits_{i=1}^N \frac{L_i(p,\omega_i)f_r(p,\omega_i,\omega_o)(n\cdot\omega_i)}{p(\omega_i)} $$
+```cpp
+// 伪代码
+shade(p, wo)
+  Randomly choose N directions wi~pdf // 根据PDF随机采样N个方向
+  Lo = 0.0  // 初始化出射radiance
+  for each wi
+    trace a ray r(p, wi)  // 对每个方向生成一束光线
+    if ray r hit the light  // 光线击中光源，说明光源有直接光照沿该方向照射到该点
+      Lo += (1/N) * L_i * f_r * cosine / pdf(wi)  // 按蒙特卡洛积分求解
+  return Lo
+```
+
+### **Global Illumination（引入间接光照）**
+* 考虑一层递归：光源直接光照 Q 点，经弹射后间接照射 P 点。
+  * Q 点沿 $\omega_i$ 弹射到 P 点的 radiance 也看作一种对 P 点而言的光源 radiance 。
+  * 而 Q 点弹射出的 radiance ，即求 Q 点的出射到 $\omega_i$ 方向的直接光照渲染结果，由于设方向都朝外，因此为 shade(q, -wi)。
+```cpp
+// 伪代码
+shade(p, wo)
+  Randomly choose N directions wi~pdf // 根据PDF随机采样N个方向
+  Lo = 0.0  // 初始化出射radiance
+  for each wi
+    trace a ray r(p, wi)  // 对每个方向生成一束光线
+    if ray r hit the light  // 光线击中光源，说明光源有直接光照沿该方向照射到该点
+      Lo += (1/N) * L_i * f_r * cosine / pdf(wi)  // 按蒙特卡洛积分求解
+    /* 增加一个分支 */
+    else if ray r hit an object at q
+      Lo += (1/N) * shade(q, -wi) * f_r * cosine / pdf(wi) // 入射radiance L_i为q点弹射来的radiance shade(q, -wi)
+  return Lo
+```
+
+### 问题
+* `问题一：光线数量太多`
+  * 指数级增长。$rays=N^{bounces}$
+  * 仅当 $N=1$ 时不会炸，因此只采样一个方向。
+```cpp
+shade(p, wo)
+  Randomly choose ONE directions wi~pdf // 根据PDF采样一个方向
+  trace a ray r(p, wi)  // 对该方向生成一束光线
+  if ray r hit the light  // 光线击中光源，说明光源有直接光照沿该方向照射到该点
+    return L_i * f_r * cosine / pdf(wi)  // 按蒙特卡洛积分求解
+  else if ray r hit an object at q
+    return shade(q, -wi) * f_r * cosine / pdf(wi) // 入射radiance L_i为q点弹射来的radiance shade(q, -wi)
+```
+* $N=1$ 时，为路径追踪 Path Tracing。 $N!=1$ 时，为分布式光线追踪 Distributed Ray Tracing。
+* 该方法产生一条从光源到视点的完整路径，而经过同一像素可能有多个路径，最后对多个路径求均值，也就相当于做了蒙特卡洛积分。
+```cpp
+ray_generation(camPos, pixel)
+  Uniformly choose N sample positions within the pixel
+  pixel_radiance = 0.0
+  for each sample in the pixel
+    shoot a ray r(camPos, cam_to_sample)
+    if ray r hit the scene at p
+      pixel_radiance += 1/N * shade(p, sample_to_cam) // 在这里取平均
+  return pixel_radiance
+```
+* `问题二：递归边界`
+  * 理论上自然界的光当然是不停地在弹射的
+  * 但是作为计算机中的算法显然不能没有终止条件
+* Solution: 俄罗斯轮盘赌Russian Roulette (RR)
+  * 六个弹匣放 $P \leqslant 6$ 颗子弹。
+  * 生存概率 $1-P$ ，死亡概率 $P$。
+* 参考俄罗斯轮盘赌，以一定的概率决定是否继续弹射。
+  * 设以一定的概率 $P$ 向某方向发射光线，最后得到的着色结果除以 $P$ ，即 $\frac{L_o}{P}$
+  * 相对地，以 $1-P$ 的概率停止弹射，那么结果为 $0$ 。
+  * 此时我们仍然可以得到着色结果的期望值
+    $$ E=P*(\frac{L_o}{P}) + (1-P) * 0 = L_o $$
+    是一个简单的二值离散型随机变量。
+  * 所以虽然结果可能会有噪声，但是理论上是正确的。
+  * 每次弹射 $P$ 的概率生存，那么期望弹射次数为
+  $$ ？ $$
+```cpp
+shade(p, wo)
+  Manually specify a probability P_RR
+  Randomly select ksi in a uniform dist. in [0, 1]
+  if (ksi > P_RR) return 0.0;   // 认为停止弹射
+
+  Randomly choose ONE direction wi-pdf(w)
+  trace a ray r(p, wi)
+  if ray r hit the light
+    return L_i * f_r * cosine / pdf(wi) / P_RR
+  else if ray r hit an object at q
+    return shade(q, -wi) * f_r * cosine / pdf(wi) / P_RR
+```
+* 至此，得到了正确的路径追踪算法，但效率不高。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img59.png) &nbsp;</br>
+  Samples Per Pixel (SPP)：每个像素的路径数。 
+
+### 在 Low SPP 的情况下提高渲染质量
+* 涉及到从着色点选取的光线方向，能遇到光源的概率。均匀采样时，很多方向是浪费的，碰不到光源。所以要使用更好的 $PDF$ 进行采样。
+* 从光源入手，直接将采样方向都定位到光源上。
+* 设在某面积为 $A$ 的面光源上采样
+  * $pdf = \frac{1}{A} (\int pdf\ dA = 1)$
+  * 渲染方程是定义在立体角上的 $L_o = \int L_i\ f_r\ cos\ d\omega$
+  * 而蒙特卡洛定义在什么值上，就要对什么值采样
+  * 所以要将渲染方程写成在光源上的积分
+</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img60.png) &nbsp;</br>
+* 求 $d\omega$ 和 $dA$ 的关系
+  * $dA$ 往着色点发射的光在单位半球上形成的投影面积就是 $d\omega$
+  * 取 $dA$ 朝着色点方向的投影面积 $dA\ cos\theta'$ ，按立体角定义除以距离的平方即为 $d\omega$
+    $$ d\omega = \frac{dA\ cos\theta'}{|x'-x|^2} $$
+    注意 $\theta'$ 是面光源上一点与着色点连线和面光源自身法向量的夹角。
+  * 代入渲染方程，改变积分域
+    $$ L_o(p, \omega_o)=\int_A L_i(p,\omega_i)f_r(p,\omega_i,\omega_o)\frac{cos\theta\ cos\theta'}{|x'-x|^2}\ dA $$
+    此时，积分定义在光源上，同时对光源进行采样
+    $$ f(x) = L_i(p,\omega_i)f_r(p,\omega_i,\omega_o)\frac{cos\theta\ cos\theta'}{|x'-x|^2} $$
+    $$ pdf = \frac{1}{A} $$
+* 将直接光照与间接弹射做拆分，直接光照对光源作积分，其它部分用原来的方法均匀采样并赌博
+  * case: 光源和着色点之间有遮挡物。从着色点往光源发射一条光线，测试中间是否有遮挡物。
+```cpp
+shade(p, wo)
+  // contribution from the light source.
+  L_dir = 0.0
+  UNIFORMLY sample the light at a' (pdf_light = 1/A)
+  Shoot a ray from p to x'
+  if the ray is not blocked in the middle // 测试光源是否被挡住
+    L_dir = L_i * f_r * cos_theta * cos_theta' / (|x'-p|^2) / pdf_light
+
+  // contribution from other reflectors.
+  L_indir = 0.0
+  Test Russian Roulette with probability P_RR
+  UNIFORMLY sample the hemisphere toward wi (pdf_hemi = 1/(2pi))
+  trace a ray r(p, wi)
+  if ray r hit a non-emitting object at q
+    L_indir = shade(q, -wi) * f_r * cos_theta /pdf_hemi / P_RR
+  
+  return L_dir + L_indir
+```
+* 注：点光源难处理。
+
+### Side Notes
+* Path tracing
+  * with physics, probability, calculus, coding
+  * 目前工业界在用中
+  * 路径追踪的正确性：http://www.graphics.cornell.edu/online/box/compare.html
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img61.png) &nbsp;</br>
+* Ray tracing: previous vs. modern concepts
+  * 以前的 ray tracing 指 Whitted-style ray tracing
+  * 现在通常指按照光线传播方法渲染的思想
+    * 单向/双向路径追踪 (Unidirectional & bidirectional) path tracing
+    * 光子映射 Photon mapping
+    * Metropolis light transport
+    * VCM / UPBP...
+* Things haven't covered
+  * 如何在半球上均匀采样，如何对任意函数进行采样
+  * 蒙特卡洛允许以任意 $pdf$ 采样，最佳选择：`重要性采样 Importance Sampling`
+  * 随机数的质量：距离控制较好的随机数 Low discrepancy sequences 低差异序列
+  * 把在半球和光源上的采样相结合： `Multiple Importance Sampling（MIS）`
+  * 为什么对像素的各路径上 radiance 取均值，就是像素的 radiance ？要不要加权？像素代表什么？：`Pixel reconstruction filter`
+  * 求出像素的 radiance 后，如何得到它实际的颜色：`Gamma校正 Gamma correction，curves，High-Dynamic Range（HDR图），color space`
+
 # Lecture 17
 # Lecture 18
 # Lecture 19
