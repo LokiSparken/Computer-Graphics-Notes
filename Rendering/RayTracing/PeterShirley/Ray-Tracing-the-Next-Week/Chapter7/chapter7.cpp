@@ -49,13 +49,15 @@ hittable *cornell_box()
     material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material *white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
     material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+    material *light = new diffuse_light(new constant_texture(vec3(9, 9, 9)));
+    // material *light = new diffuse_light(new constant_texture(vec3(7, 7, 7)));
 
     // 该视角：左x轴正向，上y轴正向，纸内z轴正向，前方的墙z坐标555.
     list[i++] = new flip_normal(new yz_rect(0, 555, 0, 555, 555, green));   // 左
     list[i++] = new yz_rect(0, 555, 0, 555, 0, red);                        // 右
-    list[i++] = new xz_rect(213, 343, 227, 332, 554, light);                // 小灯
-    // list[i++] = new xz_rect(113, 443, 127, 432, 554, light);             // 大灯
+    // list[i++] = new xz_rect(213, 343, 227, 332, 554, light);                // 小灯
+    // list[i++] = new xz_rect(183, 373, 197, 362, 554, light);                
+    list[i++] = new xz_rect(113, 443, 127, 432, 554, light);             // 大灯
     list[i++] = new xz_rect(0, 555, 0, 555, 0, white);                      // 底
     list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));   // 顶
     list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));   // 前
@@ -73,11 +75,11 @@ int main()
     start = clock();
 
     ofstream output;
-    output.open("chapter7-2-rotate.ppm");
+    output.open("chapter7-11-testbiglight-1000perpixel.ppm");
     
     if(output.is_open()) printf("open file ok\n");
 
-    int nx = 800, ny = 800 , ns = 100;
+    int nx = 800, ny = 800 , ns = 1000;
     output << "P3\n" << nx << " " << ny << "\n255\n";
 
     end = clock();

@@ -1,6 +1,31 @@
 > # 零碎文章笔记
 
-# 
+# 如何看懂这些“该死的”图形学公式 by FOXhunt
+* 知乎文章 https://zhuanlan.zhihu.com/p/21489591
+## 光照模型
+* 光通量：单位时间内某一表面接受到的光子总数量
+* 亮度：光通量的密度，单位面积的光通量
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 基于物理着色 by文刀秋二
 * 知乎专栏 Behind the Pixels https://zhuanlan.zhihu.com/behindthepixels
