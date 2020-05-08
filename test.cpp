@@ -1,13 +1,35 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+struct Foo
+{
+    template <typename T>
+    operator T*() { return nullptr; }
+
+    // template <typename T>
+    // operator const T*() const { return nullptr; }
+};
+
+template <typename T>
+void f(T*) { cout << "T*" << endl;}
+
+template <typename T>
+void f(const T*) { cout << "const T*" << endl; }
+
+struct Test { };
+
 int main()
 {
-    char *a[2];
-    char *p0 = (char *)&a[0], *p1 = (char *)&a[1];
-    // int *p0 = (int *)&a[0], *p1 = (int *)&a[1];
-    // char *p0 = &a[0], *p1 = &a[1];
-    cout << p1-p0 << endl;
-    cin >> a[0];
+    Foo a;
+    // const Foo b;
+    f<int> (a);
+    // f<int> (b);
+
+    cout << endl;
+
+    f<Test> (a);
+    // f<Test> (b);
+    
+    system("pause");
     return 0;
 }

@@ -417,17 +417,151 @@ void UGrabber::Release()
   * 在原地给出一个调用
 
 # <i class="fa fa-star"></i> 任务七：通过重量判定开门
+## 调整 BP_DefaultPawn
+* `物理模拟（不飘）`：到 BP_DefaultPawn 里为其勾选 simulate physics，并设质量
+* `视线高度`：在 BP_DefaultPawn(self) 设置 camera - `Base Eye Height`
+* `移动速度`：MovementComponent - details - Floating Pawn Movement - `Max Speed 等几个量`
+* 由于 DefaultPawn 是个球体，所以如果把东西举起来再放下，碰到自己会瞎几把滚。到 collision component 里把 constraint 的 rotation 锁住。
 
+## 判定重量
+* 首先，把物体放入区域，再根据物体的重量做判断。要使物体能触发区域的 `overlap` 事件。
+  * 主界面编辑器中，选中物体，勾选 collision - **`Generate Overlap Events`**
+  * 别勾错，collision 里第一项是 Hit Events
+* 实现重量判定
+  * `ATriggerVolume.GetOverlappingActors(TArray<AActor*>)` 获取与区域重叠的物体，返回到 TArray<AActor*> 中
+  * 要遍历数组并获取每个物体的质量，即要 `GetMass` ，查文档，发现要使用 UPrimitiveComponent （很怪，document 里面查不到，只能在官网首页查）
+  * 所以再用 `AActor.FindComponentByClass<ClassName>()` 找到相应组件
+  * 记得加头文件
+```cpp
+// OpenDoor.h 中
+#include "Components/PrimitiveComponents.h"
+UPROPERTY(EditAnyWhere)
+    float MassToOpen = 25.f
+float GetTotalMassOfActors();
 
+// OpenDoor.cpp
+float UOpenDoor::GetTotalMassOfActors()
+{
+    // 获取区域中的物体
+    if (TriggerArea == nullptr) // 加指针判定，在哪用在哪判定
+	{
+		UE_LOG(LogTemp, Error, TEXT("TriggerArea is NULL!!!"));
+		return -1.f;
+	}
+    TArray<AActor*> OverlappingActors;
+    TriggerArea->GetOverlappingActors(OverlappingActors);
+
+    float TotalMass = 0.0f;
+    for (AActor *Actor:OverlappingActors)
+    {
+        TotalMass += Actor->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+    }
+    return TotalMass;
+}
+
+// 当然 tick 里面也记得改一下
+```
 
 # <i class="fa fa-star"></i> 任务八：蓝图与 C++ 的互相调用
+## 蓝图中调用 C++
+### **1° 根据 StaticMeshActor 创建蓝图**
+* 主界面编辑器选中物体，点 Blueprint （蓝色按键）创建 BP_OpenableDoor
+* 原来的 StaticMeshActor 变为 BP_OpenableDoor
+  * 注意 opendoor c++ 脚本绑定的 TriggerArea 失效，要重新绑定
 
+### **2° 用蓝图调用 C++ 脚本**
+* 在 C++ 脚本的 .h 声明函数时用宏 **`UFUNCTION(BlueprintCallable)`** 使其能被蓝图调用，如
+```cpp
+UFUNCTION(BlueprintCallable)
+    void TestFuncFromC();
+```
+* 其它参数
+  * `Category = "xxx"` ：用于在蓝图里创建 c++ 脚本结点后，拉出时有一页新的标签页 xxx ，而被该句宏声明的函数会显示在这个标签页的下拉条内。
+* 然后在蓝图 event graph 中 beginplay 处调用即可。
 
+## C++ 中调用蓝图
+### **1° 为 C++ 类创建蓝图组件**
+* 之前的 BP_OpenableDoor 蓝图是 OpenDoor C++ 类的父组件，所以不能子调父
+* 因此要为 OpenDoor 创建它的蓝图，但是此时在项目内容中右键 OpenDoor 不能创建蓝图，所以要到 .h 中改一下 UCLASS
+* **`UCLASS()`**
+  * 在参数列表前加一项 **`Blueprintable`**
+* 回到项目内容，右键 OpenDoor 创建蓝图 BP_OpenDoor
+  * 在 BP_OpenDoor 编辑器内右上角，父类为 OpenDoor
+
+### **2° C++ 内调用蓝图**
+* 在蓝图内创建 function - TestFuncFromBP
+  * 为函数增加 input
+  * 直接用 print string 输出这个 input
+* 由于 BP_OpenDoor 继承自 OpenDoor ，所以 OpenDoor 的功能它还都有。
+* 到 C++ OpenDoor.cpp 的 BeginPlay 中调用 BP_OpenDoor 的函数 TestFuncFromBP
+  * **`CallFunctionByNameWithArguments(TCHAR*, FOutputDevice, ...)`**
+  * `TCHAR*` 从 FString 转，内容为 `蓝图中的 FuncName + 参数列表` ，中间以空格分割
+    * `FString cmd = FString::Printf(TEXT("TestFuncFromBP hello"));`
+    * FString::Printf 以经典 C 的 printf 形式构造 FString
+  * `FOutputDevice` 
+    * `#include "OutputDeviceDebug.h"` 随便 include 一个 outputdevice 子类头文件并创建它
+    * `FOutputDeviceDebug device;`
+  * 第三个参数 NULL 即可
+  * 第四个参数表示是否强制执行，true
+```cpp
+void UOpenDoor::BeginPlay()
+{
+    Super::BeginPlay();
+    
+    FString cmd = FString::Printf(TEXT("TestFuncFromBP hello"));
+    FOutputDeviceDebug device;
+    CallFunctionByNameWithArguments(*cmd, device, NULL, true);
+}
+```
+
+### **`C++ 以创建代理的方式调用蓝图`**
+* 在 .h 中创建代理 `DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTestRequest);`
+  * 参数要以 F 开头
+* 在 .h 的类定义中声明代理
+  * 用宏 **`UPROPERTY(BlueprintAssignable)`** 。 BlueprintAssignable：Usable with multicast delegate only.
+    ```cpp
+    public:
+        UPROPERTY(BlueprintAssignable)
+            FTestRequest OnTestRequest;
+    ```
+* 在 .cpp 的 BeginPlay 处使用：做广播，给蓝图发送信息
+    ```cpp
+    BeginPlay()
+    {
+        ...;
+        OnTestRequest.Broadcast();
+    }
+    ```
+* 编译一下。
+* 到 BP_OpenableDoor 中，点住 OpenDoor 组件，在 event graph 中右键 all actions for this blueprint - add event for Open Door - Event Dispatchers - `Add On Test Request`
+  * 于是就可以通过这个事件触发结点，在蓝图里面搞事情
+  * 而这个事件的触发点就是由 C++ 决定，在哪用它 broadcast 就在哪调用
+* 与 Call 方式的不同： Call 需要先通过 c++ 生成蓝图，而这种方式不需要。可以直接用。
 
 # <i class="fa fa-star"></i> 任务九：通过 TimeLine 开门
+## 过程性开门
+* 用上述创建代理的方式调用蓝图，在蓝图里用 TimeLine 开门，过程不赘述
+* 问题：**`在蓝图中调用 C++ 的变量 Angle`**
+  * 使用 **`UPROPERTY(BlueprintReadOnly) / (BlueprintReadWrite)`**
+  * 给变量 Angle 的宏加一项参数
+* 简化：关门的时候可以直接连 TimeLine 的 `Reverse`
+* Debug
+  * TimeLine 连到 play from start 了所以门一直没反应
+  * 应该是因为帧间隔时间很短，所以每帧 from start 一直从 0 开始，门还没开又被重置了
+  * 连到 play 解决
 
+## 开门过程加声音
+* 给 TimeLine 增加 `Event Track` - Play Sound
+  * 添加点，设定 TimeLine 行进到某时刻，触发事件
+  * 门 (0.3, 1) ，此设 (0.1, 1) 刚开门的时候触发声音
+* 从 Play Sound 连出结点 `Play Sound At Location`
+  * `Get Actor Location`
+  * 选择音频
 
-
+## 给门加碰撞体
+* 到 Content/ 中找 SM_Door
+* 进入静态网格编辑器
+* 加碰撞体，simple 没有的话就去加加 box 之类的
 
 # Debug
 * `The global shader cache file '*SM5.bin' is missing.`
