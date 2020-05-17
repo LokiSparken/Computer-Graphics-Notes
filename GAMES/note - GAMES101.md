@@ -386,7 +386,8 @@
         x_t & y_t & z_t & 0 \\
         x_{-g} & y_{-g} & z_{-g} & 0 \\
         0 & 0 & 0 & 1 \end{matrix} \right) $$
-* 相机根据 $M_{view}$ 变换后，根据相对运动，其它物体也统一作一次该变换。【？这样看到的东西不就一直不变了吗orz?】
+* 相机根据 $M_{view}$ 变换后，根据相对运动，其它物体也统一作一次该变换。——也就是根据相机所作的旋转和平移，把物体也相对变化一下，注意也要先平移后旋转。
+  * 【？这样看到的东西不就一直不变了吗orz？】【是的没错，就是为了给相机定位，但是相机看到的场景不能变】
   * MV变换都应用到物体，经常放在一起，称模型视图变换。
 
 ### Projection Transformation投影变换
@@ -629,7 +630,7 @@
     * 此处暂时先定义到光源单位距离的球壳上光强 $I$ ，传播到距离为 $r$ 的球壳上。  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img21.png) &nbsp;</br>
       总能量应为 $I \cdot \pi \cdot 1^2 = I_r \cdot \pi \cdot r^2$  
       所以 $I_r = \frac{I}{r^2}$  
-      说明：考虑单位面积所能接收到的能量，与光线传播的距离的平方成反比。
+      说明：考虑单位面积所能接收到的能量，与光线 传播的距离的平方成反比。
   * Lambertian Diffuse Shading
     * $L_d = k_d \cdot (\frac{I}{r^2} \cdot max（0, \overrightarrow{n}\cdot\overrightarrow{l}）$
     * 其中，  
@@ -642,9 +643,9 @@
     * 概念辨析  
       查Diffuse Coefficient的时候注意到的一点。  
       ① $Albedo$ ：光的出射能量占入射能量的比例。  
-      ② $Diffuse Coefficient$ ：光的漫反射的出射能量占入射能量的比例。  
+      ② $Diffuse\ Coefficient$ ：光的漫反射的出射能量占入射能量的比例。  
       光击中物体的时候还会有折射光等，这里只涉及漫反射。
-* 高光项Specular Term：理想光滑平面上是镜面反射，而比较光滑但又不接近理想的光滑平面，反射光的方向应在镜面反射光的附近。当观察方向接近这些反射光的时候，能观察到高光。  （in Lecture 08）
+* 高光项Specular Term：理想光滑平面上是镜面反射，而比较光滑但又不接近理想的光滑平面，反射光的方向应在镜面反射光的附近。当观察方向接近这些反射光的时候，能观察到高光。  （in Lecture 08）  
     </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img22.png) &nbsp;</br>
 
   * 定义入射光与观察方向的半程向量 
@@ -1199,7 +1200,7 @@
        $$ \int_{0}^{\pi}\ sin\theta = -cos\pi - (-cos0) = 2 $$
        $$ 2\cdot \int_{0}^{2\pi}d\phi = 2\cdot (2\pi-0)=4\pi $$
 * 回到对辐射/发光强度 Radiant/Luminous Intensity定义的理解
-  * 之前定义了光本身的总能量Radiant Flux/Power $\Omega$
+  * 之前定义了光本身的总能量Radiant Flux/Power $\Phi$
   * 所以其在某个方向上的能量，看作一块极小区域的能量，为 $d\Phi$
   * 又有极小区域的面积，即单位立体角 $d\omega$
   * 因此，该物理量表示“在某个方向上的光的能量”，即单位立体角的能量。

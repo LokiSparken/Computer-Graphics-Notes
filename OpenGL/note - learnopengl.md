@@ -149,11 +149,11 @@ else
 * `要在包含GLFW的头文件之前包含GLAD的头文件。`
 * GLAD的头文件包含了正确的OpenGL头文件（例如GL/gl.h），所以需要在其它依赖于OpenGL的头文件之前包含GLAD。
 ### **main函数：实例化GLFW窗口**
-  * `glfwInit();	// 初始化GLFW`
-  * GLFW配置函数
-    * `glfwWindowHint(<选项名称>（GLFW_*）, <选项值（整型）>)`
-    * 选项和值的说明文档：https://www.glfw.org/docs/latest/window.html#window_hints
-  * 
+* `glfwInit();	// 初始化GLFW`
+* GLFW配置函数
+  * `glfwWindowHint(<选项名称>（GLFW_*）, <选项值（整型）>)`
+  * 选项和值的说明文档：https://www.glfw.org/docs/latest/window.html#window_hints
+* 
 * GLAD
 
 <!-- 使用FontAwesome -->

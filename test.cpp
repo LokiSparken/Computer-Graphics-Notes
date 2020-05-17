@@ -1,35 +1,17 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-struct Foo
-{
-    template <typename T>
-    operator T*() { return nullptr; }
-
-    // template <typename T>
-    // operator const T*() const { return nullptr; }
-};
-
-template <typename T>
-void f(T*) { cout << "T*" << endl;}
-
-template <typename T>
-void f(const T*) { cout << "const T*" << endl; }
-
-struct Test { };
-
 int main()
 {
-    Foo a;
-    // const Foo b;
-    f<int> (a);
-    // f<int> (b);
+    int a[5][5]={{1,2,3,4,5}};
+    auto t1 = a[0];
+    auto &t2 = a[0];
 
-    cout << endl;
+    cout << typeid(t1).name() << endl;
+    cout << *t1 << endl << endl;
 
-    f<Test> (a);
-    // f<Test> (b);
-    
+    cout << typeid(t2).name() << endl;
+
     system("pause");
     return 0;
 }
