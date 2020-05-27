@@ -1,4 +1,7 @@
 > # <i class="fa fa-book-open"></i> Peter Shirley - Ray Tracing the Next Week
+
+
+
 # <i class="fa fa-star"></i> Before Start
 * 之前直接在Ubuntu上整的没有啥问题。
 * Windows下.ppm下个XnView查看，后面可能再弄一下bmp之类的图片格式或者改成OGL输出吧。（再或者直接去访问显存？
