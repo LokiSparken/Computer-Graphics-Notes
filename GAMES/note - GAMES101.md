@@ -110,7 +110,7 @@
 * [Lecture 16 Ray Tracing 4（）](#lecture-16-ray-tracing-4)
   * [蒙特卡洛积分Monte Carlo Integration](#蒙特卡洛积分monte-carlo-integration)
   * [路径追踪Path Tracing](#路径追踪path-tracing)
-    * [Motivation](#motivation)
+    * [Motivation](#motivation-1)
     * [**A Simple Monte Carlo Solution（直接光照）**](#a-simple-monte-carlo-solution直接光照)
     * [**Global Illumination（引入间接光照）**](#global-illumination引入间接光照)
     * [问题](#问题)
@@ -122,14 +122,14 @@
     * [**镜面反射 Specular Reflection**](#镜面反射-specular-reflection)
     * [**折射 Refraction**](#折射-refraction)
     * [**微表面材质/模型 Microfacet Material**](#微表面材质模型-microfacet-material)
-      * [**Motivation**](#motivation-1)
+      * [**Motivation**](#motivation-2)
       * [**Microfacet Theory**](#microfacet-theory)
   * [材质的分类](#材质的分类)
     * [**各向同性Isotropic / 各向异性Anisotropic Materials (BRDFs)**](#各向同性isotropic--各向异性anisotropic-materials-brdfs)
     * [**Anisotropic BRDFs**](#anisotropic-brdfs)
   * [BRDF的性质 Properties of BRDFs](#brdf的性质-properties-of-brdfs)
   * [BRDF的测量 Measuring BRDFs](#brdf的测量-measuring-brdfs)
-    * [Motivation](#motivation-1)
+    * [Motivation](#motivation-3)
     * [Image-Based BRDF Measurement](#image-based-brdf-measurement)
     * [BRDF测量结果的表示 Representing Measured BRDFs](#brdf测量结果的表示-representing-measured-brdfs)
 * [Lecture 18 Advanced Topics in Rendering](#lecture-18-advanced-topics-in-rendering)
@@ -1102,7 +1102,7 @@
   * 从数值上看，即取 $t_{enter} = max(t_{xmin}, t_{ymin}, t_{zmin})、t_{exit} = min(t_{xmax}, t_{ymax}, t_{zmax})$ 之间的时间，为光线在包围盒内的参数范围。
     * 当 $t_{exit} < 0$ ，未击中包围盒，不相交
     * 当 $t_{exit} \geqslant 0$ 且 $t_{enter}<0$ 时，光线在包围盒中，必然相交
-    * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时
+    * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时光线与包围盒相交
 
 # Lecture 14 Ray Tracing 2（Acceleration & Radiometry）
 ## 包围盒的利用
