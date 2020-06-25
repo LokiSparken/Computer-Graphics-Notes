@@ -1,5 +1,8 @@
 > # 零碎文章笔记
 
+# Latex
+* texdoc clsguide
+
 # 如何看懂这些“该死的”图形学公式 by FOXhunt
 * 知乎文章 https://zhuanlan.zhihu.com/p/21489591
 ## 光照模型

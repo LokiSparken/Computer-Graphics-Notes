@@ -428,6 +428,7 @@ shade(p, wo)
   * 而蒙特卡洛定义在什么值上，就要对什么值采样
   * 所以要将渲染方程写成在光源上的积分
 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img60.png) &nbsp;</br>
+
 * 求 $d\omega$ 和 $dA$ 的关系
   * $dA$ 往着色点发射的光在单位半球上形成的投影面积就是 $d\omega$
   * 取 $dA$ 朝着色点方向的投影面积 $dA\ cos\theta'$ ，按立体角定义除以距离的平方即为 $d\omega$
@@ -813,19 +814,77 @@ $$ H = T + E $$
 * Exposure controls in photography
   * Aperture size：光圈是仿生设计，类似人的瞳孔。在相机中光圈大小可以通过 f-stop 控制，最大与镜头大小相同。
   </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img83.png) &nbsp;</br>
-  如图以 F 数控制。
-  * Shutter speed：快门速度越快，曝光时间越短。
+  如图以 F 数控制。  
+  F-number（F-stop），记作FN或F/N。非正式理解：光圈直径的逆（倒数）。
+  * Shutter speed：快门开放的时间长短。快门速度越快，曝光时间越短。
   </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img84.png) &nbsp;</br>
-  如第一张图，千分之一秒。
+  如第一张图，千分之一秒。  
+  快门首先起到调节曝光度的作用。另外，由于快门的开启和关闭必然有一过程，其会造成`运动模糊Motion Blur`。即快门开启过程中，物体运动了一段距离，传感器取均值后产生的模糊效果。  
+  运动模糊能给人眼体现速度，用于呈现更逼真的视觉效果。还可以起到一定反走样的效果。  
+  当物体的运动速度和快门速度接近时，产生 `Rolling Shutter` 问题，结果图像上物体扭曲，因为物体不同时间处于不同位置并分别被记录下来。
   * ISO gain（感光度）：在这里可以暂时简单地认为，对接收到的光能量以某比例放大。
   </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img85.png) &nbsp;</br>
-  
-  * 
-  
+  比如将一幅很暗的图乘上ISO值，提升曝光度，使其变亮。在这过程中，不仅光能量信号被放大了，其中影响噪声的量也被放大了。所以通常不应调整该值。
+  * 综合：增大几倍F数，即光圈直径减小，就可以相应增大几倍快门暴露时间提高曝光度，但形成的结果不是完全相同，因为两者分别会影响景深DOF和运动模糊。  
+* 应用
+  * 高速摄影：用很短的快门时间，很大的光圈拍。如子弹穿物。
+  * 延迟摄影（拉丝）：用很小的光圈，很长的快门时间。如拍远处的飞机起飞或着陆。
 
 ## 透镜 Lenses
+* 科普时间
+  * 现在的相机一般都是用多层透镜组构成。
+  * 实际的透镜可能一面凸一面平，无法把光聚集到一点。
+* CG中研究的透镜：理想薄透镜Ideal Thin Lens，不考虑透镜厚度。
+  * 平行光射入，产生焦点。
+  * 同理，经过焦点的光必被透镜散射成平行光形成图像。
+  * CG中的假设：薄的棱镜可以任意改变焦距。（现在的相机中通过不同透镜的组合来做到这一点。）
+### **透镜相关物理规律**
+* 平行光聚到焦点，过焦点的光变成平行光出射。
+* 对称性：穿过透镜中心的光不发生改变。
+* The Thin Lens Equation 
+  * 定义物距 $z_o$ 、像距 $z_i$ 、焦距 $f$。
+  * 则有
+  $$ \frac{1}{f} = \frac{1}{z_i} + \frac{1}{z_o} $$
+  * 推导过程（高斯透镜理论）
+  </br>&nbsp;![](note%20-%20image/GAMES101/img86.png) &nbsp;</br>
+  ① 列出两对相似三角形的相似比
+  $$     \left\{
+    \begin{aligned}
+        \frac{h_o}{z_o-f} = \frac{h_i}{f} \\
+      \frac{h_o}{f} = \frac{h_i}{z_i-f}
+    \end{aligned}
+    \right. $$
+  ② 变换易得
+  $$ \frac{h_o}{h_i} = \frac{z_o-f}{f} = \frac{f}{z_i-f} $$
+  ③ 展开消去即可得等式。（该等式也称为 Gauss Thin Lens Equation）
+### **Defocus Blur**
+* Circle of Confusion（CoC，弥散圆）
+  </br>&nbsp;![](note%20-%20image/GAMES101/img87.png) &nbsp;</br>
+  * 物体在实际成像面（感光面）上投影出的圆形范围
+  * 这个范围中得到的内容不止有通过透镜而来的光，还有在同侧前方的光，也投影到相应位置。
+  * CoC的计算：同样使用相似三角形
+  $$ \frac{C}{A} = \frac{d'}{z_i} = \frac{|z_s-z_i|}{z_i} $$
+* 光圈越大，期望效果越模糊。
+* F-Number 正式定义
+  * The f-number of a lens is defined as the focal length divided by the diameter of the aperture. 即 
+    $$FN = \frac{f}{d_{lens}}$$
+* 因此计算CoC时的光圈大小 $A$ 可用 $\frac{f}{N}$ 来计算。
+### **光线追踪景深效果的一种设定方案**
+![](note%20-%20image/GAMES101/img88.png)
+* 确定成像面大小Sensor、透镜焦距、光圈大小。
+* 确定物体面Subject plane离光圈的物距 $z_o$
+  * 根据薄透镜公式求出成像面Sensor到光圈的像距 $z_i$
+* `渲染过程`
+  * $x'$ 为遍历到的成像面上一个像素
+  * 由于光线穿过透镜中心不会改变方向，因此将 $x'$ 与透镜中心相连，求出在物体面上的聚焦点 $x'''$，那么从出发像素点 $x'$ 往透镜上任意一点 $x''$ 发射的光线，都会聚焦到 $x'''$处。
+  * 因此要渲染的像素 radiance 就是各个 $x''$ 到 $x'''$ 方向的光线作出的贡献。
+### **景深Depth of Filed**
+* 光圈大小会使部分画面内容模糊，但在focal plane上总是清晰的。因此光圈大小其实是影响模糊的范围。
+* 景深：场景中一定深度范围的内容，在成像面附近形成一段区域，这块区域的 CoC 认为足够小，可以不被人眼察觉它是模糊的。即场景中成像清晰的一段范围。
+* 用景深的最近、最远处，分别发射光线穿过透镜的上下边缘作计算。（ppt p61）
 
-## Light Fields
+## 光场 Light Field / Lumigraph（in Lecture 20）
+
 
 # Lecture 20 Color and Perception
 
