@@ -884,7 +884,8 @@ $$ H = T + E $$
 * 用景深的最近、最远处，分别发射光线穿过透镜的上下边缘作计算。（ppt p61）
 
 ## 光场 Light Field / Lumigraph（in Lecture 20）
-
+### **全光函数 The plenoptic function**
+* 
 
 # Lecture 20 Color and Perception
 
