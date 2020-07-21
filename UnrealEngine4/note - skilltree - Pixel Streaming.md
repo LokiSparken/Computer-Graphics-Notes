@@ -149,4 +149,20 @@ function myHandleResponseFunction(data)
 # 【二】像素流实践 - UE社区B站中文直播第14期
 * Reference：https://www.bilibili.com/video/BV1UE411H7gU?from=search&seid=4103597289856465146
 
+> 音质好差所以先咕咕咕（
+
+# 【三】官方文档 - 像素流送
+* https://docs.unrealengine.com/en-US/Platforms/PixelStreaming/index.html
+
+## Overview
+* 作用、概况及原理简介
+* 与 YouTube 等视频播放网站的区别
+  * Pixel Streaming 的呈现是实时的
+  * 用户可以通过 Browser 给 UE4 一些输入和控制
+* 连接情况的补充
+  * 客户端连接到 signalling web server 后由服务器提供相应 HTML 页面，包含播放器控件和 JS 控制代码
+  * UE4 和 Browser 需要明确各自 IP 地址，二者间的直连才能工作。而 `NAT 服务可能对外部可见 IP 地址做修改`，需用 STUN 或 TURN 服务器解决，参考“创建主机和网络连接指南” https://docs.unrealengine.com/zh-CN/Platforms/PixelStreaming/Hosting/index.html 
+
+## Getting Started
+* 文档配置过程很详细很清楚辽，只是我女朋友显卡并不支持 NvEnc ，卒。
 

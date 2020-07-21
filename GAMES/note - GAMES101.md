@@ -134,11 +134,44 @@
     * [BRDF测量结果的表示 Representing Measured BRDFs](#brdf测量结果的表示-representing-measured-brdfs)
 * [Lecture 18 Advanced Topics in Rendering](#lecture-18-advanced-topics-in-rendering)
   * [高级光线传播 Advanced Light Transport](#高级光线传播-advanced-light-transport)
-  * [](#)
-* [Lecture 19](#lecture-19)
-* [Lecture 20](#lecture-20)
-* [Lecture 21](#lecture-21)
-* [Lecture 22](#lecture-22)
+    * [Biased vs. Unbiased Monte Carlo Estimators](#biased-vs-unbiased-monte-carlo-estimators)
+    * [无偏光线传播方法 Unbiased light transport methods](#无偏光线传播方法-unbiased-light-transport-methods)
+      * [**双向路径追踪 Bidirectional path tracing (BDPT)**](#双向路径追踪-bidirectional-path-tracing-bdpt)
+      * [**Metropolis light transport (MLT)**](#metropolis-light-transport-mlt)
+    * [有偏 Biased](#有偏-biased)
+      * [**光子映射 Photon mapping**](#光子映射-photon-mapping)
+      * [**Vertex connection and merging (VCM)**](#vertex-connection-and-merging-vcm)
+    * [实时辐射度算法 Instant radiosity (VPL / many light methods)](#实时辐射度算法-instant-radiosity-vpl--many-light-methods)
+  * [高级外观建模 Advanced Apperance Modeling](#高级外观建模-advanced-apperance-modeling)
+    * [非表面模型 Non-surface models](#非表面模型-non-surface-models)
+      * [**散射介质 Participating media**](#散射介质-participating-media)
+      * [**Hair / fur / fiber (BCSDF)**](#hair--fur--fiber-bcsdf)
+        * [**头发 Human Hair**](#头发-human-hair)
+        * [**毛发 Animal Fur**](#毛发-animal-fur)
+      * [**Granular material**](#granular-material)
+    * [表面模型 Surface models](#表面模型-surface-models)
+      * [**Translucent material (BSSRDF)**](#translucent-material-bssrdf)
+      * [**Cloth**](#cloth)
+      * [**Detailed material (non-statistical BRDF)**](#detailed-material-non-statistical-brdf)
+    * [Procedural apperance](#procedural-apperance)
+* [Lecture 19 Cameras, Lenses and Light Fields](#lecture-19-cameras-lenses-and-light-fields)
+  * [相机 Cameras](#相机-cameras)
+    * [**小孔成像**](#小孔成像)
+    * [快门 shutter：控制光能否进入相机内，且在多少时间内可以进入。](#快门-shutter控制光能否进入相机内且在多少时间内可以进入)
+    * [传感器 sensor：其上一点记录 irradiance 。](#传感器-sensor其上一点记录-irradiance-)
+    * [针孔相机成像过程 Pinhole Image Formation](#针孔相机成像过程-pinhole-image-formation)
+    * [**视场 Field Of View (FOV)**：相机能看到的视野范围](#视场-field-of-view-fov相机能看到的视野范围)
+    * [**曝光 Exposure（H）**](#曝光-exposureh)
+  * [透镜 Lenses](#透镜-lenses)
+    * [**透镜相关物理规律**](#透镜相关物理规律)
+    * [**Defocus Blur**](#defocus-blur)
+    * [**光线追踪景深效果的一种设定方案**](#光线追踪景深效果的一种设定方案)
+    * [**景深Depth of Filed**](#景深depth-of-filed)
+  * [光场 Light Field / Lumigraph（in Lecture 20）](#光场-light-field--lumigraphin-lecture-20)
+    * [**全光函数 The plenoptic function**](#全光函数-the-plenoptic-function)
+* [Lecture 20 Color and Perception](#lecture-20-color-and-perception)
+* [Lecture 21 Animation](#lecture-21-animation)
+* [Lecture 22 Animation Cont.](#lecture-22-animation-cont)
 * [Experiment](#experiment)
   * [环境配置](#环境配置)
   * [HW1](#hw1)
@@ -147,6 +180,7 @@
   * [FAQ](#faq)
     * [HW3](#hw3)
 * [More](#more)
+  * [相关论文](#相关论文)
 * [备用](#备用)
 
 <!-- /TOC -->
@@ -1102,7 +1136,7 @@
   * 从数值上看，即取 $t_{enter} = max(t_{xmin}, t_{ymin}, t_{zmin})、t_{exit} = min(t_{xmax}, t_{ymax}, t_{zmax})$ 之间的时间，为光线在包围盒内的参数范围。
     * 当 $t_{exit} < 0$ ，未击中包围盒，不相交
     * 当 $t_{exit} \geqslant 0$ 且 $t_{enter}<0$ 时，光线在包围盒中，必然相交
-    * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时光线与包围盒相交
+    * 因此，iff当且仅当 $t_{enter}<t_{exit}$ 且 $t_{exit}\geqslant0$ 时
 
 # Lecture 14 Ray Tracing 2（Acceleration & Radiometry）
 ## 包围盒的利用
@@ -1200,7 +1234,7 @@
        $$ \int_{0}^{\pi}\ sin\theta = -cos\pi - (-cos0) = 2 $$
        $$ 2\cdot \int_{0}^{2\pi}d\phi = 2\cdot (2\pi-0)=4\pi $$
 * 回到对辐射/发光强度 Radiant/Luminous Intensity定义的理解
-  * 之前定义了光本身的总能量Radiant Flux/Power $\Phi$
+  * 之前定义了光本身的总能量Radiant Flux/Power $\Omega$
   * 所以其在某个方向上的能量，看作一块极小区域的能量，为 $d\Phi$
   * 又有极小区域的面积，即单位立体角 $d\omega$
   * 因此，该物理量表示“在某个方向上的光的能量”，即单位立体角的能量。
@@ -1456,6 +1490,7 @@ shade(p, wo)
   * 而蒙特卡洛定义在什么值上，就要对什么值采样
   * 所以要将渲染方程写成在光源上的积分
 </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img60.png) &nbsp;</br>
+
 * 求 $d\omega$ 和 $dA$ 的关系
   * $dA$ 往着色点发射的光在单位半球上形成的投影面积就是 $d\omega$
   * 取 $dA$ 朝着色点方向的投影面积 $dA\ cos\theta'$ ，按立体角定义除以距离的平方即为 $d\omega$
@@ -1636,14 +1671,290 @@ shade(p, wo)
 
 # Lecture 18 Advanced Topics in Rendering
 ## 高级光线传播 Advanced Light Transport
+* 目前业界方法：Path Tracing。因为可靠性高。
+### Biased vs. Unbiased Monte Carlo Estimators
+* 无偏 unbiased：取任意样本数，得出的期望都是真实值（需要求的积分值）。
+* 有偏 biased：其它情况。
+  * 一致 consistent：虽然有偏，但是样本数趋向无穷时能收敛。
+
+### 无偏光线传播方法 Unbiased light transport methods
+* Path Tracing 也是无偏方法。
+#### **双向路径追踪 Bidirectional path tracing (BDPT)**
+* 回忆：路径追踪，光线从相机射出，弹射到光源。
+* 双向
+  * 分别从相机和光源射出半路径。
+  * 连接半路径。
+* 在光线来源集中在某一部分，环境中漫反射材质较多时（导致路径追踪中很多采样是无效的，无法遇到光源），效果很好。
+</br>&nbsp;![](note&#32;-&#32;image/GAMES101/img73.png) &nbsp;</br>
+* 缺点：但相同分辨率和采样率下，BDPT要更慢一些。
+
+#### **Metropolis light transport (MLT)**
+* A Markov Chain （马尔可夫链） Monte Carlo (MCMC) appication
+  * 马尔可夫链：根据当前的样本，生成附近的下一个样本。给定足够的时间，可以“以任意函数形状为PDF”生成样本。
+  * 采样一个函数、使得方差variance最小的PDF：与积分函数形状一致的PDF。
+  * 而马尔可夫链，能对任意未知函数，生成样本，使样本分布与被积函数形状一致。
+  * 所以可以使用这样的方法，对一条路径，在附近生成与之相似的其它路径。在局部范围内有很好的效果。
+* 思想
+  * 对路径上弹射点作微小扰动，得到新的路径。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img74.png) &nbsp;</br>
+* 在复杂场景下效果很好：光源密集，其它物体间接照亮。caustics现象（泳池下的聚焦），假设水底diffuse，则光线要经过specular-diffuse-specular三层（SDS路径），同样由于漫反射，有效采样很小，而MLT可以根据有效采样在附近生成。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img75.png) &nbsp;</br>
+* 缺点
+  * 难以分析收敛速度。（而MC中可以分析提高一倍sample能否降低一倍variance）
+  * 所有操作都是局部的，因此不同像素点附近的收敛程度不同，导致结果"dirty"
+  * 因此也不能用在动画。
+
+### 有偏 Biased
+#### **光子映射 Photon mapping**
+* 有偏、一致 & 两步法
+* 适合SDS路径和渲染caustics
+* 实现方法（的一种）
+  * 从光源发射光子，遇到diffuse停止，得到物体上的光子分布
+  * 从相机射出光线，遇到diffuse停止
+  * 计算：local density estimation
+    * 思想：区域中停留光子越多的部分越亮
+    * 对每个着色点，取附近最近的 $n$ 个光子（范围查询算法），求出这些光子所占的面积，然后求这块区域的光子密度
+* 有偏的原因
+  * 计算Local Density Estimation的时候取的是近似值
+    $$ \frac{dN}{dA} != \frac{\delta N}{\delta A} $$
+  * 但当物体上的光子密度很大时，相同光子个数覆盖的面积越小，误差也就越小，趋向无穷时会收敛。
+* 为什么不取邻近的固定区域：这样虽然光子数能增大，但是面积固定不变小，无法收敛，永远是有偏且不一致的。
+
+#### **Vertex connection and merging (VCM)**
+* 结合光子映射和双向路径追踪。
+* 思想：
+  * BDPT中，如果两个子路径走到同一个面，就不能用相连（连接需要弹射）
+  * 利用这种情况，在面上做光子映射
+* 在电影中有应用
+
+### 实时辐射度算法 Instant radiosity (VPL / many light methods)
+* 思想：将被照亮的面都认为是光源。
+* 做法：
+  * 从光源射出子路径sub-paths，经过弹射，把停住的地方认为是新的光源Virtual Point Light(VPL)
+  * 生成VPL后，用这些新光源进行渲染
+* 缺点
+  * 一些地方奇怪地发光了，涉及计算时使用的距离平方项 $\frac{1}{r^2}$ ，当距离极近时会很大。
+  * VPL不能做glossy材质
+
+## 高级外观建模 Advanced Apperance Modeling
+* Apperance：外观即材质，BRDF
+### 非表面模型 Non-surface models
+#### **散射介质 Participating media**
+* fog、cloud等，定义在空间中而不是表面上
+* 光在行进过程中，遇到散射介质，发生
+  * 介质本身发光
+  * 被介质吸收
+  * 被介质散射：介质中的小晶体随机地将光线分散到各个方向，以及接收到其它晶体散射出的光线
+* 如何进行散射：类似BRDF定义了物体如何反射光线，`Phase Function`相位函数定义了介质内的晶体如何对光线进行散射。
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img76.png) &nbsp;</br>
+* 渲染方法
+  * 选一方向前进 Randomly choose a direction to bounce
+  * 选择前进距离 Randomly choose a distance to go straight
+    * 能走多远由介质的吸收能力决定
+  * 计算最终到达人眼的路径（对视觉整体效果？）的贡献
+* 注意散射介质的计算不考虑渲染方程，由其它方程定义。
+
+#### **Hair / fur / fiber (BCSDF)**
+##### **头发 Human Hair**
+* 头发会一根一根飘，所以要考虑光线和曲线如何作用。
+* 头发上的两种高光：有色与无色
+* 简单模型 Kajiya-Kay Model（SIGGRAPH 1989 “*Rendering fur with three dimensinal textures.*”）
+  * 假设头发的模型是根圆柱
+  * 考虑光线命中圆柱，散射出一个圆锥，同时又有一些散射到四周（类似diffuse+specular）
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img77.png) &nbsp;</br>
+* Marschner Model（SIGGRAPH 2003 “*Light Scattering from Human Hair Fibers.*”）
+  * 考虑光线命中圆柱发生的三种作用：  
+    ① 反射的部分，记作 $R$ 。   
+    ② 穿进头发丝内部，发生折射记作 $T$ ，而光线要穿过一根头发，穿进再穿出，会发生 $TT$ 传播。  
+    ③ 折射进头发丝后，在内壁发生一次折射，然后再穿出的 $TRT$ 传播。
+  * 把头发 treat as Glass-like cylinder 玻璃圆柱：包含外层的表皮cuticle，内层的皮质cortex(absorbs)
+    * 认为头发内部有色素，会吸收光
+  * 对每根头发考虑三种情况的作用，然后开始渲染，跑到世界的尽头（x
+##### **毛发 Animal Fur**
+* 动物毛发与人的头发在生物学上的对比
+  * 人和动物毛发的共同点是三层结构：外表皮Cuticle、内部的皮质Cortex（absorbs light）、最内层的髓质Medulla（scatter light）  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img78.png) &nbsp;</br>
+
+  * 区别：人的髓质很细，动物的髓质非常大，所以光线更容易发生散射。  
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img79.png) &nbsp;</br>
+
+    加入对髓质的模拟之后的模型效果：
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img80.png) &nbsp;
+    </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img81.png) &nbsp;</br>
+* Double Cylinder Model
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img82.png) &nbsp;</br>
+  * 在 Marschner Model 的三种情况基础上再加两种情况：  
+    ④ $TT^s$ ：在穿进毛发、经过髓质的时候被发散到各个方向  
+    ⑤ $TRT^s$ ：同样考虑穿进毛发时与髓质的交互  
+    即只要进入毛发内就考虑可能被髓质散射。
+  * 在猩球崛起、狮子王HD中应用拿到最佳视觉效果奖提名（很遗憾最终没有获得（x
+  * YanLingQi Model hhh
+
+#### **Granular material**
+* 颗粒材质模型
+* 还没有比较好的解决办法。
+
+### 表面模型 Surface models
+
+#### **Translucent material (BSSRDF)**
+* translucent 半透明材质：玉石、水母
+  * 光线射入后，在内部发生散射，从另一个地方射出
+* 这种物理现象称为次表面散射 Subsurface Scattering
+  * 对 BRDF 的延伸
+  * BRDF：从某点进，某点出
+  * BSSRDF：从某点进，另一点出（SS即Subsurface Scattering）
+* BSSRDF：generalization of BRDF; exitant radiance at one point due to incident differential irradiance at another point.
+    $$ S(x_i, \omega_i, x_o, \omega_o) $$
+  * Generalization of rendering equation: integrating over all points on the surface and all directions. 考虑某个点时，要加入从其它点入射，从该点出射的情况，考虑其贡献，即对次表面面积再做积分。
+    $$ L(x_o, \omega_o)=\int_A \int_{H^2} S(x_i,\omega_i,x_o,\omega_o)\ L_i(x_i,\omega_i)\ cos\theta_i\ d\omega_i\ dA $$
+  * Dipole Approximation ：假设材质表面的内外各有一光源，模拟类似次表面散射的效果。
+
+#### **Cloth**
+* 布料：一系列缠绕的纤维构成的。
+  * 肉眼可见的一根毛，算一种“纤维” Fiber。
+  * 不同的纤维缠绕成一“股” Ply。
+  * 不同的股再缠绕形成“线” Yarn。
+* 渲染方法
+  * 近似看成表面。
+  * 把空间中的性质按空间分割成微小的块，考虑每块里纤维的朝向等性质，然后转化成光的散射等，类似渲染云这类的体积。
+  * 知道纤维的缠绕方法，就按纤维一根一根渲，当头发渲。
+  * 以上三种方法，目前都有使用。
+
+#### **Detailed material (non-statistical BRDF)**
+* Motivation
+  * 很多情况下渲染出的结果过于完美，但实际上的物体表面不会那么光滑。
+* YLQ Model再现！贡献统计：
+  * 细节渲染：有划痕的水壶，各向异性高光的水壶
+  * 毛发模型
+  * Real-Time Ray Tracing
+* 微表面模型的细节
+  * 如果使用的法线分布是光滑的曲线，那么必然遗失很多细节，所以要用很凹凸不平的法线分布
+  * 而单纯使用路径追踪会很慢，因为确定法线分布以后，认为微表面是镜面反射的话，会产生很多无效的采样，从相机发出的光反射不到光源，从光源出发的光反射不到相机。
+  * 而相机看到的一个像素其实是覆盖很多微表面的，因此先算出对应区域的微表面块法线分布，就能在对该像素渲染时，以这个法线分布，替换掉镜面反射的光滑分布曲线。
+  * 但引入细节后，几何光学就不足以解决问题：当物体小到与光的波长相当的时候，就不能假设光是直线传播的，会产生衍射和干涉等问题。
+  * 此处省略波动光学相关内容（在复数域上做积分等）。
+  * 波动光学得出的BRDF与几何光学的BRDF有相似处，但又有特点：是不连续的。
+
+### Procedural apperance
+* 噪声函数：定义在空间中，对任意 $(x,y,z)$ 可给出相应值。
+* 常用噪声函数：Perlin Noise等
+  * 可以用于生成地形、水面、木头纹理（auto desk）
+  * 可以将物理上的性质与噪声结合到一起
+* Houdini：专做程序化材质，先生成程序化
+
+# Lecture 19 Cameras, Lenses and Light Fields
+* 图形学的两种合成（synthesis）成像方式：光栅化、光线追踪。
+* 捕捉（capture）成像方式：把物理世界中存在的东西变成图像（相机拍照片）。
+* Image = synthesis + capture
+* 目前成像技术的研究
+  * 在微小时间内能看到的光的传播，研究光在空间中传播的过程：`Transient Imaging`
+  * `Imaging` 本身在计算摄影学 Computational Photography 中研究得更多。
+## 相机 Cameras
+### **小孔成像**
+* 原因：光沿直线传播，假设小孔在物体中心，物体上部的光向下通过小孔，下部的光向上通过小孔，因此在成像平面中产生倒影。
+* 针孔摄像机 Pinhole camera
+### 快门 shutter：控制光能否进入相机内，且在多少时间内可以进入。
+### 传感器 sensor：其上一点记录 irradiance 。
+* 所以它不能过滤特定方向上的光，也就没办法直接用传感器来拍摄。（不过现在有巨巨正在研究，说不定以后就可以了（
+### 针孔相机成像过程 Pinhole Image Formation
+* 用针孔相机原理做光线追踪，没有景深、虚化的效果。
+### **视场 Field Of View (FOV)**：相机能看到的视野范围
+* $\Join$ 相似三角形：高度 h 、到对顶点焦距 f 、对顶点角度 FOV
+  $$ FOV = 2\ arctan\ (\frac{h}{2f}) $$
+* 不同的视场决定了不同的视野，和传感器大小、焦距都有关。
+* 通常以 $35mm-format\ film（36\times24mm）$ 的传感器大小作为基准，再取各种长短的焦距，来定义相机的视野大小。
+  * 如 $17mm$ ，同传感器大小标准下，焦距短，FOV大（104°），因此是广角镜头。
+  * $50mm$ 普通，47°。
+  * $200mm$ telephoto lens 长焦/远摄镜头，12°。
+  * 对于手机而言，一般 $28mm$ 焦距，但手机中实际传感器大小很小，只是给出了等效到 $35mm$ 标准的焦距以供参考。
+### **曝光 Exposure（H）**
+$$ Exposure = Time \times Irradiance $$
+$$ H = T + E $$
+* $Time（T）：$即 Exposure Time，由快门 shutter 控制。
+* $Irradiance（E）：$传感器上单位面积接收到的光的能量，由透镜光圈大小 lens aperture 和焦距 focal lenth 决定。
+* 因此相机与渲染不同，关注的不是单位时间的能量，而是曝光时间中所接收到的所有能量总和。
+* Exposure controls in photography
+  * Aperture size：光圈是仿生设计，类似人的瞳孔。在相机中光圈大小可以通过 f-stop 控制，最大与镜头大小相同。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img83.png) &nbsp;</br>
+  如图以 F 数控制。  
+  F-number（F-stop），记作FN或F/N。非正式理解：光圈直径的逆（倒数）。
+  * Shutter speed：快门开放的时间长短。快门速度越快，曝光时间越短。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img84.png) &nbsp;</br>
+  如第一张图，千分之一秒。  
+  快门首先起到调节曝光度的作用。另外，由于快门的开启和关闭必然有一过程，其会造成`运动模糊Motion Blur`。即快门开启过程中，物体运动了一段距离，传感器取均值后产生的模糊效果。  
+  运动模糊能给人眼体现速度，用于呈现更逼真的视觉效果。还可以起到一定反走样的效果。  
+  当物体的运动速度和快门速度接近时，产生 `Rolling Shutter` 问题，结果图像上物体扭曲，因为物体不同时间处于不同位置并分别被记录下来。
+  * ISO gain（感光度）：在这里可以暂时简单地认为，对接收到的光能量以某比例放大。
+  </br>&nbsp;![](note&#32;-&#32;image/GAMES101/img85.png) &nbsp;</br>
+  比如将一幅很暗的图乘上ISO值，提升曝光度，使其变亮。在这过程中，不仅光能量信号被放大了，其中影响噪声的量也被放大了。所以通常不应调整该值。
+  * 综合：增大几倍F数，即光圈直径减小，就可以相应增大几倍快门暴露时间提高曝光度，但形成的结果不是完全相同，因为两者分别会影响景深DOF和运动模糊。  
+* 应用
+  * 高速摄影：用很短的快门时间，很大的光圈拍。如子弹穿物。
+  * 延迟摄影（拉丝）：用很小的光圈，很长的快门时间。如拍远处的飞机起飞或着陆。
+
+## 透镜 Lenses
+* 科普时间
+  * 现在的相机一般都是用多层透镜组构成。
+  * 实际的透镜可能一面凸一面平，无法把光聚集到一点。
+* CG中研究的透镜：理想薄透镜Ideal Thin Lens，不考虑透镜厚度。
+  * 平行光射入，产生焦点。
+  * 同理，经过焦点的光必被透镜散射成平行光形成图像。
+  * CG中的假设：薄的棱镜可以任意改变焦距。（现在的相机中通过不同透镜的组合来做到这一点。）
+### **透镜相关物理规律**
+* 平行光聚到焦点，过焦点的光变成平行光出射。
+* 对称性：穿过透镜中心的光不发生改变。
+* The Thin Lens Equation 
+  * 定义物距 $z_o$ 、像距 $z_i$ 、焦距 $f$。
+  * 则有
+  $$ \frac{1}{f} = \frac{1}{z_i} + \frac{1}{z_o} $$
+  * 推导过程（高斯透镜理论）
+  </br>&nbsp;![](note%20-%20image/GAMES101/img86.png) &nbsp;</br>
+  ① 列出两对相似三角形的相似比
+  $$     \left\{
+    \begin{aligned}
+        \frac{h_o}{z_o-f} = \frac{h_i}{f} \\
+      \frac{h_o}{f} = \frac{h_i}{z_i-f}
+    \end{aligned}
+    \right. $$
+  ② 变换易得
+  $$ \frac{h_o}{h_i} = \frac{z_o-f}{f} = \frac{f}{z_i-f} $$
+  ③ 展开消去即可得等式。（该等式也称为 Gauss Thin Lens Equation）
+### **Defocus Blur**
+* Circle of Confusion（CoC，弥散圆）
+  </br>&nbsp;![](note%20-%20image/GAMES101/img87.png) &nbsp;</br>
+  * 物体在实际成像面（感光面）上投影出的圆形范围
+  * 这个范围中得到的内容不止有通过透镜而来的光，还有在同侧前方的光，也投影到相应位置。
+  * CoC的计算：同样使用相似三角形
+  $$ \frac{C}{A} = \frac{d'}{z_i} = \frac{|z_s-z_i|}{z_i} $$
+* 光圈越大，期望效果越模糊。
+* F-Number 正式定义
+  * The f-number of a lens is defined as the focal length divided by the diameter of the aperture. 即 
+    $$FN = \frac{f}{d_{lens}}$$
+* 因此计算CoC时的光圈大小 $A$ 可用 $\frac{f}{N}$ 来计算。
+### **光线追踪景深效果的一种设定方案**
+![](note%20-%20image/GAMES101/img88.png)
+* 确定成像面大小Sensor、透镜焦距、光圈大小。
+* 确定物体面Subject plane离光圈的物距 $z_o$
+  * 根据薄透镜公式求出成像面Sensor到光圈的像距 $z_i$
+* `渲染过程`
+  * $x'$ 为遍历到的成像面上一个像素
+  * 由于光线穿过透镜中心不会改变方向，因此将 $x'$ 与透镜中心相连，求出在物体面上的聚焦点 $x'''$，那么从出发像素点 $x'$ 往透镜上任意一点 $x''$ 发射的光线，都会聚焦到 $x'''$处。
+  * 因此要渲染的像素 radiance 就是各个 $x''$ 到 $x'''$ 方向的光线作出的贡献。
+### **景深Depth of Filed**
+* 光圈大小会使部分画面内容模糊，但在focal plane上总是清晰的。因此光圈大小其实是影响模糊的范围。
+* 景深：场景中一定深度范围的内容，在成像面附近形成一段区域，这块区域的 CoC 认为足够小，可以不被人眼察觉它是模糊的。即场景中成像清晰的一段范围。
+* 用景深的最近、最远处，分别发射光线穿过透镜的上下边缘作计算。（ppt p61）
+
+## 光场 Light Field / Lumigraph（in Lecture 20）
+### **全光函数 The plenoptic function**
+* 
+
+# Lecture 20 Color and Perception
 
 
-## 
+# Lecture 21 Animation
 
-# Lecture 19
-# Lecture 20
-# Lecture 21
-# Lecture 22
+# Lecture 22 Animation Cont.
 
 
 # Experiment
@@ -1710,8 +2021,18 @@ shade(p, wo)
 * YLQ's way of learning things
   * WHY, WHAT, then HOW
   * 为什么学、这啥玩意、如何运作
+* 十个渲染最真实的人物模型
+  * https://cgelves.com/10-most-realistic-human-3d-models-that-will-wow-you/
+## 相关论文
+* 头发材质Kajiya-Kay Model：SIGGRAPH 1989 *Rendering fur with three dimensinal textures.*
+* 头发材质Marschner Model：SIGGRAPH 2003 *Light Scattering from Human Hair Fibers.*
+
+</br></br>
+> # The End
+</br></br>
 
 # 备用
+
 </br>&nbsp;![] &nbsp;</br>
 
 $\leqslant \geqslant \forall$
@@ -1739,9 +2060,6 @@ $$
     \end{matrix}
     \right)
 $$
-
-<!-- 目录 -->
-
 
 <!-- 图片示例 -->
 ![][<tag>]
