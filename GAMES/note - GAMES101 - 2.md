@@ -251,6 +251,156 @@ $$ H = T + E $$
 * Gamma 校正
 
 # Lecture 21 Animation
+## History
+### 动画
+* 动画：模型的扩展，在不同时间帧上展现出的模型状态
+* 输出：由于人眼的视觉暂留效应，会短暂记忆所看到的画面，所以在短时间播放一系列帧即可
+  * 不同领域对帧率的要求
+  * 电影：24 frames per second
+  * 视频：30 fps
+  * 游戏：60 fps/Hz
+  * ＶＲ：90 fps（不晕的要求）
+### 历史要点
+* First Animation：Shahr-e Sukhteh, Iran 3200 BCE
+* 圆盘滚动：Phenakistoscope, 1831
+  * 想到在书角画图然后捏角hhh
+  * 然后男神就提了书角2333
+* First Film：Edward Muybridge, "Sallie Gardner" 1878
+  * 一开始作为科学研究用途
+* 里程碑作品
+  * First Hand-Drawn Feature-Length (>40 mins) Animation（第一部手绘剧场版动画）：Disney, "Snow White and the Seven Dwarfs" 1937
+  * First Digital-Computer-Generated Animation（第一部电子计算机生成的动画）：Ivan Sutherland, "Sketchpad" 1963
+  * 人脸显示：Ed Catmull & Frederick Parke, "Computer Animated Faces" 1972
+  * Digital Dinosaurs：Jurassic Park 1993
+  * First CG（Computer-Generated） Feature-Length Film：Pixar, "Toy Story" 1995
+  * Sony Pictures Animation, "Cloudy With a Chance of Meatballs" 2009（水面涟漪）  
+    Walt Disney Animation Studios, "Frozen 2" 2019（烟雾等各类效果）  
+
+## 基本概念
+* 关键帧动画 Keyframes Animation
+  * 关键帧keyframes 定义整个动画的走向
+  * 过渡帧tweens 关键帧之间的过渡画面，in-between 的简写
+  * 插值原理：对关键帧寻找若干重要点及各自在不同关键帧上的位置对应关系，然后在那之间做插值。插值时会有一些要求，需要选取合适的样条曲线，与几何挂钩。
+* 物理模拟 Physical Simulation
+  * 通过初始位置、速度、物体上有什么力等，通过物理公式，动态更新下一时刻的位置和形状变化
+  * 涉及布料（穿模与碰撞检测hhh）、流体模拟等
+
+## **`质点弹簧系统 Mass Spring System`**
+* 应用：绳子（铰链）、头发、网格布等
+* 质点弹簧系统：一系列相互连接的质点和弹簧
+  
+  ![](note%20-%20image/GAMES101/img98.png)
+### **理想弹簧**
+* 假设：理想弹簧，拉开多长产生多大的力。
+  * 将 $a$ 拉向 $b$ 的力：$f_{a\rightarrow b} = k_s(\overrightarrow{b}-\overrightarrow{a})$
+  * 将 $b$ 拉向 $a$ 的力：$f_{b\rightarrow a} = -f_{a\rightarrow b}$
+  * 胡克定律，其中 $k_s$ 为弹性系数。
+### **有初始长度的弹簧**
+* 实际：弹簧总有初始长度 Rest length ，设为 $l$
+  * 拉开的长度 $\times$ 受力方向
+  $$ f_{a\rightarrow b} = k_s \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|} (|\overrightarrow{b}-\overrightarrow{a}| - l) $$
+### **弹簧酱不想成为永动机**
+* 上述弹簧系统的问题：动势能守恒，拉开后会变成永动机一直弹（
+* 物理模拟中用 $x$ 表示位置，$\dot{x}$ 表示速度（一阶导数），$\ddot{x}$ 表示加速度（二阶导数）
+* 不希望弹簧永动：加与速度反向的摩擦力 damping force
+  
+  ![](note%20-%20image/GAMES101/img99.png)
+  * $f = -k_d\dot{b}$
+  * $k_d$ 为劲度系数
+* 问题：是外部摩擦力，不能表示对弹簧系统内部的影响
+### **弹簧酱想拥有系统内部的调节机制（x**
+* 考虑：内部摩擦力试图使弹簧恢复形变，使 b 往 a 靠
+  $$ f_b = - k_d \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|}(\dot{b}-\dot{a}) \cdot \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|} $$
+  * $劲度系数\times大小\times b-a方向归一化后的反向（从b往a）$
+  * 大小与 a 、 b 间的相对速度有关，两个速度矢量与归一化后的方向点乘，即将相对速度往归一化后的 a 、 b 方向上作投影。（`即，只考虑会影响弹簧形变的方向上的速度，排除垂直方向上的速度分量`）
+  * 摩擦力只和相对速度有关，与弹簧的形变量无关，不考虑弹簧初始长度
+### **各种问题**
+* 布料模拟
+  * 一块方布对角拽，布会产生对抗这种切变的力，而当前系统不会：为小网格上的一组对角质点间加弹簧
+  
+    ![](note%20-%20image/GAMES101/img100.png)
+  * 当前系统也不会产生对抗“使形状变成不在同一平面上的力”（out-of-plane bending）的力，即很容易对角对折，然鹅实际的布料很难做到：给小网格上的另一组对角质点间也加弹簧，这样对角折的时候折痕处会产生形变作对抗
+  
+    ![](note%20-%20image/GAMES101/img101.png)
+  * 继续考虑“沿原小网格的某条边对折”时，仍然不会影响任何弹簧的形变：对各中间隔一质点的各组质点间加弹簧（这种连接比较弱）
+  
+    ![](note%20-%20image/GAMES101/img102.png)
+### 其它系统
+* 有限元（FEM - Finite Element Method）
+  * 应用：车子碰撞、武器效果
+  * 适用于：对力、热等扩散、传导的描述
+
+## 粒子系统 Particle Systems
+* 描述：各个小粒子、粒子间的作用、环境对粒子的作用等，然后做模拟
+  * 粒子间的作用力：涉及引力时需要找到某粒子周围的一些粒子，维护相应结构加速查找效率。还有磁力、斥力、摩擦力、碰撞……
+* 简单过程描述
+  * 生成粒子
+  * 计算作用到粒子上的作用力
+  * 更新各粒子的位置和速度
+  * 移除生命周期结束的粒子
+  * 渲染粒子
+* 定义粒子属性，个体与群体的关系。以群鸟为例，（`群聚算法`？），如：
+  * 吸引力 attraction：不离群性
+  * 斥力 repulsion：相互不靠太近
+  * alignment：整体方向一致，趋向于平均方向
+* 例子
+  * Molecular Dynamics 分子结构模拟
+  * Crowds + "Rock" Dynamics
+
+## 运动学 Kinematics
+### **正运动学 Forward Kinematics**
+* 思想：描述一个骨骼系统以做动画，表示与人类似的拓扑结构
+* ① 定义简单的关节，并形成树形结构
+  * `pin` 只能在一个方向上旋转
+  * `ball` 多一个自由度，能在两个方向上旋转
+  * `prismatic joint` 可以沿一个轴在一定范围内移动
+* ② 根据关节的旋转确定各个位置的变化
+* 问题：定义很物理，好算，但对动画师而言不够直观
+### **逆运动学 Inverse Kinematics**
+* ① 拖拽某个点
+* ② 根据拖拽后点位置的需求，调整各关节的变化情况
+* 问题
+  * 很！难！算！
+  * 求出的解不唯一
+  * 有的拖拽位置无法到达
+* 一些解决方案
+  * 求解：梯度下降？
+
+## 绑定 Rigging
+* rigging：构成骨骼的过程，在物体上添加控制点
+* blend shape：控制点变化前后，对各控制点及控制点之间的位置做插值。
+
+## 动作捕捉 Motion Capture
+* 在虚拟人和物理人之间建立关系，在人身上贴控制点采集数据，把真实人的动作反应到虚拟人上。
+* 好处：真实感强、效率高
+* 问题：准备工作复杂、贴上控制点影响人的行动、有些东西人难演、成本高（采集摄像机视野可能被遮挡需要不同方位多来几台）、捕捉到的信息准确度不一定高
+* 信息采集设备（不同的定义控制点的方法）
+  * 直接拍照，用CV方法分析控制点
+  * 控制点发出磁力不怕被遮挡
+  * 戴机械控制器
+  * 光学方法：贴Markers，放一堆摄像机测控制点位置
+* 通过捕捉设备，测出每一个控制点在不同时刻的位置曲线
+* 恐怖谷效应 Uncanny valley
+  * 关于 AI 统治世界（
+  * 技术成果过于真实的阔怕（要被用来做坏事嗷
+
+## 动画产品Pipeline
+* pre-production
+  * 故事
+  * 原画
+  * 设计场景、细节等
+* production
+  * 场景布置等
+  * 建模、纹理、rigging
+  * 做成动画
+  * VFX（视觉效果）
+  * 光照
+  * 渲染
+* post-production
+  * 合成人物、场景
+  * 加后期效果
+  * 调色等
+  * 成了！
 
 # Lecture 22 Animation Cont.
 
