@@ -403,7 +403,77 @@ $$ H = T + E $$
   * 成了！
 
 # Lecture 22 Animation Cont.
+## 单个粒子模拟 Single Particle Simulation
+* 先考虑单个粒子的运动情况
+* 假设有速度场：任意位置、任意时刻可知速度 $v(x,t)$
+### Ordinary Differential Equation（ODE）
+#### 常微分方程 ODE
+* 定义一阶常微分方程
+  $$ \frac{dx}{dt} = \dot{x} = v(x,t) $$
+* “常”：不存在其它变量的微分/导数，即单变量微分方程
+* 需求：初始位置 $x_0$ ，对任意时刻 $t$ ，求出位置 $x$，从而解出随着时间运动的轨迹
+#### 求解方法 
+* **`欧拉方法 Euler's Method`**（前向/显式欧拉 Forward/Explicit Euler）
+  * 思想：为得到一定时间后的点位置，把这段时间细分，不断加上细分的微小时间变化量（步长）[对时间离散化]
+    $$ 下一帧速度 = 当前帧速度 + 时间变化量 \times 当前帧加速度 $$
+    $$ \dot{x}^{t+\Delta t} = \dot{x}^t + \Delta t \ddot{x}^t $$
+    $$ 下一帧位置 = 当前帧位置 + 时间变化量 \times 当前帧速度 $$
+    $$ x^{t+\Delta t} = x^t + \Delta t \dot{x}^t $$
+  * 欧拉方法都用当前帧的量更新下一帧信息。也可以用下一帧速度更新下一帧位置，但不是欧拉方法。
+  * 注意：步长会影响估计的误差精度。
+* **不稳定问题**
+  * 对于圆周运动，速度总是切线方向，不应该离心，但欧拉方法无论步长多小必然逐渐远离圆心
+  
+    ![](note%20-%20image/GAMES101/img103.png)
+  * 正反馈：微小的问题被无限放大。如
 
+    ![](note%20-%20image/GAMES101/img104.png)
+#### 数值方法解微分方程的问题
+* 误差：可以通过减小步长来改善，并且对于追求视觉效果的CG而言有一定的误差通常是可以接受的
+* 不稳定：会导致 diverge ，结果越差越大，但这个问题必然存在
+#### 改善不稳定性的方法
+* **`中点法 Midpoint Method / Modified Euler`**
+  * 对初始位置、速度取步长得点 a 信息，并取初始位置与点 a 中点的速度，以初始位置、中点速度生成下一帧位置
+  * 步骤：【？20200731：感觉第一条式子没啥用？】
+    $$ \begin{aligned} 
+    ①\ a\ 点位置 &= 当前帧位置 + 时间变化量 \times 平均速度  \\ 
+    x^{t+\Delta t} &= x^t + \frac{\Delta t}{2}\ (\dot{x}^t+\dot{x}^{t+\Delta t}) \\
+    ② 中点速度 &= 当前帧速度 + 时间变化量 \times 当前帧加速度  \\
+    \dot{x}^{t+\Delta t} &= \dot{x}^t + \Delta t\ \ddot{x}^t \\
+    ③ 下帧位置 &= 当前位置 + 时间变化量 \times 中点速度 \\
+    x^{t+\Delta t} &= x^t + \Delta t\ \dot{x}^t + \frac{(\Delta t)^2}{2} \ddot{x}^t
+    \end{aligned} $$
+  * 可以看出中点法算出了局部的二次模型，所以比一次的准确。
+* **`自适应步长 Adaptive Step Size`**
+  * 中点思想的另一种应用。
+  * 步骤：  
+    ① 计算 $\frac{\Delta t}{2}$ 两次  
+    ② 考虑最终结果与一次 $\Delta t$ 结果的差异有多大  
+    ③ 如果两种情况差异较大，应该继续减小步长
+* **`隐式欧拉方法 Implicit Euler Methods / 后向 Backward Methods`**
+  * 类似欧拉方法，但都用下一帧的加速度、速度更新速度、位置
+  * 问题：下一帧的信息未知，需要通过解方程组得到新的速度和位置，应用如求根公式、牛顿法的数值方法求零点等。求解不易，但比较稳定。
+  * **`方法的稳定性`**
+    * 对数值方法定义 `局部截断误差 Local Truncation Error (every step)`、`整体累积误差 Total Accumulated Error (overall)` 两个量衡量稳定性
+    * 不关注这两个量本身，关注阶：考虑 $\Delta t$ 的值如何影响稳定性
+  * 隐式欧拉方法是`一阶`的
+    * 局部误差 Local Truncation Error：$O(h^2)$
+    * 全局误差 Global Accumulated Error：$O(h)$
+    * 其中，$h$ 为步长，此处即每步 $\Delta t$
+    * 对于全局误差为 $O(h)$ ，即步长减小一半，误差随之减小一半。由此也可以得出，“阶数”越高越好，因为步长减小相同的倍数，越高阶误差减小越多。
+  * **`龙格库塔法 Runge-Kutta Families`**
+    * 一类可用于解常微分方程的方法，尤其是对于非线性 non-linearity 的情况（前向欧拉的问题是认为模型总是线性的，因此中点法的平方模型比欧拉好，而龙格库塔更好）
+    * 其中应用最广的一种 **`RK4`** ：四阶
+    * 详见数值分析 Numerical Analysis
+* **`Position-based / 韦尔莱积分 Verlet Integration`**
+  * 思想：认为弹簧拉开后可瞬间复原。通过非物理的简化方式，在弹簧拉开后直接改变两端位置，迅速使弹簧回到原长。
+  * 问题：由于不基于物理，所以无法保证能量守恒等物理性质，有很大的能量损失。
+  * 
+
+## 刚体模拟 Rigid Body Simulation
+
+
+## Advertisement！
 
 # Experiment
 ## 环境配置
