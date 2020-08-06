@@ -471,9 +471,72 @@ $$ H = T + E $$
   * 
 
 ## 刚体模拟 Rigid Body Simulation
+* 刚体
+  * 刚体不发生形变，内部所有点运动情况相同。
+  * 把整个刚体看作一整体，其运动与粒子类似。
+  * 比粒子的模拟多考虑一些物理量：角度和角速度。
+* 变化量模拟
+  $$ \frac{d}{dt}(X, \theta, \dot{X}, \omega) = (\dot{X}, \omega, \frac{F}{M}, \frac{\Gamma}{I}) $$
+  * 位置对时间求导为速度，角度对时间求导为角速度，速度对时间求导为加速度，角速度对时间求导为角加速度（力矩torque $\Gamma$ / 转动惯量momentum of inertia $I$）
+  * 然后使用欧拉法、龙格库塔等数值方法求值
 
+## 流体模拟 Fluid Simulation
+### A Simple Position-Based Method
+* 用小球作为流体的基本单元，通过模拟形成流体的每个小球的位置，实现对流体的模拟。
+* 基本思想
+  * 认为水由很多刚体小球组成
+  * `认为水在任何地方不可压缩`（任意位置密度相同）
+  * 因此当某处密度发生变化，需要进行修正
+  * 关键：知道`任意位置密度`对`任意小球位置`的`梯度gradient（导数）`（任意位置密度受任意小球位置的影响，主要受密度位置附近小球位置的影响，即任意位置密度可表示为关于任意小球位置的一个函数，就可以对其求导）
+* 方法：`梯度下降 gradient descent`
+* 问题：不断修正到世界的尽头，但可以手加能量损失
 
-## Advertisement！
+## 大规模物质的模拟方法
+* **`质点法（拉格朗日法/视角 Lagrangian Approach）`**：模拟物体/物质内部的每一个单元的位置变化
+* **`网格法（欧拉方法/视角 Eulerian Approach）`**：对空间划分网格，关注网格内的状态
+* **`混合法（Hybrid，物质点法 Material Point Method-MPM）`**：从物体内每个单元获取物理信息，模拟过程在网格中完成，结果记录到网格，再写回各个粒子单元
+
+## 继续学习之路
+* 实时渲染
+  * RTR看起来！
+  * OpenGL、DirectX、Vulkan等API
+  * 着色器
+* 几何
+  * 微分几何、离散微分几何
+  * 拓扑
+  * 流形
+* 光线传播
+  * 见广告
+* 模拟仿真
+  * GAMES201
+
+### Advertisement！
+* GAMES千秋万代一统江湖！
+* Chinagraph 2020
+  * 特邀嘉宾：Henry Fuchs、Richard Hao Zhang
+  * 会前课程：关于渲染和模拟仿真领域如何进入科研（男神和胡渊鸣！）
+* ChinaVR 2020（第二十届中国虚拟现实大会）
+
+### Rendering！
+* 实时高质量渲染 Real-Time High Quality Rendering （seminar style）
+  * 男神的课w
+  * 软阴影与环境光 Soft Shadows and Environment Lighting
+  * 预计算辐射传输 Precomputed Radiance Transfer
+  * 基于图像的渲染 Image-Based Rendering
+  * 非真实感渲染 Non-Photorealistic Rendering
+  * 实时全局光照 Interactive Global Illumination
+  * 实时光追等 Real-time Ray Tracing & DLSS, etc.
+* Advanced Image Synthesis
+  * 高级光线传播 Advanced Light Transport
+  * 高级外观建模 Advanced Apperance Modeling
+  * Emerging Technology for Rendering：如注视点渲染（关注人眼集中注意的区域渲染，节省计算资源）、与机器学习的结合
+  * 科研基础w
+* 男神的渲染准则：Ultimate Realism 无 限 月 读
+  * RT/offline Rendering
+  * Appearance Modeling
+  * Future Display Equip.
+  * Emerging Technology
+* 
 
 # Experiment
 ## 环境配置

@@ -169,9 +169,50 @@
     * [**景深Depth of Filed**](#景深depth-of-filed)
   * [光场 Light Field / Lumigraph（in Lecture 20）](#光场-light-field--lumigraphin-lecture-20)
     * [**全光函数 The plenoptic function**](#全光函数-the-plenoptic-function)
+    * [**光场 Light Field**](#光场-light-field)
+    * [**光场照相机 Light Field Camera**](#光场照相机-light-field-camera)
 * [Lecture 20 Color and Perception](#lecture-20-color-and-perception)
+  * [**Physical Basis of Color**](#physical-basis-of-color)
+  * [**Perception - Biological Basis of Color**](#perception---biological-basis-of-color)
+    * [三色视觉理论 Tristimulus theory of color](#三色视觉理论-tristimulus-theory-of-color)
+    * [调色 Color Reproduction / Matching](#调色-color-reproduction--matching)
+    * [CIE RGB Color Matching Experiment](#cie-rgb-color-matching-experiment)
+    * [颜色空间 Color Spaces](#颜色空间-color-spaces)
+  * [题外](#题外)
 * [Lecture 21 Animation](#lecture-21-animation)
+  * [History](#history)
+    * [动画](#动画)
+    * [历史要点](#历史要点)
+  * [基本概念](#基本概念)
+  * [**`质点弹簧系统 Mass Spring System`**](#质点弹簧系统-mass-spring-system)
+    * [**理想弹簧**](#理想弹簧)
+    * [**有初始长度的弹簧**](#有初始长度的弹簧)
+    * [**弹簧酱不想成为永动机**](#弹簧酱不想成为永动机)
+    * [**弹簧酱想拥有系统内部的调节机制（x**](#弹簧酱想拥有系统内部的调节机制x)
+    * [**各种问题**](#各种问题)
+    * [其它系统](#其它系统)
+  * [粒子系统 Particle Systems](#粒子系统-particle-systems)
+  * [运动学 Kinematics](#运动学-kinematics)
+    * [**正运动学 Forward Kinematics**](#正运动学-forward-kinematics)
+    * [**逆运动学 Inverse Kinematics**](#逆运动学-inverse-kinematics)
+  * [绑定 Rigging](#绑定-rigging)
+  * [动作捕捉 Motion Capture](#动作捕捉-motion-capture)
+  * [动画产品Pipeline](#动画产品pipeline)
 * [Lecture 22 Animation Cont.](#lecture-22-animation-cont)
+  * [单个粒子模拟 Single Particle Simulation](#单个粒子模拟-single-particle-simulation)
+    * [Ordinary Differential Equation（ODE）](#ordinary-differential-equationode)
+      * [常微分方程 ODE](#常微分方程-ode)
+      * [求解方法](#求解方法)
+      * [数值方法解微分方程的问题](#数值方法解微分方程的问题)
+      * [改善不稳定性的方法](#改善不稳定性的方法)
+  * [刚体模拟 Rigid Body Simulation](#刚体模拟-rigid-body-simulation)
+  * [流体模拟 Fluid Simulation](#流体模拟-fluid-simulation)
+    * [A Simple Position-Based Method](#a-simple-position-based-method)
+  * [大规模物质的模拟方法](#大规模物质的模拟方法)
+  * [继续学习之路](#继续学习之路)
+    * [Advertisement！](#advertisement)
+    * [Rendering！](#rendering)
+* [完结撒花！！！](#完结撒花)
 * [Experiment](#experiment)
   * [环境配置](#环境配置)
   * [HW1](#hw1)
@@ -1947,15 +1988,440 @@ $$ H = T + E $$
 
 ## 光场 Light Field / Lumigraph（in Lecture 20）
 ### **全光函数 The plenoptic function**
-* 
+* 用全光函数描述人眼看到的所有内容（各个方向的光）
+* 人在一场景中往各方向看，由球极坐标可表示任意方向。定义往任意方向看到的结果为函数
+  $$ P(\theta, \phi) $$
+* 引入影响光线颜色的波长
+  $$ P(\theta, \phi, \lambda) $$
+* 再引入各方向上不同时刻的状态
+  $$ P(\theta, \phi, \lambda, t) $$
+  * 男神：这就是电影！
+* 设人的位置也可以任意移动
+  $$ P(\theta, \phi, \lambda, t, V_X, V_Y, V_Z) $$
+  * 男神：这就是全息！
+* 总结：在任意位置，任意时刻，往任意方向观察到的不同颜色。可以用这七个维度衡量视觉世界。
+* 从全光函数中提取部分信息来表示更复杂的光，光场就是全光函数的一部分。
+
+### **光场 Light Field**
+* 光线的定义
+  * 给出起点 $(V_X, V_Y, V_Z)$ 、方向 $(\theta, \phi)$
+  * 两点一线（视作二维位置），知道大致走向（正负，二维走向）
+* 物体表面的定义
+  * 把物体视作在包围盒中，那么人眼看到的某点光状态，就是该点往人眼方向发射的光的状态
+* 光场：记录物体表面的`任意位置`往`任意方向`发射的光的强度。
+  * 二维位置：三维物体的表面展开是在二维空间中的，类似纹理映射
+  * 二维方向：$\theta、\phi$
+  * 在任意视点，往任意方向观察物体，都可以从已记录的四维光场信息中提取相应的结果。
+  * 由于`将光场信息记录在物体外的某包围盒上`，使用时不涉及对物体本身的几何等特性考虑，简化了问题。
+  * 限制：视点应在包围盒外。
+* 信息记录（`光场的参数化`）
+  * 用一个表面上的点及方向来确定参数
+  * 定义两个平行平面，分别取两个面上的点 $(u, v)、(s, t)$ 来确定一个方向。因此记录信息时只要`组合遍历两个面上所有点`即可！
+* 设面 $(u, v)$ ，面 $(s, t)$ 为近场景面
+  * 定 $(u, v)$ 看向 $\forall (s, t)$ ：即针孔成像。将每个 $(u, v)$ 往任意 $(s, t)$ 的观察结果综合到一起即光场。
+    * Stanford camera array SIGGRAPH2012 相机矩阵的钞能力
+    * 事后可以任意对焦
+  * 反之：可以理解为将成像结果中一个像素的 Irradiance 分解为了各个方向上的 Radiance [Lecture 20 - 29:50]
+    * 把各方向的光通过微小的透镜改变方向（像素用透镜替换），将不同方向的光分解到微透镜后的不同区域 [参考苍蝇复眼]
+
+### **光场照相机 Light Field Camera**
+* The Lytro Light Field Camera
+  * Ren Ng 
+  * 微透镜原理
+  * 支持后期重新聚焦
+* 光场照相机
+  * 像素用微透镜替换，感光元件后移
+  * 把各方向照射到原像素位置的光再分解到各个方向，感光元件记录下一块区域的信息
+* 光场照片还原
+  * 直接取每块区域的底部边缘一条光线方向的结果，也可取中心、取顶部边缘
+  * 通过取的光线方向不同，可以达到虚拟移动相机的目的，实现重新变焦
+  * 实际上重新变焦只要在记录的光场信息中按照计算结果查询所需的光线，各区域可以是不同的位置
+* 总结：光场照相机记录了当时进入相机的所有信息，包括位置和方向，所以可以通过这些信息重新变焦。
+* 缺陷
+  * 因为用了一坨像素区域来记录原来只需要一个像素的信息，所以对分辨率要求高了，成本高
+  * 微透镜只是简化模型，实际工艺要求很高
+  * 提升分辨率，会丢失更多的位置信息，所以又是一个 trade off （from 弹幕：现代取舍入门
 
 # Lecture 20 Color and Perception
+## **Physical Basis of Color**
+* 不同波长的光有不同的折射率。
+* 图形学关注可见光光谱范围：400nm~700nm
+* 谱功率密度 Spectral Power Distribution （SPD）
+  * 光线在不同波长的强度分布
+  * 线性可加
 
+## **Perception - Biological Basis of Color**
+* 颜色是人的感知，不是物理上的光的属性。
+* 视网膜上的感光细胞 Retinal Photoreceptor Cells
+  * 包含感知`光线强度`的`视杆细胞`（Rod cells），可得灰度图
+  * `视锥细胞`（Cone cells）较少，感知`颜色`
+* 视锥细胞内部又分为 `S`、`M`、`L` 细胞  
+  
+  ![](note%20-%20image/GAMES101/img89.png)
+  * `S` 对短波、高频光敏感，`L` 对长波、低频光敏感
+  * 不同的人三种细胞分布差异很大
+
+### 三色视觉理论 Tristimulus theory of color
+* 对人眼，给定 SPD $S(\lambda)$ ，有  
+  $$S = \int_\lambda s(\lambda)r_S(\lambda) d\lambda$$  
+  $$M = \int_\lambda s(\lambda)r_M(\lambda) d\lambda$$
+  $$L = \int_\lambda s(\lambda)r_L(\lambda) d\lambda$$ 
+  * 将光在不同波长上的分布 $S(\lambda)$ 及三种细胞对不同波长的响应度（敏感度），那么把各个波长的感知结果（即二者之积）积分求和，就是最终结果
+  * 同色异谱现象 Metamerism：不同的 SPD 会产生相近或相同的 XYZ ，即同色但光谱能量分布不同的光 metamers 。
+### 调色 Color Reproduction / Matching
+* 给定某色，用不同的颜色混合得到某色的过程
+* 电脑中的 `加色系统 Additive Color`：R+G+B 255 最终变白色（减色系统变黑色）
+* ① 从混色往目标色调整 ② 给目标色加上一定色值（相当于减色系统）往混色靠拢
+### CIE RGB Color Matching Experiment
+* 给出如何通过单色光调出一个颜色
+  
+  ![](note%20-%20image/GAMES101/img90.png)
+  * 给出每种波长结果，分别需要多少单色光进行组合，每一条单色光曲线为光谱匹配曲线
+  * 上图结果都是对单个波长，相当于乘以 $1$ 。考虑到实际情况下光在不同波长上的强度 SPD ，为了`匹配任意 SPD 的光`，就再乘上该分布，得到实际需要的各单色光的量，并考虑到各波长上的贡献，积分求和
+    $$R_{CIE RGB} = \int_\lambda s(\lambda)r(\lambda) d\lambda$$  
+    $$G_{CIE RGB} = \int_\lambda s(\lambda)g(\lambda) d\lambda$$
+    $$B_{CIE RGB} = \int_\lambda s(\lambda)b(\lambda) d\lambda$$ 
+    * 注意与响应积分的形式略像但含义不同
+    * 这就是通常所说的RGB系统
+### 颜色空间 Color Spaces
+* 标准颜色空间 Standardized Color Spaces（sRGB）
+  * 广泛应用在各式成像设备
+  * `色域 gamut` 有限
+* CIE XYZ系统
+  
+  ![](note%20-%20image/GAMES101/img91.png)
+  * CIE XYZ color matching functions 非实验所得颜色匹配系统，为人造曲线，当然所给出的信息与实验所得的相同
+  * 具有很好的理论性质，直观，色域极大
+  * 其中 $\overrightarrow{y}$ 覆盖了 400nm~700nm ，分布又比较对称，匹配后的 $Y$ 可一定程度上表示亮度
+* 色域 gamut：一个颜色空间所有可能表示的颜色
+  * 因为颜色的三个分量要全可视化将呈现到三维空间，不利于观察
+  * 因此将根据 CIE XYZ 系统匹配所得的 $X、Y、Z$ 归一化
+    $$ x = \frac{X}{X+Y+Z} $$
+    $$ y = \frac{Y}{X+Y+Z} $$
+    $$ z = \frac{Z}{X+Y+Z} $$
+  * 由于 $x+y+z=1$ ，改变其中两个量就能获知第三个量
+  * 通常固定亮度 $Y$ ，改变 $x、y$ 的值，获得色域图
+
+    ![](note%20-%20image/GAMES101/img92.png)
+    * 中心混合最重处为白色（加色系统），边缘为单色
+* 不同的颜色空间表示能力不同
+  * sRGB只能表示上图色域范围内的一部分
+* HSV Color Space （Hue色调-Saturation饱和度-Value/Lightness亮度，Photoshop）
+  * 用作颜色拾取器 color picker
+  
+  ![](note%20-%20image/GAMES101/img93.png)
+  * 色调：不同的颜色
+  * 饱和度：更接近白色还是更接近单色
+  * 亮度：偏黑还是偏单色
+* CIE LAB Space
+  * L 轴表示亮度 W-B，a 轴表示 R-G，b轴表示 B-Y
+  * 认为任意两个轴的极限两端为互补色（柯南赤壁案！！！）
+    * 看某图中心，切全白，可以出互补色图
+    * 切灰度图，互补色会给灰度图染色！！！卧槽卧槽姿势++！！！
+* **颜色是感知，是相对的，所以感知结果很容易受旁边颜色的影响。**
+
+  ![](note%20-%20image/GAMES101/img94.png)
+  ![](note%20-%20image/GAMES101/img95.png)
+  ![](note%20-%20image/GAMES101/img96.png)
+* CMYK（Cyan品蓝，Magenta品红，Yellow黄色，Key黑色）
+  
+  ![](note%20-%20image/GAMES101/img97.png)
+  * 一种减色系统
+  * 多用于打印机，越混越黑
+  * 为啥能混黑还要黑：考虑实际应用的成本，黑色用得多，但CMY三色成本比黑的高，用混黑很亏（
+## 题外
+* High Dynamic Range（HDR，高动态范围图像）
+  * 比白色更亮的东西
+* Gamma 校正
 
 # Lecture 21 Animation
+## History
+### 动画
+* 动画：模型的扩展，在不同时间帧上展现出的模型状态
+* 输出：由于人眼的视觉暂留效应，会短暂记忆所看到的画面，所以在短时间播放一系列帧即可
+  * 不同领域对帧率的要求
+  * 电影：24 frames per second
+  * 视频：30 fps
+  * 游戏：60 fps/Hz
+  * ＶＲ：90 fps（不晕的要求）
+### 历史要点
+* First Animation：Shahr-e Sukhteh, Iran 3200 BCE
+* 圆盘滚动：Phenakistoscope, 1831
+  * 想到在书角画图然后捏角hhh
+  * 然后男神就提了书角2333
+* First Film：Edward Muybridge, "Sallie Gardner" 1878
+  * 一开始作为科学研究用途
+* 里程碑作品
+  * First Hand-Drawn Feature-Length (>40 mins) Animation（第一部手绘剧场版动画）：Disney, "Snow White and the Seven Dwarfs" 1937
+  * First Digital-Computer-Generated Animation（第一部电子计算机生成的动画）：Ivan Sutherland, "Sketchpad" 1963
+  * 人脸显示：Ed Catmull & Frederick Parke, "Computer Animated Faces" 1972
+  * Digital Dinosaurs：Jurassic Park 1993
+  * First CG（Computer-Generated） Feature-Length Film：Pixar, "Toy Story" 1995
+  * Sony Pictures Animation, "Cloudy With a Chance of Meatballs" 2009（水面涟漪）  
+    Walt Disney Animation Studios, "Frozen 2" 2019（烟雾等各类效果）  
+
+## 基本概念
+* 关键帧动画 Keyframes Animation
+  * 关键帧keyframes 定义整个动画的走向
+  * 过渡帧tweens 关键帧之间的过渡画面，in-between 的简写
+  * 插值原理：对关键帧寻找若干重要点及各自在不同关键帧上的位置对应关系，然后在那之间做插值。插值时会有一些要求，需要选取合适的样条曲线，与几何挂钩。
+* 物理模拟 Physical Simulation
+  * 通过初始位置、速度、物体上有什么力等，通过物理公式，动态更新下一时刻的位置和形状变化
+  * 涉及布料（穿模与碰撞检测hhh）、流体模拟等
+
+## **`质点弹簧系统 Mass Spring System`**
+* 应用：绳子（铰链）、头发、网格布等
+* 质点弹簧系统：一系列相互连接的质点和弹簧
+  
+  ![](note%20-%20image/GAMES101/img98.png)
+### **理想弹簧**
+* 假设：理想弹簧，拉开多长产生多大的力。
+  * 将 $a$ 拉向 $b$ 的力：$f_{a\rightarrow b} = k_s(\overrightarrow{b}-\overrightarrow{a})$
+  * 将 $b$ 拉向 $a$ 的力：$f_{b\rightarrow a} = -f_{a\rightarrow b}$
+  * 胡克定律，其中 $k_s$ 为弹性系数。
+### **有初始长度的弹簧**
+* 实际：弹簧总有初始长度 Rest length ，设为 $l$
+  * 拉开的长度 $\times$ 受力方向
+  $$ f_{a\rightarrow b} = k_s \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|} (|\overrightarrow{b}-\overrightarrow{a}| - l) $$
+### **弹簧酱不想成为永动机**
+* 上述弹簧系统的问题：动势能守恒，拉开后会变成永动机一直弹（
+* 物理模拟中用 $x$ 表示位置，$\dot{x}$ 表示速度（一阶导数），$\ddot{x}$ 表示加速度（二阶导数）
+* 不希望弹簧永动：加与速度反向的摩擦力 damping force
+  
+  ![](note%20-%20image/GAMES101/img99.png)
+  * $f = -k_d\dot{b}$
+  * $k_d$ 为劲度系数
+* 问题：是外部摩擦力，不能表示对弹簧系统内部的影响
+### **弹簧酱想拥有系统内部的调节机制（x**
+* 考虑：内部摩擦力试图使弹簧恢复形变，使 b 往 a 靠
+  $$ f_b = - k_d \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|}(\dot{b}-\dot{a}) \cdot \frac{\overrightarrow{b}-\overrightarrow{a}}{|\overrightarrow{b}-\overrightarrow{a}|} $$
+  * $劲度系数\times大小\times b-a方向归一化后的反向（从b往a）$
+  * 大小与 a 、 b 间的相对速度有关，两个速度矢量与归一化后的方向点乘，即将相对速度往归一化后的 a 、 b 方向上作投影。（`即，只考虑会影响弹簧形变的方向上的速度，排除垂直方向上的速度分量`）
+  * 摩擦力只和相对速度有关，与弹簧的形变量无关，不考虑弹簧初始长度
+### **各种问题**
+* 布料模拟
+  * 一块方布对角拽，布会产生对抗这种切变的力，而当前系统不会：为小网格上的一组对角质点间加弹簧
+  
+    ![](note%20-%20image/GAMES101/img100.png)
+  * 当前系统也不会产生对抗“使形状变成不在同一平面上的力”（out-of-plane bending）的力，即很容易对角对折，然鹅实际的布料很难做到：给小网格上的另一组对角质点间也加弹簧，这样对角折的时候折痕处会产生形变作对抗
+  
+    ![](note%20-%20image/GAMES101/img101.png)
+  * 继续考虑“沿原小网格的某条边对折”时，仍然不会影响任何弹簧的形变：对各中间隔一质点的各组质点间加弹簧（这种连接比较弱）
+  
+    ![](note%20-%20image/GAMES101/img102.png)
+### 其它系统
+* 有限元（FEM - Finite Element Method）
+  * 应用：车子碰撞、武器效果
+  * 适用于：对力、热等扩散、传导的描述
+
+## 粒子系统 Particle Systems
+* 描述：各个小粒子、粒子间的作用、环境对粒子的作用等，然后做模拟
+  * 粒子间的作用力：涉及引力时需要找到某粒子周围的一些粒子，维护相应结构加速查找效率。还有磁力、斥力、摩擦力、碰撞……
+* 简单过程描述
+  * 生成粒子
+  * 计算作用到粒子上的作用力
+  * 更新各粒子的位置和速度
+  * 移除生命周期结束的粒子
+  * 渲染粒子
+* 定义粒子属性，个体与群体的关系。以群鸟为例，（`群聚算法`？），如：
+  * 吸引力 attraction：不离群性
+  * 斥力 repulsion：相互不靠太近
+  * alignment：整体方向一致，趋向于平均方向
+* 例子
+  * Molecular Dynamics 分子结构模拟
+  * Crowds + "Rock" Dynamics
+
+## 运动学 Kinematics
+### **正运动学 Forward Kinematics**
+* 思想：描述一个骨骼系统以做动画，表示与人类似的拓扑结构
+* ① 定义简单的关节，并形成树形结构
+  * `pin` 只能在一个方向上旋转
+  * `ball` 多一个自由度，能在两个方向上旋转
+  * `prismatic joint` 可以沿一个轴在一定范围内移动
+* ② 根据关节的旋转确定各个位置的变化
+* 问题：定义很物理，好算，但对动画师而言不够直观
+### **逆运动学 Inverse Kinematics**
+* ① 拖拽某个点
+* ② 根据拖拽后点位置的需求，调整各关节的变化情况
+* 问题
+  * 很！难！算！
+  * 求出的解不唯一
+  * 有的拖拽位置无法到达
+* 一些解决方案
+  * 求解：梯度下降？
+
+## 绑定 Rigging
+* rigging：构成骨骼的过程，在物体上添加控制点
+* blend shape：控制点变化前后，对各控制点及控制点之间的位置做插值。
+
+## 动作捕捉 Motion Capture
+* 在虚拟人和物理人之间建立关系，在人身上贴控制点采集数据，把真实人的动作反应到虚拟人上。
+* 好处：真实感强、效率高
+* 问题：准备工作复杂、贴上控制点影响人的行动、有些东西人难演、成本高（采集摄像机视野可能被遮挡需要不同方位多来几台）、捕捉到的信息准确度不一定高
+* 信息采集设备（不同的定义控制点的方法）
+  * 直接拍照，用CV方法分析控制点
+  * 控制点发出磁力不怕被遮挡
+  * 戴机械控制器
+  * 光学方法：贴Markers，放一堆摄像机测控制点位置
+* 通过捕捉设备，测出每一个控制点在不同时刻的位置曲线
+* 恐怖谷效应 Uncanny valley
+  * 关于 AI 统治世界（
+  * 技术成果过于真实的阔怕（要被用来做坏事嗷
+
+## 动画产品Pipeline
+* pre-production
+  * 故事
+  * 原画
+  * 设计场景、细节等
+* production
+  * 场景布置等
+  * 建模、纹理、rigging
+  * 做成动画
+  * VFX（视觉效果）
+  * 光照
+  * 渲染
+* post-production
+  * 合成人物、场景
+  * 加后期效果
+  * 调色等
+  * 成了！
 
 # Lecture 22 Animation Cont.
+## 单个粒子模拟 Single Particle Simulation
+* 先考虑单个粒子的运动情况
+* 假设有速度场：任意位置、任意时刻可知速度 $v(x,t)$
+### Ordinary Differential Equation（ODE）
+#### 常微分方程 ODE
+* 定义一阶常微分方程
+  $$ \frac{dx}{dt} = \dot{x} = v(x,t) $$
+* “常”：不存在其它变量的微分/导数，即单变量微分方程
+* 需求：初始位置 $x_0$ ，对任意时刻 $t$ ，求出位置 $x$，从而解出随着时间运动的轨迹
+#### 求解方法 
+* **`欧拉方法 Euler's Method`**（前向/显式欧拉 Forward/Explicit Euler）
+  * 思想：为得到一定时间后的点位置，把这段时间细分，不断加上细分的微小时间变化量（步长）[对时间离散化]
+    $$ 下一帧速度 = 当前帧速度 + 时间变化量 \times 当前帧加速度 $$
+    $$ \dot{x}^{t+\Delta t} = \dot{x}^t + \Delta t \ddot{x}^t $$
+    $$ 下一帧位置 = 当前帧位置 + 时间变化量 \times 当前帧速度 $$
+    $$ x^{t+\Delta t} = x^t + \Delta t \dot{x}^t $$
+  * 欧拉方法都用当前帧的量更新下一帧信息。也可以用下一帧速度更新下一帧位置，但不是欧拉方法。
+  * 注意：步长会影响估计的误差精度。
+* **不稳定问题**
+  * 对于圆周运动，速度总是切线方向，不应该离心，但欧拉方法无论步长多小必然逐渐远离圆心
+  
+    ![](note%20-%20image/GAMES101/img103.png)
+  * 正反馈：微小的问题被无限放大。如
 
+    ![](note%20-%20image/GAMES101/img104.png)
+#### 数值方法解微分方程的问题
+* 误差：可以通过减小步长来改善，并且对于追求视觉效果的CG而言有一定的误差通常是可以接受的
+* 不稳定：会导致 diverge ，结果越差越大，但这个问题必然存在
+#### 改善不稳定性的方法
+* **`中点法 Midpoint Method / Modified Euler`**
+  * 对初始位置、速度取步长得点 a 信息，并取初始位置与点 a 中点的速度，以初始位置、中点速度生成下一帧位置
+  * 步骤：【？20200731：感觉第一条式子没啥用？】
+    $$ \begin{aligned} 
+    ①\ a\ 点位置 &= 当前帧位置 + 时间变化量 \times 平均速度  \\ 
+    x^{t+\Delta t} &= x^t + \frac{\Delta t}{2}\ (\dot{x}^t+\dot{x}^{t+\Delta t}) \\
+    ② 中点速度 &= 当前帧速度 + 时间变化量 \times 当前帧加速度  \\
+    \dot{x}^{t+\Delta t} &= \dot{x}^t + \Delta t\ \ddot{x}^t \\
+    ③ 下帧位置 &= 当前位置 + 时间变化量 \times 中点速度 \\
+    x^{t+\Delta t} &= x^t + \Delta t\ \dot{x}^t + \frac{(\Delta t)^2}{2} \ddot{x}^t
+    \end{aligned} $$
+  * 可以看出中点法算出了局部的二次模型，所以比一次的准确。
+* **`自适应步长 Adaptive Step Size`**
+  * 中点思想的另一种应用。
+  * 步骤：  
+    ① 计算 $\frac{\Delta t}{2}$ 两次  
+    ② 考虑最终结果与一次 $\Delta t$ 结果的差异有多大  
+    ③ 如果两种情况差异较大，应该继续减小步长
+* **`隐式欧拉方法 Implicit Euler Methods / 后向 Backward Methods`**
+  * 类似欧拉方法，但都用下一帧的加速度、速度更新速度、位置
+  * 问题：下一帧的信息未知，需要通过解方程组得到新的速度和位置，应用如求根公式、牛顿法的数值方法求零点等。求解不易，但比较稳定。
+  * **`方法的稳定性`**
+    * 对数值方法定义 `局部截断误差 Local Truncation Error (every step)`、`整体累积误差 Total Accumulated Error (overall)` 两个量衡量稳定性
+    * 不关注这两个量本身，关注阶：考虑 $\Delta t$ 的值如何影响稳定性
+  * 隐式欧拉方法是`一阶`的
+    * 局部误差 Local Truncation Error：$O(h^2)$
+    * 全局误差 Global Accumulated Error：$O(h)$
+    * 其中，$h$ 为步长，此处即每步 $\Delta t$
+    * 对于全局误差为 $O(h)$ ，即步长减小一半，误差随之减小一半。由此也可以得出，“阶数”越高越好，因为步长减小相同的倍数，越高阶误差减小越多。
+  * **`龙格库塔法 Runge-Kutta Families`**
+    * 一类可用于解常微分方程的方法，尤其是对于非线性 non-linearity 的情况（前向欧拉的问题是认为模型总是线性的，因此中点法的平方模型比欧拉好，而龙格库塔更好）
+    * 其中应用最广的一种 **`RK4`** ：四阶
+    * 详见数值分析 Numerical Analysis
+* **`Position-based / 韦尔莱积分 Verlet Integration`**
+  * 思想：认为弹簧拉开后可瞬间复原。通过非物理的简化方式，在弹簧拉开后直接改变两端位置，迅速使弹簧回到原长。
+  * 问题：由于不基于物理，所以无法保证能量守恒等物理性质，有很大的能量损失。
+  * 
+
+## 刚体模拟 Rigid Body Simulation
+* 刚体
+  * 刚体不发生形变，内部所有点运动情况相同。
+  * 把整个刚体看作一整体，其运动与粒子类似。
+  * 比粒子的模拟多考虑一些物理量：角度和角速度。
+* 变化量模拟
+  $$ \frac{d}{dt}(X, \theta, \dot{X}, \omega) = (\dot{X}, \omega, \frac{F}{M}, \frac{\Gamma}{I}) $$
+  * 位置对时间求导为速度，角度对时间求导为角速度，速度对时间求导为加速度，角速度对时间求导为角加速度（力矩torque $\Gamma$ / 转动惯量momentum of inertia $I$）
+  * 然后使用欧拉法、龙格库塔等数值方法求值
+
+## 流体模拟 Fluid Simulation
+### A Simple Position-Based Method
+* 用小球作为流体的基本单元，通过模拟形成流体的每个小球的位置，实现对流体的模拟。
+* 基本思想
+  * 认为水由很多刚体小球组成
+  * `认为水在任何地方不可压缩`（任意位置密度相同）
+  * 因此当某处密度发生变化，需要进行修正
+  * 关键：知道`任意位置密度`对`任意小球位置`的`梯度gradient（导数）`（任意位置密度受任意小球位置的影响，主要受密度位置附近小球位置的影响，即任意位置密度可表示为关于任意小球位置的一个函数，就可以对其求导）
+* 方法：`梯度下降 gradient descent`
+* 问题：不断修正到世界的尽头，但可以手加能量损失
+
+## 大规模物质的模拟方法
+* **`质点法（拉格朗日法/视角 Lagrangian Approach）`**：模拟物体/物质内部的每一个单元的位置变化
+* **`网格法（欧拉方法/视角 Eulerian Approach）`**：对空间划分网格，关注网格内的状态
+* **`混合法（Hybrid，物质点法 Material Point Method-MPM）`**：从物体内每个单元获取物理信息，模拟过程在网格中完成，结果记录到网格，再写回各个粒子单元
+
+## 继续学习之路
+* 实时渲染
+  * RTR看起来！
+  * OpenGL、DirectX、Vulkan等API
+  * 着色器
+* 几何
+  * 微分几何、离散微分几何
+  * 拓扑
+  * 流形
+* 光线传播
+  * 见广告
+* 模拟仿真
+  * GAMES201
+
+### Advertisement！
+* GAMES千秋万代一统江湖！
+* Chinagraph 2020
+  * 特邀嘉宾：Henry Fuchs、Richard Hao Zhang
+  * 会前课程：关于渲染和模拟仿真领域如何进入科研（男神和胡渊鸣！）
+* ChinaVR 2020（第二十届中国虚拟现实大会）
+
+### Rendering！
+* 实时高质量渲染 Real-Time High Quality Rendering （seminar style）
+  * 男神的课w
+  * 软阴影与环境光 Soft Shadows and Environment Lighting
+  * 预计算辐射传输 Precomputed Radiance Transfer
+  * 基于图像的渲染 Image-Based Rendering
+  * 非真实感渲染 Non-Photorealistic Rendering
+  * 实时全局光照 Interactive Global Illumination
+  * 实时光追等 Real-time Ray Tracing & DLSS, etc.
+* Advanced Image Synthesis
+  * 高级光线传播 Advanced Light Transport
+  * 高级外观建模 Advanced Apperance Modeling
+  * Emerging Technology for Rendering：如注视点渲染（关注人眼集中注意的区域渲染，节省计算资源）、与机器学习的结合
+  * 科研基础w
+* 男神的渲染准则：Ultimate Realism 无 限 月 读
+  * RT/offline Rendering
+  * Appearance Modeling
+  * Future Display Equip.
+  * Emerging Technology
+
+# 完结撒花！！！
 
 # Experiment
 ## 环境配置
