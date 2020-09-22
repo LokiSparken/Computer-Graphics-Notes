@@ -31,9 +31,31 @@
 ## 视角调整
 * 给TankBody添加组件Spring Arm及子组件Camera
   * Spring Arm - Details - Target Arm Length 修改摇臂长度
-* 6.51
+### **`根据鼠标的移动调整视角`**
+* **`从外设获取输入`**
+  * project settings - engine - input
+    * `Action Mappings` 按键映射
+    * **`Axis Mappings` 轴映射**
+  * 添加轴绑定 LookH/V - Mouse X/Y 分别关联到鼠标水平/垂直方向的移动
+  * 此时可在蓝图中获取到结点 `InputAxis LookH/V`
+* **`移动逻辑`**
+  * 项目管理：不在默认的 EventGraph 中处理输入，新建自定义的 InputGraph 用于处理输入
+  * `基于摄像机摇臂当前的 rotation 做偏移`：`AddRelativeRotation`
+    * 三维 rotation 展开，在 viewport 中观察并确定需要偏移的轴是哪一维
+    * 把 InputAxis LookH 连到相应的水平维度
+  * 垂直方向可同理新增一个 AddRelativeRotation 结点，但两个方向独立在旋转角度过大时会翻车（【？】其实我这瞎子没看出来翻了什么车……）
+* **`Scene组件：只有位置信息`**
+  * 给 TankBody 添加只有位置信息的 Scene 组件
+  * 把 SpringArm 移入 Scene
+  * 将两个处理维度偏移的结点其中一个 target 设为 Scene
+* `对垂直方向的移动略做限制`
+  * 使用 `SetRelativeRotation` ，把 SpringArm 原来的 rotatorX、rotatorZ `GetRelativeRotation` 取出来连进去不变
+  * 用 `Clamp` 对偏移结果 rotatorY+MouseY 做 Min、Max 限制
+    * 仍可在 viewport 中观察合适的视角范围
+    * 此可用 [-40, 5]
 
 # <i class="fa fa-star"></i> 任务四：创建 Controller
+
 
 # <i class="fa fa-star"></i> 任务五：LineTrace 寻找瞄准点
 
