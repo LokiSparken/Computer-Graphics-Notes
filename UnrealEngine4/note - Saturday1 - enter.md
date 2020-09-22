@@ -499,7 +499,7 @@ UFUNCTION(BlueprintCallable)
     * `FString cmd = FString::Printf(TEXT("TestFuncFromBP hello"));`
     * FString::Printf 以经典 C 的 printf 形式构造 FString
   * `FOutputDevice` 
-    * `#include "OutputDeviceDebug.h"` 随便 include 一个 outputdevice 子类头文件并创建它
+    * `#include "Misc/OutputDeviceDebug.h"` 随便 include 一个 outputdevice 子类头文件并创建它
     * `FOutputDeviceDebug device;`
   * 第三个参数 NULL 即可
   * 第四个参数表示是否强制执行，true
