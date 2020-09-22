@@ -55,9 +55,86 @@
     * 此可用 [-40, 5]
 
 # <i class="fa fa-star"></i> 任务四：创建 Controller
+## **整体设计**
+  
+![](image/tank-1.png)
+* 考虑基本功能：坦克的移动、射击
+* 对战双方：PlayerController、AIController
+  * 两者分别需要明确自己控制的 tank instance
+  * 对 AI 而言还要确定 Player 控制的 tanke instance 做追踪和打击
 
+## 基本框架
+### 坦克类 Tank
+* New C++ Class
+  * Actor：`placed` or spawned in the world 可放置
+  * Pawn：an actor that `can be 'prossessed'` and receive input from a controller 可放置、可控制
+  * Character：a type of pawn that includes the ability to `walk` around 可放置、可控制、可移动
+  * 默认功能逐步增加。
+  * 此处用 Pawn 创建坦克类 Tank 并自定义移动逻辑的控制。
+* 项目管理：新建时点 public 把头文件和源文件分别自动放入 Public 和 Private
+### 控制类 Controller
+#### **PlayerController - TankPlayerController**
+* 获取所控制的 tank instance - `TankPlayerController::GetControlledTank()`
+	```cpp
+	ATank *ATankPlayerController::GetControlledTank()
+	{
+		// 转为 ATank 类型返回
+		return Cast<ATank>(GetPawn());
+	}
+	```
+  * 为了使类型转换能成功，进入 `BP_Tank - Class Settings - Parent Class` 设为 `Tank` 类
+  * （否则类型转换不成功，下述 debug log 将输出 NULL）
+* 在 BeginPlay() 中做输出测试 - `定位 BeginPlay() 来源`
+  * ATankPlayerController -> `APlayerController` -> `AController` -> `AActor` -> `UObject`
+  * `BeginPlay - Called when the level is started`
+  * **`AActor 中定义了 virtual void BeginPlay();`** Overridable native event for when play begins for this actor
+	```cpp
+	// .h中声明对虚函数的重写
+	class ...
+	{
+	public:
+		virtual void BeginPlay() override;
+	}
+
+	// .cpp中
+	void ATankPlayerController::BeginPlay()
+	{
+		// 记得调一下父类相关行为
+		Super::BeginPlay();
+
+		ATank *ControlledTank = GetControlledTank();
+		if (ControlledTank == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ERROR: Controlled Tank is NULL!!!"));
+		}
+		else
+		{
+			// 获取控制到的坦克默认名
+			UE_LOG(LogTemp, Warning, TEXT("Controlled tank is %s"), *ControlledTank->GetName());
+		}
+	}
+	```
+  * `Attention！` 声明完必须写好定义再编译
+  * `Super` 不是 C++ 标准语法，在 UE4 中定义为 `Typedef ParentClass SonClass::Super`
+* **`使用 TankPlayerController`**
+  * BP_TankGameMode - Player Controller Class 设为 TankPlayerController
+#### **AIController - TankAIController**
+* New C++ Class - show all classes - AIController
+* 同理获取所控制的 tank instance
+* 获取玩家控制的 tank instance
+  * 取得当前世界 -> 取得世界中的玩家控制器 -> 取得玩家所控制的 tank instance
+  * `GetWorld()->GetFirstPlayerController()->GetPawn()` 并类型转换为 ATank （也可将控制器转换为 TankPlayerController 并调用其中的 GetControllerTank）
+  * 所需头文件 `#include "Engine/World.h"`
+  * `Attention！` 记得指针判空
+  * 【插播VS小技巧】Alt+上下键，把当前行上下移动
+* 同理重写 BeginPlay 分别输出所控制的坦克和获取的玩家坦克名进行验证
+* **`使用 TankAIController`**
+  * BP_Tank - details - AI Controller Class 改为 TankAIController
+  * 然后在场景里随便放两个看测试结果
 
 # <i class="fa fa-star"></i> 任务五：LineTrace 寻找瞄准点
+
+
 
 # <i class="fa fa-star"></i> 任务六：创建火控系统 AimingComponent
 
