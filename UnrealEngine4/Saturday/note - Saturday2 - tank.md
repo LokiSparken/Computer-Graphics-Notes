@@ -133,10 +133,111 @@
   * 然后在场景里随便放两个看测试结果
 
 # <i class="fa fa-star"></i> 任务五：LineTrace 寻找瞄准点
-
-
+## BP_Tank 的基本物理模拟
+* 增加物体重量：BP_Tank - tankbody - details - Physics - `Simulate Physics` 及 `MassInKg`
+* 解决 SringArm 观察位置指向车底导致视角在车底（……）问题：把 SpringArm 往上抬一点看向炮塔（给 Tank 模型去掉 Simple Collision ，用 Collision - Auto Convex Collision 重新生成一个更贴合的，使坦克的碰撞体底部离地，对履带也重新生成碰撞体，max hull verts 设32，嗯，然而并没有解决）
+## 射击功能 - 1. 创建准星 UI
+* 项目管理：新建 Content/Blueprints/UI 文件夹
+* `创建 User Interface - Widget Blueprint` - MainUI
+  * 拖拽一个 `image` 到 Canvas Panel（画布）上，主界面出现个框
+  * 点框出现一个 `anchor` ，调整 anchor 到想要设定的准星显示位置
+  * 清空框的 position 使其左上角与 anchor 对齐
+  * 框的 alignment (0, 0) 左上角与 anchor 对齐，(1, 1) 右下角与 anchor 对齐，因此 (0.5, 0.5) 把 anchor 放中间
+  * 最后调整框的 size 大小
+* **`应用 MainUI`**
+  * `在 Controller 中应用`
+  * 由于 Controller 是 C++ 的，所以基于 TankPlayerController 创建蓝图 BP_TankPlayerController
+  * 从 Event Graph - BeginPlay 拉出结点 **`Create Widget`**
+    * class - `MainUI`
+  * 顺序拉出结点 **`add to viewport`**
+    * target = Create Widget return value
+  * 最后把 BP_TankGameMode 中的 Player Controller Class 改为 BP_TankPlayerController
+## 射击功能 - 2. 瞄准（炮管转向准星）
+### 逻辑
+* 每帧行为：`Tick`
+* 每帧都努力转向目标：`AimToTarget` ，其中应调用 Tank 给出的相应接口来做具体的转向行为
+* 判断当前是否瞄准某实体并返回瞄准位置：`GetSightRayHitLocation`
+### 实现 **GetSightRayHitLocation**
+* 使用射线试探是否撞击到实体
+  * 确定起点：即 Camera ，通过 **`PlayerCameraManager->GetCameraLocation()`** 获取
+  * 确定方向：指向准星方向，**`DeprojectScreenPositionToWorld(float ScreenX, float ScreenY, FVector &WorldLocation, FVector &WorldDirection)`** 传入屏幕坐标，返回世界位置及方向
+* **`获取准星所处屏幕坐标`**
+  * 由于准星位置在 MainUI 中按照屏幕大小以比例做调整，因此先`获取屏幕(视口)大小` - **`GetViewportSize(int32 &sizeX, int32 &sizeY)`**
+  * 分别乘上 UI 中设定的所处比例位置即为屏幕坐标
+* **`发出射线试探并返回撞击点`**：`GetLookVectorHitLocation()`
+  * 使用 **`GetWorld()->LineTraceSingleByChannel(FHitResult &outHit, FVector &startLocation, FVector &endLocation, ECollisionChannel, ...)`**
+  * `ECollisionChannel` 使用 `ECollisionChannel::ECC_Visibility` 指 BP_Tank - TankBody - Details - `Collision - Collision Presets - Trace Responses - Visibility` 属性值，值为 block 时可被射线撞击到
+  * 射线被 block 后返回 true
+### 小总结
+* 通过射线瞄准：GetWorld()->LineTraceSingleByChannel()，关键是要给出 startLocation 、endLocation
+  * startLocation 即 camera 位置
+  * endLocation = startLocation + direction * length
+* 瞄准方向：从 camera 指向屏幕上的准星位置，通过 DeprojectScreenPositionToWorld() 取得，需要给出屏幕坐标 ScreenX 、ScreenY
+  * 即转化为获取准星所处屏幕坐标：scale * GetViewportSize()
 
 # <i class="fa fa-star"></i> 任务六：创建火控系统 AimingComponent
+## 射击功能 - 3. 射击预处理
+### 逻辑
+![](image/tank-2.png)
+* 不同于激光类武器是直线射击，`炮弹发射`实质是`抛物线`，因此瞄准后需要根据炮弹出膛的初速度计算发射角度。
+* 需求
+  * ① 炮塔转向射击方向
+  * ② 炮管抬起相应射击角度
+
+### 自定义静态网格组件
+* 新建 C++ 类 - show all - `StaticMeshComponent` - TankTurret
+* 为炮塔定义每秒可旋转角度，显示在主界面编辑器中，并`创建分类目录`
+	```cpp
+	UPROPERTY(EditAnywhere, Category = "Setup")
+		float ...
+	```
+* **`显示到可绑定组件列表中并创建分组`**（BP_Tank 的 AddComponent 列表）
+	```cpp
+  // 可被蓝图生成，并设置分组
+	UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+	class ... : public UStaticMeshComponent
+	```
+* BP_Tank 中原来的 TankTurret 组件用新的替换
+  * 为之绑定 StaticMesh
+  * 插入到 parent socket 中定位
+* 同理创建 StaticMeshComponent - TankBarrel
+  * 相同的 UCLASS
+  * 定义相同的旋转速度，另外设定俯角、仰角
+  * 编译后添加到 TankTurret 下，设定 staticmesh 与 socket
+
+### 火控系统组件
+* 新建 C++ 类 - show all - `ActorComponent` - TankAimingComponent
+* 作为运算处理部件，分别对接从 PlayerController 传入的输入信息 HitLocation 以及将计算结果传达给炮塔和炮管
+  * 接收 Controller 的输入 - `AimAt(FVector HitLocation);`
+  * 获取要输出结果的对象
+    * `UTankBarrel *Barrel = nullptr, *Turret = nullptr;`
+    * 创建可在蓝图中调用的函数 `UPROPERTY(BlueprintCallable, Category = "Setup")` 并传入两指针
+    * 在蓝图 BeginPlay 中把组件拖到相应 target 输入端
+  * 设定炮弹出膛初速度（标量） - `float launchSpeed = ...;`
+  * 计算抛出角度 - **`UGameplayStatics::SuggestProjectileVelocity`**
+    * 给出 startLocation 、 endLocation 、 speed
+    * 返回出膛初速度（矢量）
+    ```cpp
+    UGameplayStatics::SuggestProjectileVelocity
+    (
+        this,
+        fireVector,
+        startLocation,
+        HitLocation,      // endLocation
+        launchSpeed,
+        false,            // default, followings same, can be ignored
+        0,
+        0,
+        ESuggestProjVelocityTraceOption::DoNotTrace
+    )
+    ```
+  * 给坦克设定炮弹发射点 `startLocation`
+    * 在炮管 Barrel 的静态网格编辑器中添加插槽 socket - FireLocation
+    * 把插槽位置设定在炮管前方
+    * 在火控系统组件 AimingComponent 中使用获取到的输出对象 Barrel 得到其 socket 位置 - **`Barrel->GetSocketLocation(FName("FireLocation"));`**
+* `在 Controller 中使用火控系统组件`
+  * 回到需要坦克做处理的位置
+  * 获取所控制的坦克 - **`GetControlledTank()->FindComponentByClass<UTankAimingComponent>()->AimAt(HitLocation);`**
 
 # <i class="fa fa-star"></i> 任务七：炮塔和炮管转向
 

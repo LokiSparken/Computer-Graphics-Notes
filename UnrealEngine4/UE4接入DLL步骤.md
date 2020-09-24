@@ -187,7 +187,7 @@ UDLLInvokeTest::UDLLInvokeTest()
 
 # 自建简单DLL库示例
 ## VS2017创建新项目
-* 创建`Windows控制台应用程序 MyLib`
+* 创建`Windows控制台应用程序ConsoleApplication - MyLib`
 * 修改项目配置属性
   * 平台 `x64`
   * 项目 - 属性 - 配置属性 - 常规 - 配置类型改为 `dll`
