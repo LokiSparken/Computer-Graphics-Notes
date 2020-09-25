@@ -202,7 +202,7 @@
   * 插入到 parent socket 中定位
 * 同理创建 StaticMeshComponent - TankBarrel
   * 相同的 UCLASS
-  * 定义相同的旋转速度，另外设定俯角、仰角
+  * 定义相同的旋转速度，另外设定俯角、仰角（即上下俯仰角度最大最小值）
   * 编译后添加到 TankTurret 下，设定 staticmesh 与 socket
 
 ### 火控系统组件
@@ -210,7 +210,7 @@
 * 作为运算处理部件，分别对接从 PlayerController 传入的输入信息 HitLocation 以及将计算结果传达给炮塔和炮管
   * 接收 Controller 的输入 - `AimAt(FVector HitLocation);`
   * 获取要输出结果的对象
-    * `UTankBarrel *Barrel = nullptr, *Turret = nullptr;`
+    * `UTankBarrel *Barrel = nullptr; UTankTurret *Turret = nullptr;`
     * 创建可在蓝图中调用的函数 `UPROPERTY(BlueprintCallable, Category = "Setup")` 并传入两指针
     * 在蓝图 BeginPlay 中把组件拖到相应 target 输入端
   * 设定炮弹出膛初速度（标量） - `float launchSpeed = ...;`
@@ -238,6 +238,9 @@
 * `在 Controller 中使用火控系统组件`
   * 回到需要坦克做处理的位置
   * 获取所控制的坦克 - **`GetControlledTank()->FindComponentByClass<UTankAimingComponent>()->AimAt(HitLocation);`**
+
+### 小结及注意事项
+* 记得把 Aiming Component 也加入 BP_Tank 的组件列表然后在 BeginPlay 里给指针设初值，否则又要狂炸惹！！！
 
 # <i class="fa fa-star"></i> 任务七：炮塔和炮管转向
 
