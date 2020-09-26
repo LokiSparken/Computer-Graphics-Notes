@@ -221,7 +221,7 @@
     UGameplayStatics::SuggestProjectileVelocity
     (
         this,
-        fireVector,
+        velocity,
         startLocation,
         HitLocation,      // endLocation
         launchSpeed,
@@ -243,8 +243,112 @@
 * 记得把 Aiming Component 也加入 BP_Tank 的组件列表然后在 BeginPlay 里给指针设初值，否则又要狂炸惹！！！
 
 # <i class="fa fa-star"></i> 任务七：炮塔和炮管转向
+## 炮塔转向
+* 供火控系统调用的转向接口 - MoveTurret(FVector AimDirection);
+  * 调用时传入方向向量 - Turret->MoveTurret(velocity.GetSafeNormal());
+* `基本逻辑`：转向即改变 Rotation 
+  * ① 获取当前的炮塔状态 **`GetForwardVector().Rotation()`**
+  * ② 获取目标状态 **`AimDirection.Rotation()`**
+  * ③ 在 BP_Tank 的 viewport 中观察炮塔水平旋转影响的是 Yaw 值
+  * ④ 获取到 Yaw 维度上的变化量 **`float changeYaw = AimRotation.Yaw - CurrentRotation.Yaw;`**
+  * ⑤ **`SetRelativeRotation(FRotator(0, newRotationYaw, 0));`**
+* `细节处理`：为避免转向过于僵硬，转向并非一步到位，而是每帧都会调用，把总的 changeYaw 划分成小段后每帧做`插值`慢慢转。
+  * ① 用 **`float relativeSpeed = FMath::Clamp<float>(changeYaw, -1, 1)`** 将 changeYaw 限制到 [-1, 1] 
+  * ② relativeSpeed $\times$ 每秒最大转向角度 = 这一秒实际转向角度 rotatePerSecond（正负确定方向，该次调用超过每秒最大转向角度就转满，否则就转相应比例）
+  * 【？】这里好像有点 bug ，changeYaw 直接限制应该会经常转过头然后一直停不下来？感觉是要按比例缩小吧=。=
+  * ③ 最后把该秒实际转向角度乘上 **`GetWorld()->DeltaTimeSeconds`** 获得`每帧转向角度 rotatePerTick`（在 Engine/World.h 中）
+  * ④ newRotationYaw = CurrentRotation.Yaw + rotatePerTick
+
+## 炮管转向
+* 同理
+  * Yaw -> Pitch
+  * 炮塔可 360° 转向，炮管需对 newRotationPitch 用所设定的 min 、 max 再 Clamp 一下
+
+## 大甩头问题处理
+* 如 aim = -170°，current = 170°，delta = -340°
+  * 实际只需转向 -340° + 360° = 20°
+* 所以在绝对值跨过 180° 的时候分别加减 360° 限制一下即可
+
+## 转向卡顿
+* 【？】转的时候很卡，有些转不过去
+  * `LogPhysics: Warning: PopulatePhysXGeometryAndTransform(Convex): ConvexElem invalid`
+  * `LogPhysics: Warning: ForeachShape(Convex): ScaledElem[0] invalid`
+  * 好像是模型碰撞体方面的问题？
+  * 把炮塔在坦克上摆正就好了（……
+  * 还是会 warning 但是看着不卡了
 
 # <i class="fa fa-star"></i> 任务八：发射炮弹
+## 输入控制
+* project settings - engine - input
+  * add `action mappings` - Fire（`Left Mouse Button`）
+* BP_Tank 的 InputGraph 中处理输入信息
+  * 获取 `InputAction Fire` 结点，`pressed` 时调用火控系统给出的相应接口
+
+## 射击功能
+* 射击同样是火控系统管理的功能部分，所以在火控系统中定义和实现。
+  * UFUNCTION(BlueprintCallable, Category = "GamePlay") 目录与之前的各种设定类数据成员和函数等区别开
+  * void Fire();
+### 制作炮弹
+* 新建 C++ 类 - `Actor` - Projectile
+  * 基于该类创建 BP_Projectile
+  * 添加组件 sphere
+* **`运行时动态生成对应类型的 Actor`**
+  * **`TSubClassOf<AProjectile> ProjectileType;`** 并设蓝图中可编辑，编译后在蓝图 details 中生成下拉框，可选择继承自 AProjectile 的各种类型
+  * 在 .cpp 中使用，**`SpawnActor`** 生成指定类型 actor 对象，并给出 Location 与 Rotation
+  ```cpp
+    void ...::Fire()
+    {
+		if (ProjectileType == nullptr) return ;
+		GetWorld()->SpawnActor<AProjectile>
+		(
+			ProjectileType,
+			Barrel->GetSocketLocation(FName("FireLocation")),
+			Barrel->GetSocketRotation(FName("FireLocation"))
+			// ... default
+		);
+    }
+
+  ```
+* 最后回到 BP_Tank 中 fire 时调用
+### 抛物线运动
+* 内置组件类型 **`ProjectileMovement`** 给出初速度，可沿抛物线运动
+* 由于是所有炮弹都应具有的属性，所以不分别在各基于 Projectile 的 BP 蓝图中增设，直接在 Projectile 里实现
+	```cpp
+	// projectile.h
+	#include "GameFramework/ProjectileMovementComponent.h"
+
+	class ...
+	{
+	public:
+		// 给 projectile 添加组件
+		UProjectileMovementComponent *ProjectileMovementComponent = nullptr;
+	};
+
+	// projectile.cpp
+	AProjectile::AProjectile
+	{
+		// default code
+		// 生成
+		ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(FName("ProjectileMovement"));
+		// 取消自动发射
+		ProjectileMovementComponent->bAutoActivate = false;	
+	}
+	```
+* 发射！
+	```cpp
+	void LaunchProjectile(float speed);
+
+	void AProjectile::LaunchProjectile(float speed)
+	{
+		// 标量转矢量，设置速度
+		ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * speed);
+		// 发射！
+		ProjectileMovementComponent->Activate();
+	}
+	```
+### Boom！
+* 火控系统中的 GetWorld()->SpawnActor 返回相应的一个 AProjectile 类型对象
+* 用该对象调用 Launch 发射即可w
 
 # <i class="fa fa-star"></i> 任务九：完善射击状态
 
