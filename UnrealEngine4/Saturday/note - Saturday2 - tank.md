@@ -293,7 +293,7 @@
   * 基于该类创建 BP_Projectile
   * 添加组件 sphere
 * **`运行时动态生成对应类型的 Actor`**
-  * **`TSubClassOf<AProjectile> ProjectileType;`** 并设蓝图中可编辑，编译后在蓝图 details 中生成下拉框，可选择继承自 AProjectile 的各种类型
+  * **`TSubclassOf<AProjectile> ProjectileType;`** 并设蓝图中可编辑，编译后在蓝图 details 中生成下拉框，可选择继承自 AProjectile 的各种类型
   * 在 .cpp 中使用，**`SpawnActor`** 生成指定类型 actor 对象，并给出 Location 与 Rotation
   ```cpp
     void ...::Fire()
@@ -351,9 +351,58 @@
 * 用该对象调用 Launch 发射即可w
 
 # <i class="fa fa-star"></i> 任务九：完善射击状态
+## 设置CD时间
+* 增加 CD 时间 - reloadTime
+* 增加时间戳 - double lastFireTime = 0;
+  * 每次射击后记录时间 **`lastFireTime = FPlatformTime::Seconds();`**
+  * 每次射击前判断 FPlatformTime::Seconds() - lastFireTime > reloadTime;
+* 增加一项 UPROPERTY 后去蓝图中编译一次
 
+## 销毁炮弹
+* 在 BP_Projectile 的 BeginPlay 中设定 delay 时间，delay 后直接 destroy
+
+## 暴力去除炮塔炮管碰撞体警告
+* 把 convex 碰撞体去掉，改成 box collision
+
+## 改变准星颜色状态
+* 定义枚举类型 ENUM - ue4 中的枚举类型：加宏 **`UENUM()`** 并继承自 **`uint8`**
+	```cpp
+  // 定义几种瞄准状态
+	UENUM()
+	enum class EFiringState : uint8
+	{
+		Reloading,
+		Aiming,
+		Locked
+	};
+
+  class TankAimingComponent : ...
+  {
+    // 定义瞄准状态变量并初始化
+    UPROPERTY(BlueprintReadOnly)
+      EStringState FiringState = EFiringState::Aiming;
+  }
+	```
+* 接下来每一帧根据逻辑判断当前应处于的状态
+  * Reloading：炮弹装载中，FPlatformTime::Seconds() - lastFireTime < tankReloadTime
+  * Aiming：炮塔旋转中
+  * Locked：旋转完毕，锁定目标
+  * 对 Aiming、Locked 判断关键就是当前 Rotation 状态离目标状态还差多少，接近时就可认为是 Locked 。从 TankTurret 给出获取 changeYaw 的接口即可。判断时可用 **`FMath::Abs()`** 看其绝对值。
+* **`MainUI 中修改准星颜色`**
+  * MainUI - details - `Apperance`
+  * 进入 color and options 蓝图界面
+  * 创建变量 BP_AimingComponent 选择类型为 TankAimingComponent - Object Reference 并拖拽到蓝图上，拉出结点 `Firing State` （记得先编译得到enum），再拉出 `select` 并设置处于三种状态时的颜色。
+  * `添加颜色`：使用结点 **`ToColor`** 设置颜色并接到各个状态上。
+* **`应用颜色设置`**
+  * 回到 BP_TankPlayerController 的 `Create Main UI Widget` 
+  * 从其返回值（MainUI）拖出结点 **`Set AimingComponent`**
+  * 由于 AimingComponent 组件是搭载在每个 Tank 实体上的，而准星是 PlayerTank 的功能， PlayerTank 由 PlayerController 管理，之前已有 GetControlledTank() 方法，此处只需增加 UFUNCTION 使其在蓝图中可调用，就能调用 Get Controlled Tank 结点（记得再编译一下使蓝图可见），再拉出 `Get Component By Class`（用 return value 是单变量不是数组的那个orz） 设为 Tank Aiming Component `获取相应组件`并作为 Set AimingComponent 的 target 来使用。
+* Bug
+  * 把 SpringArm 调到 2000.0 准星放到炮管前方，瞄准判定线正常一点
+  * Aiming 和 Locked 判定大概还是炮台转向问题的锅不是很准
 
 # <i class="fa fa-star"></i> 任务十：开始坦克移动并修复一个炮台 Bug
+
 
 # <i class="fa fa-star"></i> 任务十一：OnHit 事件绑定及WASD控制移动
 
