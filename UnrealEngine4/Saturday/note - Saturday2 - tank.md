@@ -402,7 +402,49 @@
   * Aiming 和 Locked 判定大概还是炮台转向问题的锅不是很准
 
 # <i class="fa fa-star"></i> 任务十：开始坦克移动并修复一个炮台 Bug
+## 坦克移动 - 1. 履带前进
+* 首先完成实现坦克移动最根本的基础任务：让履带转动并向前推进
+  * 类似炮台和炮管，创建可自定义的 C++ 类 StaticMeshComponent - TankTrack
+  * 记得 `UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))`
+* **`移动逻辑`**
+  * ① 施加作用力：通过履带给坦克作用力 $F$ - TankMaxDrivingForce，（查资料）坦克一般加速度 $a = 2\frac{m}{s^2}$，前设坦克质量 $40000kg$，两条履带因此除以二，即 $F=40000\times 1$
+  * ② 设置节流阀：void SetThrottle(float Throttle);   // 范围在 [-1, 1] 之间
+  * ③ 求出矢量作用力：`ForceApplied = `$标量作用力 \times 节流阀 \times 前进方向$ **`GetForwardVector()`**
+  * ④ 作用力施加位置：施加在当前正在定义的履带上 **`auto ForceLocation = GetComponentLocation();`**
+  * ⑤ 带动坦克移动：作用到履带组件所处的根组件 Tank 上，**`从组件绑定的 Actor 找到其根组件 - auto RootComponent = GetOwner()->GetRootComponent()`**
+    * 此时返回值为 SceneComponent ，没有 AddForce 这样的方法可调用。
+    * 主编辑器 Window - Developer Tools - `Class Viewer` 去掉  filters - Actors Only 的勾选
+    * 查看 Actor Component 下的 Scene Component 说明：只含有位置信息、层级信息（has a transform and supports attachment），但是 has no rendering or collision capabilities（没有显示 mesh 和碰撞的功能，不能施加力）
+    * 此时可以使用 Scene Component 下的 **`PrimitiveComponent`** 即 `Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());`
+  * ⑥ `正式对坦克施加力`：**`RootComponent->AddForceAtLocation(ForceApplied, ForceLocation)`**
+* 通过创建的自定义静态网格组件类创建组件对象绑定到 BP_Tank
+  * 绑定 static mesh
+  * 位置放入插槽 socket
+* 添加输入映射（轴绑定）
+  * LeftTrackThrottle
+    * Q - scale = 1.0
+    * Z - scale = -0.5
+  * RightTrackThrottle
+    * E - scale = 1.0
+    * C - scale = -0.5
+* **`应用输入信息`**
+  * BP_Tank - Input Graph
+  * 拖入 Left Track 并拽出 set throttle，输入应用结点 InputAxis LeftTrackThrottle 的 axis value 值
+  * 同理设定 Right Track
 
+## 修炮台 Bug
+* 之前炮台移动使用 GetForwardVector().Rotation().Yaw 加旋转量获得新值
+* 仍然使用 GetForwardVector() 的值计算 deltaYaw
+* 但是获得新值时使用 **`RelativeRotation.Yaw`** 相对量
+* 炮管同理修改
+
+## 坦克移动 - 2. 履带摩擦力
+* BP 中新建 Physics - **`Physical Material`**
+  * 其中 **`Friction`** 设置摩擦力
+  * 勾选 `Override Friction Combine Mode` 后选择两物体面接触时摩擦力取值（取小、取大、取平均等）
+* **`应用摩擦力设置`**
+  * 【？不造要不要，看到他勾了】Simulation Generates Hit Events
+  * BP_Tank - Left/RightTrack - details - `Collision - Phys Material Override`
 
 # <i class="fa fa-star"></i> 任务十一：OnHit 事件绑定及WASD控制移动
 
