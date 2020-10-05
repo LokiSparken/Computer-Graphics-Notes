@@ -447,6 +447,33 @@
   * BP_Tank - Left/RightTrack - details - `Collision - Phys Material Override`
 
 # <i class="fa fa-star"></i> 任务十一：OnHit 事件绑定及WASD控制移动
+## **`绑定 OnHit 事件`**
+* BP_Tank - details - enable gravity 取消
+* 蓝图中绑定
+  * BP_Tank - Left/Right Track - details - `events - on component hit` 
+  * 在 event graph 中创建事件结点
+* C++ 中绑定
+  * 在 TankTrack - BeginPlay() 中绑定事件：重写 BeginPlay()
+  * 为事件添加执行函数：**`OnComponentHit.AddDynamic(this, <FuncName>);`**
+  * 
+    ```cpp
+    // .h
+    UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+    class ...
+    {
+    public:
+        virtual void BeginPlay() override;
+    }
+
+    // .cpp
+    void UTankTrach::BeginPlay()
+    {
+        Super::BeginPlay();
+        OnComponentHit.AddDynamic(this, <FuncName>)
+    }
+    ```
+  * 
+* 
 
 # <i class="fa fa-star"></i> 任务十二：优化坦克移动
 
