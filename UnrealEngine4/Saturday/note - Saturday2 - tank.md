@@ -448,32 +448,61 @@
 
 # <i class="fa fa-star"></i> 任务十一：OnHit 事件绑定及WASD控制移动
 ## **`绑定 OnHit 事件`**
-* BP_Tank - details - enable gravity 取消
-* 蓝图中绑定
-  * BP_Tank - Left/Right Track - details - `events - on component hit` 
-  * 在 event graph 中创建事件结点
-* C++ 中绑定
-  * 在 TankTrack - BeginPlay() 中绑定事件：重写 BeginPlay()
-  * 为事件添加执行函数：**`OnComponentHit.AddDynamic(this, <FuncName>);`**
-  * 
+* BP_Tank - details - enable gravity 暂时取消，观察悬浮时也能控制移动，这不合理（
+* TankTrack - details - `Collision - Simulation Generates Hit Events` 勾选
+### 蓝图中绑定
+* BP_Tank - Left/Right Track - details - `events - on component hit` 
+* 在 event graph 中创建事件结点
+### C++ 中绑定
+* 在 TankTrack - BeginPlay() 中绑定事件：重写 BeginPlay()
+* 为事件添加执行函数：**`OnComponentHit.AddDynamic(this, <FuncName>);`**
+  ```cpp
+  // .h
+  UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+  class ...
+  {
+  public:
+      virtual void BeginPlay() override;
+  }
+
+  // .cpp
+  void UTankTrach::BeginPlay()
+  {
+      Super::BeginPlay();
+      OnComponentHit.AddDynamic(this, <FuncName>)
+  }
+  ```
+* **`创建事件的执行函数`**
+  * **`FComponentHitSignature`** - PrimitiveComponent.h
+  * 无 C++ 定义，同样在 PrimitiveComponent.h 中有宏 **`DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_FiveParams();`**
+  * 仿该宏的 **`( FComponentHitSignature, UPrimitiveComponent, OnComponentHit, UPrimitiveComponent*, HitComponent, AActor*, OtherActor, UPrimitiveComponent*, OtherComp, FVector, NormalImpulse, const FHitResult&, Hit )`** 参数列表定义 UFUNCTION
+    * 其中第一项 FComponentHitSignature 对应当前要定义的执行函数将绑定到的事件类型
+    * 后续为执行函数的`<参数类型, 建议参数名>`
     ```cpp
-    // .h
-    UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-    class ...
+    // 声明
+    UFUNCTION()
+    void OnHit(UPrimitiveComponent OnComponentHit, UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+    // 定义（当发生OnComponentHit事件时执行）
+    void UTankTrack::OnHit(...)
     {
-    public:
-        virtual void BeginPlay() override;
+        DriveTrack();
     }
 
-    // .cpp
-    void UTankTrach::BeginPlay()
-    {
-        Super::BeginPlay();
-        OnComponentHit.AddDynamic(this, <FuncName>)
-    }
+    // 绑定到事件（传入函数指针）
+    OnComponentHit.AddDynamic(this, &UTankTrack::OnHit);
     ```
-  * 
-* 
+* 修改移动逻辑
+  * 让 SetThrottle 只做对 throttle 的修改
+  * 具体的移动解耦到 DriveTrack() 并在 OnHit 中调用
+
+## WASD移动
+### 添加按键绑定
+* 同理增加WASD的输入控制
+  * MoveForward - W 1.0, S -0.5
+  * MoveRight - D 1.0
+  * MoveLeft - A 1.0
+
 
 # <i class="fa fa-star"></i> 任务十二：优化坦克移动
 
