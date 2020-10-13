@@ -58,7 +58,7 @@ public class GeoSOTService : ModuleRules
 ```
 * 
 
-# 编译错误：can not find class '' to resolve delegate
+# 直接加载DLL库
 
 ## dll文件复制到引擎或工程的Plugins目录
 
@@ -180,7 +180,21 @@ UDLLInvokeTest::UDLLInvokeTest()
 
 ```
 
-* 从DLL库中导入具体函数，可拆分为import方法和导入后直接使用的get函数，.h中【？】import是否需要用UFUNTION宏，测一下
+## 踩坑
+* 打印信息到屏幕
+    ```cpp
+    #include "Runtime/Engine/Public/EngineGlobals.h"
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(...);
+    }
+    ```
+* 获取打包后的文件 WinNoEditor 目录
+  * `FPaths::ConvertRelativePathToFull(FPaths::RootDir())`
+* `TSet`
+  * `TSet<FString> set;`
+  * `set.Contains(...);`
+  * `set.Add(...);`
 
 ## 调用dll中的函数
 
@@ -193,7 +207,7 @@ UDLLInvokeTest::UDLLInvokeTest()
   * 项目 - 属性 - 配置属性 - 常规 - 配置类型改为 `dll`
 * 创建头文件、源文件`Mylib.h`、`Mylib.cpp`
 ```cpp
-//.h
+// .h
 #pragma once
 #define DLL_EXPORT __declspec(dllexport)
 #ifdef __cplusplus
@@ -209,7 +223,7 @@ extern "C"
 ```
 
 ```cpp
-//.cpp
+// .cpp
 #include "MyDllTest.h"
 
 float DLL_EXPORT getCircleArea(float radius)
@@ -220,7 +234,47 @@ float DLL_EXPORT getCircleArea(float radius)
 
 * F7编译得到 `.dll`
 
-## 函数返回值为非内置类型的情况
+## 自定义类
+* 项目配置同上
+* 头文件、源文件
+```cpp
+// .h
+#pragma once
+
+#define DLL_EXPORT __declspec(dllexport)
+#ifdef __cplusplus
+
+extern "C"
+{
+#endif 
+	double DLL_EXPORT getCircleArea(double radius);
+
+	class DLLWithClass
+	{
+	public:
+		int returnANumber(int number);
+	};
+#ifdef __cplusplus
+}
+
+#endif
+```
+
+```cpp
+// .cpp
+#include "DLLProducer2.h"
+
+double DLL_EXPORT getCircleArea(double radius)
+{
+	return 3.14 * radius * radius;
+}
+
+int DLLWithClass::returnANumber(int number)
+{
+	return number;
+}
+```
+* 测试进度：可在UE4中获取dll句柄
 
 
 
