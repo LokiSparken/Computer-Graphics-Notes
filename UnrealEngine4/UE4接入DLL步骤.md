@@ -148,18 +148,18 @@ float UDLLInvokeTest::getCircleArea(float radius)
 	if (m_getCircleAreaFromDll != NULL)
 	{
 		float out = m_getCircleAreaFromDll(radius); // 调用
-		UE_LOG(LogTemp, Warning, TEXT("Successly call method \"getCircleAreaFromDll\" from DLL library."));
+		UE_LOG(LogTemp, Warning, TEXT("Successly call method <getCircleAreaFromDll> from DLL library."));
 		return out;	// 返回给UE
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Failed to call method \"getCircleAreaFromDll\" from DLL library."));
+	UE_LOG(LogTemp, Warning, TEXT("Failed to call method <getCircleAreaFromDll> from DLL library."));
 	return 1.0f;
 }
 
-// 在该类构造期间就导入DLL库及相关函数
+// 在该类构造期间导入DLL库及相关函数
 UDLLInvokeTest::UDLLInvokeTest()
 {
 	// 调用DLL库的导入
-	if (importDll("DLL", "MyLib.dll"))
+	if (importDll("DLL", "DLLProducer1.dll"))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DLL load ok."));
 	}
@@ -170,11 +170,11 @@ UDLLInvokeTest::UDLLInvokeTest()
 	// 调用函数导入
 	if (importMethodGetCircleAreaFromDll())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("method: getCircleArea load ok."));
+		UE_LOG(LogTemp, Warning, TEXT("method <getCircleArea> load ok."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("method: getCircleArea load failed."));
+		UE_LOG(LogTemp, Warning, TEXT("method <getCircleArea> load failed."));
 	}
 }
 
@@ -201,11 +201,11 @@ UDLLInvokeTest::UDLLInvokeTest()
 
 # 自建简单DLL库示例
 ## VS2017创建新项目
-* 创建`Windows控制台应用程序ConsoleApplication - MyLib`
+* 创建 `Windows 控制台应用程序 ConsoleApplication - DLLProducer1`
 * 修改项目配置属性
-  * 平台 `x64`
-  * 项目 - 属性 - 配置属性 - 常规 - 配置类型改为 `dll`
-* 创建头文件、源文件`Mylib.h`、`Mylib.cpp`
+  * 平台：`x64`
+  * 项目 - 属性 - 配置属性 - 常规 - 配置类型：`dll`
+* 创建头文件、源文件 `DLLProducer1.h`、`DLLProducer1.cpp`
 ```cpp
 // .h
 #pragma once
@@ -224,7 +224,7 @@ extern "C"
 
 ```cpp
 // .cpp
-#include "MyDllTest.h"
+#include "DLLProducer1.h"
 
 float DLL_EXPORT getCircleArea(float radius)
 {
@@ -232,7 +232,7 @@ float DLL_EXPORT getCircleArea(float radius)
 }
 ```
 
-* F7编译得到 `.dll`
+* F7编译，在 x64 目录下得到 `.dll`
 
 ## 自定义类
 * 项目配置同上
