@@ -12,6 +12,8 @@
   Alt + G | 在定义和实现之间切换
 * 基本设置 https://docs.unrealengine.com/zh-CN/Programming/Development/VisualStudioSetup/index.html
 * VS 2017 建议不关闭 options - text editor - c/c++ - advanced - intellisense - disable squiggles
+### UE4 Editor setting
+* blueprint - compile - save on compile - On Success Only
 
 ## 常见问题
 * **`已绑定事件但无法触发`**
@@ -70,5 +72,116 @@
   * collision - `collision presets`
   * `BlockAllDynamic` 改为 `NoCollision`
 ### 3. 设置碰撞和重叠事件
-* 
+#### 设置碰撞属性
+```cpp
+#include "Components/StaticMeshComponent.h"
+// 禁用静态网格体组件的碰撞属性
+MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+// 不需要球体组件的物理效果，只使用查询 Line Traces 、 Overlap Events 等
+SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+// 设置通道：相应所有通道
+SphereComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+// 为 Pawn 人形体通道启用碰撞
+SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+```
+* `ECR_Overlap` 使发射物击中目标物体时不受阻，直接穿过对象
+#### 重叠事件：重叠时生成粒子效果（捡起物体特效）
+* **`生成粒子效果`**
+    ```cpp
+    // .h
+    protected:
+        void PlayEffects();
+
+    // .cpp
+    #include "Kismet/GameplayStatics.h"
+    void AFPSObjectiveActor::PlayEffects()
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(this, PickupFX, GetActorLocation());
+    }
+    ```
+    * **`SpawnEmitterAttached`** 附加到物体
+    * **`SpawnEmitterAtLocation`** 附加到特定位置，对静止物体而言就使用其位置即可
+        * `UObject *WorldContextObject`：this，用于获取世界场景上下文，明确在哪个世界场景中注册相应粒子效果
+        * `UParticleSystem *EmitterTemplate`：PickupFX
+        * `FVector Location`：`GetActorLocation()`
+* **`创建粒子系统`**
+    ```cpp
+    // .h
+    protected:
+        UPROPERTY(EditDefaultsOnly, Category = "Effects")
+        UParticleSystem *PickupFX;
+    ```
+    * 暴露到蓝图中进行赋值
+    * `EditDefaultsOnly`：property can be changed only for Blueprints, in Blueprint->Defaults
+* **`物体重叠时调用`**
+  * 注册到球体组件的重叠事件：`SphereComp->OnComponentBeginOverlap()`
+  * 使用 Actor `NotifyActorBeginOverlap` （想找接口时可以到相关类型的父类文件里查查看）
+        ```cpp
+        // .h
+        public:
+            virtual void NotifyActorBeginOverlap(AActor *OtherActor) override;
+
+        // .cpp
+        void AFPSObjectiveActor::NotifyActorBeginOverlap(AActor *OtherActor)
+        {
+            Super::NotifyActorBeginOverlap(OtherActor);
+
+            PlayEffects();
+        }
+        ```
+
+### 4. 拾取物体
+* 逻辑
+  * FPSObjectiveActor 的 NotifyActorBeginOverlap 发生
+  * 检查是否与 FPSCharacter 中角色类型发生重叠（已在碰撞设置中将过滤条件设为仅对 Pawn 有效，此处再用 cast 来 check 是否是对应需要的类型）
+    ```cpp
+    // FPSCharacter.h
+    public:
+        UPROPERTY(BlueprintReadOnly, Category = "Gameplay")
+        bool bIsCarryObjective;
+    
+    // FPSObjectiveActor.cpp
+    #include "FPSCharatcer.h" 
+    void AFPSObjectiveActor::NotifyActorBeginOverlap(AActor *OtherActor)
+    {
+        AFPSCharacter * MyCharacter = Cast<AFPSCharacter>(OtherActor);
+        if (MyCharacter)
+        {
+            MyCharacter->bIsCarryObjective = true;
+
+            Destroy();
+        }
+    }
+    ```
+
+### 5. 向用户显示信息
+#### 创建 UMG
+* 创建文本 UI - UMG
+  * 在 Content/UI 下创建 User Interface - Widget Blueprint - WBP_ObjectiveInfo
+  * 添加 Text 控件
+  * text - details - size to content 使大小适应文本内容
+  * font - size 调整文本内容大小
+* 应用 UMG
+  * 在 Content/Blueprints 下创建 HUD - FPSHUD - BP_HUD
+  * 在 Event Graph 中 `Create Widget`，target = WBP_ObjectiveInfo
+  * 将 Create Widget Return Value `Add to Viewport`
+* 应用 HUD
+  * 在 Content/Blueprints 下创建 FPSGameMode - BP_GameMode
+  * Classes - HUD Class 设为 BP_HUD
+* 应用 GameMode
+  * 主界面 World Settings - GameMode - GameMove Override 设为 BP_GameMode
+* **`发生事件时修改文本信息`**
+  * bind get text 0 - GetObjectiveText
+  * 创建变量 Text - GetObjective、ExtractArea 并设置对应文本
+  * get text 蓝图界面中 select，index = Boolean
+  * 通过结点 **`Get Owning Player Pawn`** 找到玩家控制的 Pawn ，Return Value 用 `isValid` 或 `Cast To FPSCharatcer` 检查是否有效，此用 Cast （转换成功即有效）
+  * 根据相应情况显示文本
+
+### 6. Challenge：黑洞
+* 一个会吸入周围 Actor 的黑洞
+  * Sphere Component，Create and Destroy
+  * Physics：`AddForce()`、`AddRadialForce()`
+  * Find Nearby Actors：`SphereComp->GetOverlappingComponents` in `Tick()`
+  * check all actors `Generate Overlap Events`
+* p15 02:42
