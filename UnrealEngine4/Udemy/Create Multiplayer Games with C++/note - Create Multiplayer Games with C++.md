@@ -185,3 +185,79 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
   * Find Nearby Actors：`SphereComp->GetOverlappingComponents` in `Tick()`
   * check all actors `Generate Overlap Events`
 * p15 02:42
+
+## 二、游戏规则
+* 规则
+  * 玩家将目标物体带至通关区域范围即完成任务。
+  * 向玩家显示相应通知。
+  * 暂停接收玩家输入。
+  * 镜头离开玩家，切至下一关。
+### 1. 通关口 Extraction Zone
+* 创建 C++ 类 - Actor - FPSExtractionZone
+* 添加盒体组件、重叠组件（检测重叠事件）
+    ```cpp
+    // FPSExtractionZone.h
+    class UBoxComponent;
+    UPROPERTY(VisibleAnywhere, Category = "Components")
+    UBoxComponent *OverlapComp;
+
+    // FPSExtractionZone.cpp
+    #include "Components/BoxComponent.h"
+    AFPSExtractionZone::AFPSExtractionZone()
+    {
+        OverlapComp = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapComp"));
+        OverlapComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        OverlapComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+        OverlapComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+        // 设置盒体区域的响应范围
+        OverlapComp->SetBoxExtent(FVector(200.0f));
+        // 设为根组件
+        RootComponent = OverlapComp;
+        // 显示重叠组件
+        OverlapComp->SetHiddenInGame(false);
+        // 创建与玩家发生重叠时的事件
+        OverlapComp->OnComponentBeginOverlap.AddDynamic(this, &AFPSExtractionZone::HandleOverlap);
+    }
+    ```
+* 定义绑定到重叠事件的代理函数
+    * OnComponentBeginOverlap Alt + G 转到定义
+    * 对其类型 Alt + G 转到定义
+    * 找到 `DECLARE_DYNAMIC_MULTICAST_DELEGATE_*()` ：声明了代理，把首项去掉，后面的参数列表作为要定义的代理函数的参数，去掉类型和名称间的分隔逗号
+    * 要标记为 UFUNCTION() ，通知虚幻后端该函数的含义及如何与事件绑定
+    ```cpp
+    // FPSExtractionZone.h
+    UFUNCTION()
+    void HandleOverlap(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult);
+
+    // .cpp
+    void AFPSExtractionZone::HandleOverlap(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
+    {
+        // 判断玩家是否携带目标物体
+        UE_LOG(LogTemp, Log, TEXT(""));
+    }
+    ```
+* 使用重叠组件
+  * 主界面左侧 Modes 中 search classes - FPSExtractionZone 拖入场景
+  * `显示重叠组件`：`SetHiddenInGame`
+### 2. 完善通关口
+* 向项目的 Content 添加内容
+  * 右键 Content - Show in Explorer
+  * Ctrl + 把 Materials 拖入
+* **`贴花`**
+    ```cpp
+    // FPSExtractionZone.h
+    protected:
+        UPROPERTY(VisibleAnywhre, Category = "Components")
+        UDecalComponent *DecalComp;
+    
+    // .cpp
+    #include ""
+    AFPSExtractionZone::AFPSExtractionZone()
+    {
+        // 创建对象
+        DecalComp = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComp"));
+        // 尺寸与通关口范围一致，API Alt + G 到
+        DecalComp->DecalSize = FVector(200.0f);
+    }
+    ```
+* p18 02:19
