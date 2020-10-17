@@ -233,7 +233,7 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     void AFPSExtractionZone::HandleOverlap(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
     {
         // 判断玩家是否携带目标物体
-        UE_LOG(LogTemp, Log, TEXT(""));
+        UE_LOG(LogTemp, Log, TEXT("Overlapped with extraction zone!"));
     }
     ```
 * 使用重叠组件
@@ -243,7 +243,7 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 * 向项目的 Content 添加内容
   * 右键 Content - Show in Explorer
   * Ctrl + 把 Materials 拖入
-* **`贴花`**
+* **`贴花组件`**
     ```cpp
     // FPSExtractionZone.h
     protected:
@@ -251,13 +251,208 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
         UDecalComponent *DecalComp;
     
     // .cpp
-    #include ""
+    #include "Components/DecalComponent.h"
     AFPSExtractionZone::AFPSExtractionZone()
     {
         // 创建对象
         DecalComp = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComp"));
-        // 尺寸与通关口范围一致，API Alt + G 到
-        DecalComp->DecalSize = FVector(200.0f);
+        // 尺寸与通关口范围一致。API 可 Alt + G 到相关头文件里查。
+        DecalComp->DecalSize = FVector(200.0f, 200.0f, 200.0f);
+        // 
+        DecalComp->SetupAttachment(RootComponent);
     }
     ```
-* p18 02:19
+    * 主界面中找到 DecalComp 为其设定材质 SpawnBox_M_Inst
+    * 原材质颜色太亮，在强光照下不明显，把花纹调暗。将 SpawnBox_M 材质的 Opacity（不透明度）Clamp 的 Min Default 设高到 0.15 。
+    * 基于 ExtractionZone 创建 BP_ExtractionZone ，便于更改 C++ 中设置的默认值 
+    * DecalComp 相对 ExtractionZone 有偏移，重置 Location
+    * 角度旋转 90 度
+### 3. 游戏模式
+```cpp
+// FPSExtractionZone.cpp
+#include "FPSCharacter.h"
+#include "FPSGameMode.h"
+void AFPSExtractionZone::HandleOverlap(...)
+{
+    // 类型转换，并判断玩家是否携带目标物
+    AFPSCharacter *MyPawn = Cast<AFPSCharacter>(OtherActor);
+    if (MyPawn && MyPawn->bIsCarryObjective)
+    {
+        // 通知【游戏模式】目前的游戏状态
+        AFPSGameMode *GM = Cast<FPSGameMode>(GetWorld()->GetAuthGameMode());
+        if (GM)
+        {
+            GM->CompleteMission(MyPawn);
+        }
+    }
+}
+```
+* `GetWorld()` 返回当前游戏世界
+* `GetAuthGameMode()` 返回当前世界游戏模式的引用，仅在服务器上有效
+```cpp
+// FPSGameMode.h
+public:
+    void CompleteMission(APawn *InstigatorPawn);
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "GameMode")
+    void OnMissionCompleted(APawn *InstigatorPawn);
+```
+* `UFUNCTION(BlueprintImplementableEvent)` 通过蓝图实现
+```cpp
+// FPSGameMode.cpp
+void AFPSGameMode::CompleteMission(APawn *InstigatorPawn)
+{
+    if (InstigatorPawn)     // check
+    {
+        InstigatorPawn->DisableInput(nullptr);  // 禁用输入
+    }
+    OnMissionCompleted(InstigatorPawn);
+}
+```
+* Pawn 与 PlayerController 
+  * Pawn 生成后由 PlayerController 控制，输入经由 PlayerController 转换后发送给 Pawn
+  * `DisableInput(nullptr)` 禁用对角色 Pawn 输入，但不阻止对 PlayerController 的输入（如调出游戏菜单等）
+### 4. 添加通关反馈
+* **`文字提示`**：创建提示任务完成的 UI Widget
+  * 创建新的 Widget - WBP_GameOver
+  * 放入 Text ，Anchor 调整至屏幕中心，重置 Text Position ，并放在屏幕中心上部。
+* 在 BP_GameMode 蓝图中完成上述暴露给蓝图实现的函数 `OnMissionCompleted` ，向玩家显示任务完成提示
+  * Create Widget(WBP_GameMode, default) -> Add to Viewport
+  * Owning Player 保留默认值
+* **`音效提示`**：未携带目标物进入通关口时的未完成提示
+    ```cpp
+    // FPSExtractionZone.h
+    protected:
+        UPROPERTY(EditDefaultsOnly, Category = "Sounds")
+        USoundBase *ObjectiveMissingSound;
+    ```
+    * `EditDefaultsOnly` 游戏启动后无法编辑，只能在为其创建蓝图版本时进行编辑
+    * 在 `BP_ExtractionZone` 中设置音效：details - sounds - objective missing sound
+* 在 `HandleOverlap` 中调用
+    ```cpp
+    // FPSExtractionZone.cpp
+    #include "Kismet/GameplayStatics.h"
+    void AFPSExtractionZone::HandleOverlap(...)
+    {
+        AFPSCharacter *MyPawn = Cast<AFPSCharacter>(OtherActor);
+        if (MyPawn == nullptr)
+        {
+            return;
+        }
+
+        if (MyPawn->bIsCarryObjective)
+        {
+            AFPSGameMode *GM = Cast<AFPSGameMode>(GetWorld()->GetAuthGameMode());
+            if (GM)
+            {
+                GM->CompleteMission(MyPawn);
+            }
+        }
+        else
+        {
+            UGameplayStatics::PlaySound2D(this, ObjectiveMissingSound);
+        }
+    }
+    ```
+    * `UGameplayStatics` 中均为静态函数
+    * `PlaySound2D` 播放声效，将信号传输至音频引擎
+### 5. 视角切换
+* 蓝图实现：`BP_GameMode` 中
+  * 用 **`Sequence`** 接出另一条执行线
+  * `获取控制器`：从 `Event On Mission Completed` 结点的 `Instigator Pawn` 拉出结点 **`Get Controller`** 并 **`Cast to PlayerController`** 
+  * `更改视角`：`Cast As Player Controller` -> `Set View Target with Blend` 
+  * `创建新视角`
+    * 新建蓝图 Actor - BP_SpectatingViewpoint
+    * 添加组件 StaticMesh ，设定 Static Mesh - MatineeCam_SM 
+    * **`在游戏中隐藏`**：StaticMesh - details - Rendering - Hidden in Game
+    * 将 BP_SpectatingViewpoint 拖入场景，右键 `Pilot` 调整视角
+  * `应用新视角`
+    * 回到 `Set View Target` 
+    * `获取新视角`：**`Get All Actors of Class`** ，`Actor Class` 设为 BP_SpectatingViewpoint ，返回值 Out Actors -> `Get (a copy)` 
+  * `视角切换优化`：仍然是 `Set View Target with Blend`
+    * `Blend Time`：0.5
+    * `Blend Func`：Cubic
+* **`C++ 实现`**
+    ```cpp
+    // FPSGameMode.h
+    protected:
+        UPROPERTY(EditDefaultsOnly, Category = "Spectating")
+        TSubclassOf<AActor> SpectatingViewpointClass;
+
+    // FPSGameMode.cpp
+    #include "Kismet/GameplayStatics.h"
+    void AFPSGameMode::CompleteMission(APawn *InstigatorPawn)
+    {
+        if (InstigatorPawn)
+        {
+            ...
+            if (SpectatingViewpointClass)   // check 新视角存在
+            {
+                // 获取新视角
+                TArray<AActor *> ReturnedActors;
+                UGameplayStatics::GetAllActorsOfClass(this, SpectatingViewpointClass, ReturnedActors);
+
+                if (ReturnedActors.Num() > 0)
+                {
+                    AActor *NewViewTarget = ReturnedActors[0];
+
+                    // 获取控制器
+                    APlayerController *PC = Cast<PlayerController>(InstigatorPawn->GetController());
+                    if (PC)
+                    {
+                        // 应用新视角，并设切换过渡时间
+                        PC->SetViewTargetWithBlend(NewViewTarget, 0.5f, EViewTargetBlendFunction::VTBlend_Cubic);
+                    }
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SpectatingViewpointClass is nullptr. Please update GameMode class with valid subclass. Cannot change spectating view target."));
+            }
+        }
+        
+    }
+    ```
+    * 编译后到蓝图中给 SpectatingViewpointClass 赋值为 BP_SpectatingViewpoint
+    * 接口名与蓝图中类似，主要根据接口所需传入的参数逆推需要的变量
+### 6. Challenge：发射平台
+* 把人弹飞
+  * 在 `LaunchCharacter()` 单个函数中完成，内置在 Character Class 中
+  * 添加粒子效果
+  * 可以把物体（如蓝色方块）也弹飞：Generate Overlap Events on blue cubes
+* 关键点
+  * 碰撞组件：球体/盒体碰撞组件，判定人物或物体是否与其重叠
+  * 
+* p22 02:23
+
+## 三、AI 基础
+* AI 行为
+  * 守卫目标物
+  * 能看到玩家，听到周围动静
+  * 对守卫有干扰机制（可声东击西）
+### 1. AI 守卫
+* New C++ Class - Character - FPSAIGuard
+  * Character 比 Pawn 多的内容：Static Mesh 组件、角色的移动
+  * 不涉及玩家，可将 SetupPlayerInputComponent 部分删掉
+  * 增加 Content 资源
+* 基于 FPSAIGuard 创建 BP_Guard
+  * `使用模型`：Mesh - details - Mesh - skeletal Mesh 使用导入的 DwarfGrunt_R_new
+  * 调整位置 -80，调整胶囊碰撞体高度 Shape - Capsule Half H... = 60
+  * 面向 X 轴方向（红轴方向）：Rotation_Z = -90
+  * `设置动画效果`：details - animation - animation mode - use animation assets，anim to play 中选择动画效果 Idle
+* p24 04:42
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+
+## 四、
+## 五、
+## 六、
+## 七、
+## 八、
+## 九、
+## 十、
+## 十一、
+## 十二、
+## 十三、
