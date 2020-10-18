@@ -29,7 +29,7 @@
 ### 1. 创建类
 * New C++ Class - Actor - FBSObjectiveActor
 * 基于 FBSObjectiveActor 创建 BP_Objective
-### 2. 绑定组件
+### 2. 绑定组件（in C++）
 * 选取一个拾取物体的地点，并放置 BP_Objective 
 * **`为 Actor 绑定组件`**
     ```cpp
@@ -69,6 +69,6 @@
 * 静态网格体组件设为无碰撞（蓝图中）
   * collision - `collision presets`
   * `BlockAllDynamic` 改为 `NoCollision`
-### 3. 设置碰撞和重叠事件
+### 3. 设置碰撞和重叠事件（in C++）
 * 
 
