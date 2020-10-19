@@ -721,6 +721,7 @@ void AFPSCharacter::Fire()
   * `Sine_Remapped` 两 Value 值可改变脉冲频率
 * 尝试多人游（爆）戏（炸）
   * Play - Multiplayer Options - Number of Players 设为 2，同时打开两个客户端（实际上打开的是一个服务器和一个客户端）
+  * UE4 小技巧：多端运行时 Shift + F1 挪开窗口
   * ↓ 在客户端做操作测试：
   * 问题 1：守卫头顶 UMG UI 只在触发客户端显示
   * 问题 2：客户端可出现拾起粒子特效，但目标物未显示销毁，只在服务器上显示销毁。但客户端的左上提示 UI 正常变化，服务器提示 UI 未改变。
@@ -744,8 +745,84 @@ void AFPSCharacter::Fire()
     	* ③ 启用 `SetReplicates` 后，服务器向所有客户端发送数据包，请求在客户端上生成该发射物
 	* `SetReplicateMovement`：类似地，移动、位置、转动等信息改变时，服务器也向客户端发送数据包，将状态更新到客户端
 * `确保代码在服务端上运行`
-  * ue4 client-server mode ，只能从服务端
-  * 03:19
+  * ue4 client-server mode ，只能从服务端给客户端发数据包。如果要反向的话需要调用服务端给出的事件触发接口传参实现：
+  * 所以完成 SetReplicate 后，在客户端窗口生成发射物的数据不能被服务端知晓：`FPSCharacter::Fire()` 与玩家控制的 Character 绑定，客户端无法往服务端直接传数据包。
+  * **`服务器函数`**
+    ```cpp
+    // FPSCharacter.h
+    protected:
+        UFUNCTION(Server, Reliable, WithValidation)
+        void ServerFire();
+
+    // FPSCharacter.cpp
+    void AFPSCharacter::ServerFire_Validate()
+    {
+        return true;
+    }
+
+    void AFPSCharacter::ServerFire_Implementation()
+    {
+        // 需要运行在服务器上的部分代码
+        if (ProjectileClass) { ... }
+    }
+
+    void AFPSCharacter::Fire()
+    {
+        ServerFire();
+    }
+    ```
+    * `Reliable`：确保连接至服务器（可能遇到丢包等问题，但最终确保连接）
+    * `WithValidation`：实现时要另外写一个 `_Validate` 结尾的 bool 函数，在服务器端进行完整性检查时用到。当客户端发起 return false 请求时服务器会强制取消连接，因为可能出现严重问题或在用外挂（
+    * 注意实现时要加后缀 `_Implementation` ，调用时与头文件的 ServerFire() 保持一致。
+    * 原因：`当创建带有 Server 关键词的 UFUNCTION 时，后台会自动为 _Implementation 和 _Validate 创建头文件`
+    * 流程：在客户端 `Fire()` 中调用 `ServerFire()` 时，不在客户端执行，而是发送请求到服务器，让服务器执行 ServerFire_Implementation() 函数。在服务端 `Fire()` 中调用 `ServerFire()` 时（因为本游戏服务端自身也可以是游戏玩家），当然直接执行。
+* 其它 Projectile 相关内容
+  ```cpp
+  // FPSProjectile.cpp
+  void AFPSProjectile::OnHit(...)
+  {
+      // 施加推力等
+      if (Role = ROLE_Authority)
+      {
+          MakeNoise(...);
+          Destroy();
+      }
+  }
+  ```
+  * MakeNoise 用于影响 AI 逻辑，所以只需在服务器上运行。
+  * Destroy 不应在客户端执行，因为客户端不拥有 Actor ，只是模拟生成了服务器的指令（replicate）。最终还是服务端决定何时销毁 Actor 。
+* 客户端只能水平射击问题（p35 开头）
+  * 在模板工程代码中使用了 `MuzzleLocation`、`MuzzleRotation`
+  * 运行测试可以发现客户端抬枪的时候服务端并没有动。
+  * 解决办法一：在服务器函数中给出发射物位置和旋转度信息，当然这样不能解决服务端观察客户端角色时没有抬枪的问题。
+  * 解决办法二：**`uint8 APawn::RemoteViewPitch`** 
+    ```cpp
+    // FPSCharacter.h
+    public:
+        virtual void Tick(float DeltaTime) override;
+    // FPSCharacter.cpp 
+    void AFPSCharacter::Tick(float DeltaTime)
+    {
+        Super::Tick(DeltaTime);
+
+        // check 是否被控制中
+        if ( !IsLocallyControlled() )
+        {
+            // 设置玩家手臂的相对旋转度
+            FRotator NewRot = Mesh1PComponent->RelativeRotation;
+            NewRot.Pitch = RemoteViewPitch;
+            Mesh1PComponent->SetRelativeRotation(NewRot);
+        }
+    }
+    ```
+    * 用到 FPSCharacter 的每台机器上的实例都按帧更新其位置。更新函数在服务器和客户端上都会运行，即运行两次。
+    * `RemoteViewPitch` 是 replicated 的。
+    * 注意：`不要和控制角色时给出的输入冲突`，因此只在不操作角色时执行。
+* 组件拼接 Bug：手臂虚影
+  * BP_Player 中 Mesh1PComponent 轴心在底部，但又附加到相机组件
+  * 把上面更改的组件从 Mesh1PComponent 改为 CameraComponent
+  * Bug：手臂狂晃
+  * **`RemoteViewPitch的存储方式`**： Alt + G 转到定义，其类型为 `uint8` ，不能为负值，在整个文件中搜索 RemoteViewPitch ，发现设置该变量的地方，有注释“Compress pitch to 1 byte”，被压缩到了一个字节。因此该量不能直接设置为 Pitch ，而需要进行解压（做压缩处操作的逆操作）。偷懒笔记：$RemoteViewPitch \times 360.0f / 255.0f$，转为 [0, 360] 内的任一角度。
 ### 3. 
 ### 4. 
 ### 5. 
