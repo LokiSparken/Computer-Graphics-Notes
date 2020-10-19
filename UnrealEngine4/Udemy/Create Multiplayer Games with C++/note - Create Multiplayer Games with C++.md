@@ -699,9 +699,61 @@ void AFPSCharacter::Fire()
   * 转到 WBP_GuardState 进入蓝图界面 Graph ，新建 Functions - UpdateText ，增加 Inputs - `Text NewText;`。回到 Designer 界面选中 Text - details - 勾选 `Is Variable`。再到 Graph 中，Text 显示到 Variables 栏下，拖入蓝图 `SetText`。
   * 再回到 BP_Guard，As WBP_GuardState -> `Update Text`，New State 输入从 On State Changed - New State -> Select 给出。
   * 在 WBP_GuardState - event graph - event construct -> `Get Text` -> `SetText` 使初始显示为空。
-### 8. Challenge：
+### 8. Challenge：AI 巡逻
+* 逻辑
+  * 两点间游走（可以范围内随机？）：**`寻路网格体 Nav Mesh Bounds Volume`**
+    * 寻路系统相关
+    * UE4 小技巧：右键物体，Select -> Select all matching classes 选中所有匹配类
+    * details - `search navigation`（导航） - collision - `can ever affect` 取消寻路系统对相应物体的影响。（默认情况下物体会让寻路网格有洞，而模拟物理的物体被击中时会移动，运行时寻路网格静止，洞保留）
+  * Suspicious 时停止巡逻
+* p31 02:53
 
-## 四、
+## 四、实现联网
+* 总览
+  * 让类在多人游戏设置下的客户端和服务器上运作
+  * **Replication**
+### 1. 场景调整
+* 调整场景，增加难度。
+* 为目标物创建简单材质
+  * 新建 Content/Materials/M_Objective 闪光材质
+  
+  ![](images/1.png)
+  * `Sine_Remapped` 两 Value 值可改变脉冲频率
+* 尝试多人游（爆）戏（炸）
+  * Play - Multiplayer Options - Number of Players 设为 2，同时打开两个客户端（实际上打开的是一个服务器和一个客户端）
+  * ↓ 在客户端做操作测试：
+  * 问题 1：守卫头顶 UMG UI 只在触发客户端显示
+  * 问题 2：客户端可出现拾起粒子特效，但目标物未显示销毁，只在服务器上显示销毁。但客户端的左上提示 UI 正常变化，服务器提示 UI 未改变。
+  * 问题 3：任务完成时客户端视角切换，无 UI 提示。服务器未切换视角，有 UI 提示，仍可移动。
+  * 问题 4：（p34 开头处）在客户端、服务端分别开枪，另一窗口都没有相应变化， Projectile 不通信。
+### 2. 发射物 Projectile 通信
+* `打开 Replication`：在要复制到客户端的 Actor 类的构造函数中将相关 Actor 的复制选项打开
+	```cpp
+	// FPSProjectile.cpp
+	AFPSProjectile::AFPSProjectile()
+	{
+		SetReplicates(true);
+		SetReplicateMovement(true);
+	}
+	```
+	* `SetReplicates`：生成发射物 projectile 时在客户端复制同样的效果。
+    	* 流程：
+    	* ① 服务器窗口调用 `AFPSCharacter::Fire()` 
+    	* ② `AFPSCharacter::Fire()` 中 `SpawnActor<AFPSProjectile>` 生成发射物
+    	* 此时只对服务器有效，客户端中不显示
+    	* ③ 启用 `SetReplicates` 后，服务器向所有客户端发送数据包，请求在客户端上生成该发射物
+	* `SetReplicateMovement`：类似地，移动、位置、转动等信息改变时，服务器也向客户端发送数据包，将状态更新到客户端
+* `确保代码在服务端上运行`
+  * ue4 client-server mode ，只能从服务端
+  * 03:19
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. Activity：和基友一起愉快滴玩耍w
+
 ## 五、
 ## 六、
 ## 七、
