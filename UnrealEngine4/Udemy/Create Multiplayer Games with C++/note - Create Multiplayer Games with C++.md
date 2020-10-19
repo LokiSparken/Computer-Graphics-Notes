@@ -791,11 +791,13 @@ void AFPSCharacter::Fire()
   ```
   * MakeNoise 用于影响 AI 逻辑，所以只需在服务器上运行。
   * Destroy 不应在客户端执行，因为客户端不拥有 Actor ，只是模拟生成了服务器的指令（replicate）。最终还是服务端决定何时销毁 Actor 。
-* 客户端只能水平射击问题（p35 开头）
+
+### 3. **`角色组件转动通信`**
+* 问题：客户端只能水平
   * 在模板工程代码中使用了 `MuzzleLocation`、`MuzzleRotation`
   * 运行测试可以发现客户端抬枪的时候服务端并没有动。
-  * 解决办法一：在服务器函数中给出发射物位置和旋转度信息，当然这样不能解决服务端观察客户端角色时没有抬枪的问题。
-  * 解决办法二：**`uint8 APawn::RemoteViewPitch`** 
+* 解决办法一：在服务器函数中给出发射物位置和旋转度信息，当然这样不能解决服务端观察客户端角色时没有抬枪的问题。
+* 解决办法二：**`uint8 APawn::RemoteViewPitch`** 
     ```cpp
     // FPSCharacter.h
     public:
@@ -815,20 +817,20 @@ void AFPSCharacter::Fire()
         }
     }
     ```
-    * 用到 FPSCharacter 的每台机器上的实例都按帧更新其位置。更新函数在服务器和客户端上都会运行，即运行两次。
-    * `RemoteViewPitch` 是 replicated 的。
-    * 注意：`不要和控制角色时给出的输入冲突`，因此只在不操作角色时执行。
+  * 用到 FPSCharacter 的每台机器上的实例都按帧更新其位置。更新函数在服务器和客户端上都会运行，即运行两次。
+  * `RemoteViewPitch` 是 replicated 的。
+  * 注意：`不要和控制角色时给出的输入冲突`，因此只在不操作角色时执行。
 * 组件拼接 Bug：手臂虚影
   * BP_Player 中 Mesh1PComponent 轴心在底部，但又附加到相机组件
   * 把上面更改的组件从 Mesh1PComponent 改为 CameraComponent
   * Bug：手臂狂晃
   * **`RemoteViewPitch的存储方式`**： Alt + G 转到定义，其类型为 `uint8` ，不能为负值，在整个文件中搜索 RemoteViewPitch ，发现设置该变量的地方，有注释“Compress pitch to 1 byte”，被压缩到了一个字节。因此该量不能直接设置为 Pitch ，而需要进行解压（做压缩处操作的逆操作）。偷懒笔记：$RemoteViewPitch \times 360.0f / 255.0f$，转为 [0, 360] 内的任一角度。
-### 3. 
-### 4. 
-### 5. 
-### 6. 
-### 7. 
-### 8. 
+### 4. 目标物体通信
+* p36
+### 5. AI 守卫通信
+### 6. 游戏状态联网 1
+### 7. 游戏状态联网 2
+### 8. 游戏状态联网 3
 ### 9. Activity：和基友一起愉快滴玩耍w
 
 ## 五、
