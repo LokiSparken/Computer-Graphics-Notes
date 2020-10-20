@@ -727,7 +727,7 @@ void AFPSCharacter::Fire()
   * 问题 2：客户端可出现拾起粒子特效，但目标物未显示销毁，只在服务器上显示销毁。但客户端的左上提示 UI 正常变化，服务器提示 UI 未改变。
   * 问题 3：任务完成时客户端视角切换，无 UI 提示。服务器未切换视角，有 UI 提示，仍可移动。
   * 问题 4：（p34 开头处）在客户端、服务端分别开枪，另一窗口都没有相应变化， Projectile 不通信。
-### 2. 发射物 Projectile 通信
+### 2. 发射物 Projectile 联网
 * `打开 Replication`：在要复制到客户端的 Actor 类的构造函数中将相关 Actor 的复制选项打开
 	```cpp
 	// FPSProjectile.cpp
@@ -791,8 +791,7 @@ void AFPSCharacter::Fire()
   ```
   * MakeNoise 用于影响 AI 逻辑，所以只需在服务器上运行。
   * Destroy 不应在客户端执行，因为客户端不拥有 Actor ，只是模拟生成了服务器的指令（replicate）。最终还是服务端决定何时销毁 Actor 。
-
-### 3. **`角色组件转动通信`**
+### 3. **`角色组件联网`**
 * 问题：客户端只能水平
   * 在模板工程代码中使用了 `MuzzleLocation`、`MuzzleRotation`
   * 运行测试可以发现客户端抬枪的时候服务端并没有动。
@@ -825,10 +824,92 @@ void AFPSCharacter::Fire()
   * 把上面更改的组件从 Mesh1PComponent 改为 CameraComponent
   * Bug：手臂狂晃
   * **`RemoteViewPitch的存储方式`**： Alt + G 转到定义，其类型为 `uint8` ，不能为负值，在整个文件中搜索 RemoteViewPitch ，发现设置该变量的地方，有注释“Compress pitch to 1 byte”，被压缩到了一个字节。因此该量不能直接设置为 Pitch ，而需要进行解压（做压缩处操作的逆操作）。偷懒笔记：$RemoteViewPitch \times 360.0f / 255.0f$，转为 [0, 360] 内的任一角度。
-### 4. 目标物体通信
-* p36
-### 5. AI 守卫通信
+### 4. 目标物体联网
+#### 玩家起点微调
+* 移除 BP_Player
+  * 主界面选中 BP_Player 查看 details - BP_Player(self) - Pawn - `Auto Possess Player`
+  * 默认设置 Player 0 ，即第一个进入游戏的玩家会获得该 Pawn 的支配权。也即第一个进入游戏的玩家的 `Player Controller 会分配到这个 Pawn`。
+  * 对于多人游戏，使用 `Player Start` 。
+* **`Player Start`**
+  * 游戏开始时，Game Mode 尝试在关卡中寻找这类 Actor ，（盲猜）取一个交给玩家控制器。
+  * 流程：在 World Settings 中设定了 BP_GameMode ，并在 Default Pawn 应用了 BP_Player ，因此 GameMode 会在 Player Start 处生成 BP_Player （盲猜）并将控制权交给 Player Controller。
+* 把 Number of Players 改回 1 看效果
+#### 更改目标物设置
+* 打开 replicates：构造函数中 `SetReplicates(true);`
+* UE4 小技巧：运行窗口大小调整 play - advanced settings - editor preference - play in new window - `new window size`
+### 5. AI 守卫联网
+* AI 守卫头顶 UI 在客户端中不显示变化的原因
+  * `AFPSAIGuard::SetGuardState()` 中的 `OnStateChanged()` 是 AI 相关函数，AI 只在服务器上进行逻辑运算，所以这类函数只能在服务器调用
+  * 【？】可是这明明是自定义的，还是说是因为它在 AI 模块里？
+#### **`实现变量的同步`**
+* `Replicated一个变量`
+    ```cpp
+    // FPSAIGuard.h
+    protected:
+        UPROPERTY(ReplicatedUsing = OnRep_GuardState)
+        EAIState GuardState;
+
+        UFUNCTION()
+        void OnRep_GuardState;
+
+    // FPSAIGuard.cpp
+    void AFPSAIGuard::OnRep_GuardState()
+    {
+        OnStateChanged(GuardState);
+    }
+
+    void AFPSAIGuard::SetGuardState(EAIState NewState)
+    {
+        // ...
+        GuardState = NewState;      // 更新状态
+        OnRep_GuardState();
+        // OnStateChanged(GuardState); // 服务器运行
+    }
+    ```
+    * 当 GuardState 更新后，客户端上会调用 `OnRep_GuardState()` ，因此在该函数内调用 `OnStateChanged()` 修改 UI 显示。
+    * 流程：（盲猜）由于对 `GuardState` 设置了 `ReplicatedUsing` ，因此其变化会由服务器通知客户端。接着客户端调用 `OnRep_GuardState()` 并在其内调用 `OnStateChanged()` 修改蓝图中的 UI 显示。
+* `设置 ReplicatedUsing 同步规则`
+  * 同步规则：如所有客户端都同步，单客户端进行同步等。
+  * **`GetLifetimeReplicatedProps`**：Ctrl + Shift + F 查询源码
+    ```cpp
+    // FPSAIGuard.cpp
+    #include "Net/UnrealNetwork.h"
+    void AFPSAIGuard::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+    {
+        Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+        DOREPLIFETIME(AFPSAIGuard, GuardState);     // 复制
+    }
+    ```
+    * 应用默认规则复制变量，即复制到所有联网客户端。
+    * 该设置配合 ReplicatedUsing 实现将 AI 守卫状态同步到所有客户端。
+* 【？】流程：更新状态后，服务器调用 `OnRep_GuardState()` ，因此之后的 OnStateChanged() 调用可以删掉了。
+  * 【？】上面盲猜失败了咩？？？到底是谁调 `OnRep_GuardState()`？？？
 ### 6. 游戏状态联网 1
+* 问题：通关逻辑中，失败提示音、任务完成提示 UI 等生成错乱。
+* 解决任务完成也出现的失败提示音
+  * 原因：是否携带目标物标记 `IsCarryingObjective` 未同步（变量同步问题，类似 GuardState ）
+  * 之前只对服务器设置了 `IsCarryingObjective` 的状态更新，因此在客户端上该值永远不会为真。所以在 UPROPERTY 中打开该变量的 replicated，并通过 `` 函数实现同步。
+    ```cpp
+    // FPSCharacter.h
+    public:
+        UPROPERTY(Replicated, ...)
+        bool bIsCarryingObjective;
+
+    // FPSCharacter.cpp
+    #include "Net/UnrealNetwork.h"
+    void AFPSCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > &OutLifetimeProps) const
+    {
+        Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+        DOREPLIFETIME(AFPSCharacter, bIsCarryingObjective);
+        // 也可以使用 _CONDITION 添加同步规则
+        // DOREPLIFETIME_CONDITION(AFPSCharacter, bIsCarryingObjective, COND_OwnerOnly);
+    }
+    ```
+    * `COND_OwnerOnly`：将数据传输至任一控制角色的机器上，有效节省带宽。
+  * UE4 小技巧：play - `Run Dedicated Server` 在专用服务器上运行，则本地运行的就是客户端
+* 解决任务完成提示 UI 不显示问题
+  * 原因：BP_GameMode 中的 `OnMissionCompleted` 事件用于创建相应控件 UI 并显示，所以关键在于，通关口触发并将信号发送至 Game Mode 后，这一块的实现目前未实现同步
+  * 在 `AFPSGameMode::CompleteMission()` 中，只有 PC 、if (PC) 在后台运行，因此在客户端上也正常。其它代码都跑在服务器上。
 ### 7. 游戏状态联网 2
 ### 8. 游戏状态联网 3
 ### 9. Activity：和基友一起愉快滴玩耍w
@@ -842,3 +923,8 @@ void AFPSCharacter::Fire()
 ## 十一、
 ## 十二、
 ## 十三、
+
+# 备注
+* 【？】：挠头的地方
+* （盲猜）abcd：abcd （我猜的
+* 
