@@ -744,7 +744,7 @@ void AFPSCharacter::Fire()
     	* 此时只对服务器有效，客户端中不显示
     	* ③ 启用 `SetReplicates` 后，服务器向所有客户端发送数据包，请求在客户端上生成该发射物
 	* `SetReplicateMovement`：类似地，移动、位置、转动等信息改变时，服务器也向客户端发送数据包，将状态更新到客户端
-* `确保代码在服务端上运行`
+* `确保代码在服务端上运行`：**`函数在服务端和客户端的同步问题`**
   * ue4 client-server mode ，只能从服务端给客户端发数据包。如果要反向的话需要调用服务端给出的事件触发接口传参实现：https://answers.unrealengine.com/questions/709110/index.html
   * 所以完成 SetReplicate 后，在客户端窗口生成发射物的数据不能被服务端知晓：`FPSCharacter::Fire()` 与玩家控制的 Character 绑定，客户端无法往服务端直接传数据包。
   * **`服务器函数`**
@@ -911,11 +911,173 @@ void AFPSCharacter::Fire()
   * 原因：BP_GameMode 中的 `OnMissionCompleted` 事件用于创建相应控件 UI 并显示，所以关键在于，通关口触发并将信号发送至 Game Mode 后，这一块的实现目前未实现同步
   * 在 `AFPSGameMode::CompleteMission()` 中，只有 PC 、if (PC) 在后台运行，因此在客户端上也正常。其它代码都跑在服务器上。
 ### 7. 游戏状态联网 2
-### 8. 游戏状态联网 3
-### 9. Activity：和基友一起愉快滴玩耍w
+* 需求
+  * 任务完成提示 UI 同步
+  * 统一禁用所有玩家对 Pawn 的操作
+* 分析
+  * 实现于 `AFPSGameMode::CompleteMission()` 中，检查是否提供了 `InstagatorPawn` 并禁用该 Pawn 的输入
+  * **`Game Mode 在客户端上没有 instance （实例），因此 Game Mode 类中的相关函数都不会在客户端上运行。`**所以当客户端运行到 HandleOverlap 内创建 GM 的时候就获取不到 GameMode 。
+  * 但是当前的需求其实只要确保：在每个客户端上都 `DisableInput(nullptr)`，而不止是针对 `InstigatorPawn` 。并且在每台客户端上运行 `OnMissionCompleted()` 显示 UI 的变化。
+* 解决办法：**`组播函数 Multicast Function`**
+  * 一般来说想要同步代码，可以像上面的 ServerFire 一样做 Server、Client、MultiCast 这样的标记，让服务器调用再应用到客户端。但 Game Mode 类只存在于服务器上，不能再这样操作。【？】Game Mode 类不能使用 Replicated。【？】为啥不能在服务器这调用了然后结果告诉客户端？就在服务器上不是更好办……吗？
+  * 【？】是不是我英语不太好只会看翻译。。。那上面的 MultiCast 标记和下面的 Multicast 函数有啥区别。。。
+  * 【？】UFUNCTION(NetMulticast) 不行吗？https://docs.unrealengine.com/zh-CN/Programming/UnrealArchitecture/Reference/Functions/Specifiers/index.html
+* **`游戏状态基 Game State Base`**
+  * 创建 C++ 类 - Game State Base - FPSGameState
+  * 进入不知道为啥 Alt + 2 了一下然后好像就加载出了基本头文件啥的内容=。=||| 前面没加载完？
+  * Game State Base ：`用于装入 Game Mode 中所有需要复制的东西`。
+* **`创建组播函数`**
+    ```cpp
+    // FPSGameState.h
+    public:
+        UFUNCTION(NetMulticast, Reliable)
+        void MulticastOnMissionComplete(APawn *InstigatorPawn, bool bMissionSuccess);
 
-## 五、
-## 六、
+    // FPSGameState.cpp
+    void AFPSGameState::MulticastOnMissionComplete(APawn *InstigatorPawn, bool bMissionSuccess);
+    {
+        for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; It++)
+        {
+            APawn *Pawn = It->Get();
+        }
+        if (Pawn && Pawn->IsLocallyControlled())
+        {
+            Pawn->DisableInput(nullptr);
+        }
+    }
+    ```
+    * 创建组播函数 `MulticastOmMissionComplete()` ，参数列表与原函数保持一致。实现时同样加 `_Implementation` 后缀。
+    * 【？】我透竟然用了！NetMulticast！那为啥 Game Mode 里不行。。。客户端没有实例不能 replicated 所以就不行吗=。=？
+    * `NetMulticast`：函数经服务器调用时，消息发送到所有客户端，服务器和客户端都会运行。
+* 禁用所有受玩家控制的 Pawn
+  * `获取所有受控 Pawn`：`world.h PawnIterator`，包括敌方 Pawn
+  * `check 是否受本地控制`：`Pawn->IsLocallyControlled()`
+  * 在 Game Mode 中调用
+    ```cpp
+    // FPSGameMode.cpp
+    #include "FPSGameState.h"
+    AFPSGameMode::AFPSGameMode()
+    {
+        GameStateClass = AFPSGameState::StaticClass();
+    }
+
+    void AFPSGameMode::CompleteMission(APawn *InstigatorPawn, bool bMissionSuccess)
+    {
+        // 删除原有的 InstigatorPawn->DisableInput(nullptr); ，其只对当前行为的 Pawn 生效
+        AFPSGameState *GS = GetGameState<AFPSGameState>();
+        if (GS)
+        {
+            GS->MulticastOnMissionComplete(InstigatorPawn, bMissionSuccess);
+        }
+    }
+    ```
+    * `GetGameState<T>()` 模板函数。【？】看来可以有多种状态基？
+    * 【？】`GameStateClass = AFPSGameState::StaticClass();` 好像是用于明确游戏状态，但是还是不太清楚在干嘛……就像在 BP_GameMode 里应用 Player Controller 之类的一样做个设置？好像是的。。。那 StaticClass 又是啥玩意。。。UClass::StaticClass()，好像就是返回这个类？
+    * 流程：游戏模式通过获取设定的游戏状态调用组播函数，通知客户端跟它一起跑组播函数内的代码。
+### 8. 游戏状态联网 3
+* 需求：任务完成提示 UI 的同步问题
+* 分析：使用Player Controller
+  * 玩家控制器将受到的输入发送给所控制的 Pawn ，`在服务器和拥有该控制器的客户端上都存在`。
+  * Pawn ：服务器上两个，客户端机器上也有两个，使它们都同步。
+  * Player Controller 只需控制本地设备。但对于当前需求，只需要在本地设备上显示 HUD 信息，所以已经足够。
+* 实现
+  * 创建 C++ 类 - Player Controller - FPSPlayerController
+  * 创建组播函数
+    ```cpp
+    // FPSPlayerController.h
+    public:
+        UFUNCTION(BlueprintImplementableEvent, Category = "PlayerController")
+        void OnMissionCompleted(APawn *InstigatorPawn, bool bMissionSuccess);
+    ```
+  * 在游戏状态中调用：类似 PawnIterator ，通过 `PlayerControllerIterator` 获取所有玩家控制器，并调用玩家控制器的该组播函数。
+    ```cpp
+    // FPSGameState.cpp
+    #include "FPSPlayerController.h"
+    void AFPSGameState::MulticastOnMissionComplete_Implementation(...)
+    {
+        for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
+        {
+            AFPSPlayerController *PC = Cast<AFPSPlayerController>(It->Get());
+            if (PC && PC->IsLocalController())
+            {
+                PC->OnMissionCompleted(InstigatorPawn, bMissionSuccess);
+
+                // disable input
+                APawn *MyPawn = PC->GetPawn();
+                if (MyPawn)
+                {
+                    MyPawn->DisableInput(PC);
+                }
+            }
+        }
+    }
+    ```
+    * 由于组播函数在服务器上也会运行，所以要判断获取的控制器是否本地控制器。
+    * 【？】道理我都懂，那么如果在服务器上对其它客户端的控制器也调用了这个函数的话会咋样？为啥我感觉调就调了……能直接用那个控制器让客户端显示的话那不是更好？如果不能的话就是资源浪费一丢丢？会有啥不妙的问题吗？【测一下】
+    * `简化`：可以把上面的 PawnIterator 去掉，在这里通过玩家控制器迭代器获取相应控制的 Pawn。
+  * 实现组播函数
+    * 把 BP_GameMode 中原来 OnMissionCompleted 的蓝图实现剪切到新的基于 FPSPlayerController 创建的 BP_PlayerController 中
+    * 事件同样是 OnMissionCompleted ，不过此时是组播函数版本，会在客户端也调用
+    * 最后在 BP_GameMode 中应用 BP_PlayerController
+* 需求：服务器完成任务后相机不切换视角问题
+* 分析：是的没错，就是最后一坨没有进入组播函数的那部分代码干了切换视角的事
+* 实现
+  * 把原来只对 InstigatorPawn 的控制器做的 SetViewTargetWithBlend ，通过 PlayerControllerIterator 对所有玩家控制器进行设置。
+  ```cpp
+  // FPSGameMode.cpp
+  void AFPSGameMode::CompleteMission(...)
+  {
+      // ...
+      AActor *NewViewTarget = ReturnedActors[0];
+      for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
+      {
+          APlayerController *PC = It->Get();
+          if (PC)
+          {
+              PC->SetViewTargetWithBlend(NewViewTarget, 0.5f, EViewTargetBlendFunction::VTBlend_Cubic);
+          }
+      }
+  }
+  ```
+  * 这一部分在服务器上运行，不检查是否本地控制器，否则只有一个控制器可用。
+  * `SetViewTargetWithBlend` is `a framework function` that just `does the view target replication` 然后向客户端传输信号，令其更改视角。
+  * 【？】因为视角是和控制器绑定的？服务器和客户端上控制器联动？
+  * 【？】那么所以为什么显示 UI 的时候不直接在服务器上对所有控制器直接调要用组播+判本地控制器……因为 UI 是要跑在客户端上才有效？
+### 9. Activity：和基友一起愉快滴玩耍w
+* 项目设置 - edit - project settings
+  * Maps & Modes
+    * Default GameMode - 启用 FPSGameMode
+    * Game Default Map - 默认地图 FirstPersonExampleMap 已启用
+* 直接打包
+* 运行
+  * 进入一个 .exe
+  * `~` 启用控制台
+  * `> open FirstPersonExampleMap?listen` 建立连接
+  * 再打开一个 .exe
+  * 进入控制台，`> open 127.0.0.1` 联机
+  * 与其他人联机：WinNoEditor 整个打包，获取他人 IP，再用 :7777 做端口（失败则可能是因为路由器的NAT规则比较严格，可在7777端口上做转发）
+
+## 五、玩家基本移动、角色动画、设置第三人称相机视角
+### 1. 
+* p43
+### 2. 
+### 3. 移动输入
+### 4. 
+### 5. 第三人称相机视角 1
+### 6. 第三人称相机视角 2
+### 7. 添加玩家网格
+### 8. 
+### 9. 
+### 10. Challenge：
+## 六、武器设定：hit-scan 武器（发出轨迹线、瞄准游戏世界中的目标actor）
+* Hit-scan weapon：发出轨迹线瞄准目标 Actor
+  * 创建轨迹线
+  * 对 Actor 造成伤害
+  * 基础特效
+* Challenge：Grenade launcher 枪榴弹发射器
+  * 类似第一个项目中的 projectile
+### 1. 
+* p54
 ## 七、
 ## 八、
 ## 九、
@@ -926,5 +1088,5 @@ void AFPSCharacter::Fire()
 
 # 备注
 * 【？】：挠头的地方
-* （盲猜）abcd：abcd （我猜的
+* （盲猜）abcd：abcd 是我猜的（
 * 
