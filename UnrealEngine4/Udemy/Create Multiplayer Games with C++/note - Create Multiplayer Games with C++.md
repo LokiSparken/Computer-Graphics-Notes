@@ -628,7 +628,7 @@ void AFPSCharacter::Fire()
 ### 6. 游戏模式：死亡规则
 * 规则：被守卫发现就 Game Over
   * 显示 Game Over
-  * 切换相机视角
+  * 切换摄像机视角
   * 取消 Pawn 控制权
 * 修改 Game Mode
   * 为 `FPSGameMode::CompleteMission()` 增加参数 `bool bMissionSuccess`
@@ -820,7 +820,7 @@ void AFPSCharacter::Fire()
   * `RemoteViewPitch` 是 replicated 的。
   * 注意：`不要和控制角色时给出的输入冲突`，因此只在不操作角色时执行。
 * 组件拼接 Bug：手臂虚影
-  * BP_Player 中 Mesh1PComponent 轴心在底部，但又附加到相机组件
+  * BP_Player 中 Mesh1PComponent 轴心在底部，但又附加到摄像机组件
   * 把上面更改的组件从 Mesh1PComponent 改为 CameraComponent
   * Bug：手臂狂晃
   * **`RemoteViewPitch的存储方式`**： Alt + G 转到定义，其类型为 `uint8` ，不能为负值，在整个文件中搜索 RemoteViewPitch ，发现设置该变量的地方，有注释“Compress pitch to 1 byte”，被压缩到了一个字节。因此该量不能直接设置为 Pitch ，而需要进行解压（做压缩处操作的逆操作）。偷懒笔记：$RemoteViewPitch \times 360.0f / 255.0f$，转为 [0, 360] 内的任一角度。
@@ -1019,7 +1019,7 @@ void AFPSCharacter::Fire()
     * 把 BP_GameMode 中原来 OnMissionCompleted 的蓝图实现剪切到新的基于 FPSPlayerController 创建的 BP_PlayerController 中
     * 事件同样是 OnMissionCompleted ，不过此时是组播函数版本，会在客户端也调用
     * 最后在 BP_GameMode 中应用 BP_PlayerController
-* 需求：服务器完成任务后相机不切换视角问题
+* 需求：服务器完成任务后摄像机不切换视角问题
 * 分析：是的没错，就是最后一坨没有进入组播函数的那部分代码干了切换视角的事
 * 实现
   * 把原来只对 InstigatorPawn 的控制器做的 SetViewTargetWithBlend ，通过 PlayerControllerIterator 对所有玩家控制器进行设置。
@@ -1057,14 +1057,92 @@ void AFPSCharacter::Fire()
   * 进入控制台，`> open 127.0.0.1` 联机
   * 与其他人联机：WinNoEditor 整个打包，获取他人 IP，再用 :7777 做端口（失败则可能是因为路由器的NAT规则比较严格，可在7777端口上做转发）
 
-## 五、玩家基本移动、角色动画、设置第三人称相机视角
-### 1. 
-* p43
-### 2. 
-### 3. 移动输入
-### 4. 
-### 5. 第三人称相机视角 1
-### 6. 第三人称相机视角 2
+## 五、Coop Game 1
+* 总览
+  * 玩家的基本移动 Basic movements
+  * 添加角色动画 Character animations
+  * 设置第三人称摄像机视角 Third person camera view
+### 1. 创建项目
+* New project - C++ - Basic Code - No Starter Content
+### 2. 创建角色
+* New C++ Class - Character - SCharacter
+  * S - Shooter
+### 3. 角色移动控制 - 键盘移动
+* ① 添加输入控制 - 轴映射
+  * project settings - input - `Axis Mappings`
+  * 添加映射 MoveForward
+  * 添加按键 W scale = 1.0、S scale = -1.0
+* ② 绑定代理函数到 project settings 中定义的轴映射
+    ```cpp
+    // SCharacter.cpp
+    void ASCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
+    {
+        PlayerInputComponent->BindAxis("MoveForward", this, &ASCharacter::MoveForward);
+    }
+    ```
+* ③ 定义代理函数
+    ```cpp
+    // SCharacter.h
+    protected:
+        void MoveForward(float value);
+
+    // SCharacter.cpp
+    void ASCharacter::MoveForward(float value)
+    {
+        AddMovementInput(GetActorForwardVector() * Value);
+    }
+    ```
+    * 【？】这参数啥玩意
+* 为不同方向做相应设置。
+* 项目管理：创建 Content/Blueprints 文件夹
+  * 基于 SCharacter 创建 BP_PlayerPawn 拖入场景
+  * details - Auto Possess Player 设为 Player 0。对单玩家模式，直接分配到该 Pawn 可以简化对 Player Start 的设置等操作。
+### 4. 角色视野控制 - 鼠标转向
+* ① 添加输入控制 - 轴映射
+  * project settings - input - `Axis Mappings`
+  * 添加映射 LookUp、Turn
+  * 添加按键 Mouse Y scale = -1.0（坐标系问题，1 时颠倒）、Mouse X scale = 1.0
+* ② 绑定代理函数
+    ```cpp
+    // SCharacter.cpp
+    void ASCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
+    {
+        PlayerInputComponent->BindAxis("LookUp", this, &ASCharacter::AddControllerPitchInput);  // 上下
+        PlayerInputComponent->BindAxis("Turn", this, &ASCharacter::AddControllerYawInput);    // 左右
+    }
+    ```
+    * `AddControllerPitch/YawInput(float Value);` 为 Pawn 自带的视角控制输入函数。
+* 项目管理：创建 Content/Maps 文件夹
+  * 保存地图为 P_TestMap （persistent）
+### 5. 第三人称摄像机视角 1 - Camera Component
+* 声明摄像机组件
+    ```cpp
+    // SCharacter.h
+    class UCameraComponent;
+
+    protected:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+        UCameraComponent *CameraComp;
+    ```
+    * VisibleAnywhere 在所有属性窗口中可见，无法编辑。
+    * BlueprintReadOnly 蓝图可读取，无法修改。
+    * 因此这样标识的组件只能在构造函数内创建实例，添加为属性。构造完就不能惹！
+* 创建摄像机组件
+    ```cpp
+    // SCharacter.cpp
+    #include "Camera/CameraComponent.h"
+    ASCharacter::ASCharacter()
+    {
+        CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
+        CameraComp->bUsePawnControlRotation = true;
+    }
+    ```
+    * bUsePawnControlRotation 使摄像机正常地跟随观看者视角移动
+* 编译，摄像机组件错位是常见问题，需要重新编译。
+* UE4 小技巧：Save on Compile - On Success Only （好像是记过了的小技巧2333 不过再记一次问题不大（
+  * 节省编译后手动保存的时间
+### 6. 第三人称摄像机视角 2 - Spring Arm Component
+
 ### 7. 添加玩家网格
 ### 8. 
 ### 9. 
