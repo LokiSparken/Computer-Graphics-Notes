@@ -184,7 +184,7 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 * p15 02:42
 
 ## 二、游戏规则
-* 规则
+* 总览
   * 玩家将目标物体带至通关区域范围即完成任务。
   * 向玩家显示相应通知。
   * 暂停接收玩家输入。
@@ -1359,6 +1359,7 @@ void AFPSCharacter::Fire()
   * UE4 小技巧：蓝图编辑器 - Ctrl + 将变量拖入蓝图（【？】好像直接是 get 了？）
   * Current Weapon -> （如果属于 Actor 类型）Cast to BP_Rifle -> Fire
 ### 4. Trace Line 2
+p57
 ### 5. 
 ### 6. 
 ### 7. 
@@ -1366,6 +1367,11 @@ void AFPSCharacter::Fire()
 ### 9. Challenge：
 
 ## 七、
+* 总览
+  * 开镜狙击 Aiming down sights
+  * 后座力导致的摄像机抖动 Camera shakes
+  * 多表面类型 Multiple physical surface types（用于生成不同的粒子效果，击中不同材质的表面产生不同效果）
+  * 
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1377,6 +1383,10 @@ void AFPSCharacter::Fire()
 ### 9. 
 
 ## 八、
+* 总览
+  * 自定义组件（记录生命值、侦听传入的伤害事件，集成到一个组件中，可解耦并分别应用到玩家和 AI ）
+  * 角色死亡效果
+  * UMG 生命值反馈
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1387,7 +1397,9 @@ void AFPSCharacter::Fire()
 ### 8. 
 ### 9. 
 
-## 九、
+## 九、联网
+* 总览
+  * 为之前几章内容做联机设置
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1398,7 +1410,10 @@ void AFPSCharacter::Fire()
 ### 8. 
 ### 9. 
 
-## 十、
+## 十、基础 AI
+* 总览
+  * 滚动追踪球体（接近玩家，爆炸）：AI 基础原理，Navigation 及 C++ 中如何为其编写基本行为
+  * 适应多人游戏
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1409,7 +1424,13 @@ void AFPSCharacter::Fire()
 ### 8. 
 ### 9. 
 
-## 十一、
+## 十一、功能道具
+* 总览
+  * 创建增益型道具：Super speed、Health regeneration（基本设计与《虚幻竞技场》类似）
+    * 生成 Actor
+    * 玩家经过时可拾起
+    * 经过一定时间后重新生成道具
+  * 适应多人游戏
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1420,7 +1441,11 @@ void AFPSCharacter::Fire()
 ### 8. 
 ### 9. 
 
-## 十二、
+## 十二、游戏规则
+* 总览
+  * 创建关卡：BSP Geometry Tools，画出粗略可用于测试游戏功能的关卡
+  * 关键元素：玩家 Player Spawns、敌军 Enemy Spawns、增益道具 Power-up Locations
+  * `创建游戏模式`：批量生成敌军、杀敌得分、处理 Win & Lose 等游戏状态、玩家复活 Respawn Players
 ### 1. 
 ### 2. 
 ### 3. 
@@ -1431,7 +1456,12 @@ void AFPSCharacter::Fire()
 ### 8. 
 ### 9. 
 
-## 十三、
+## 十三、高级 AI
+* 总览
+  * 人形敌军、使用武器
+  * 行为树 Behavior Trees
+  * 用 Environment Query System 实现隐蔽、找到攻击玩家的最佳位置
+  * 感官系统 Perception System for sight and hearing
 ### 1. 
 ### 2. 
 ### 3. 
