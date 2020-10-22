@@ -1138,15 +1138,124 @@ void AFPSCharacter::Fire()
     }
     ```
     * bUsePawnControlRotation 使摄像机正常地跟随观看者视角移动
-* 编译，摄像机组件错位是常见问题，需要重新编译。
+* 编译
+  * 摄像机组件位置与蓝图 viewport 中设置不一致是常见问题，需要重新编译。
+  * 编译后对 BP_PlayerPawn 和 CameraComp 分别 reset position 。
 * UE4 小技巧：Save on Compile - On Success Only （好像是记过了的小技巧2333 不过再记一次问题不大（
   * 节省编译后手动保存的时间
 ### 6. 第三人称摄像机视角 2 - Spring Arm Component
+* UE4 小技巧：运行时 `~` 打开控制台 `show collision` 显示碰撞体
+* 问题：上下看的时候有点奇怪
+* 定义摄像机摇臂组件
+    ```cpp
+    // SCharacter.h
+    class USpringArmComponent;
 
-### 7. 添加玩家网格
-### 8. 
-### 9. 
-### 10. Challenge：
+    protected:
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+        USpringArmComponent *SpringArmComp;
+
+    // SCharacter.cpp
+    #include "GameFramework/SpringArmComponent.h"
+    ASCharacter::ASCharacter()
+    {
+        SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
+        SpringArmComp->bUsePawnControlRotation = true;
+        SpringArmComp->SetupAttachment(RootComponent);
+
+        CameraComp->SetupAttachment(SpringArmComp);
+    }
+    ```
+    * 把摇臂附加到根组件，即人物 Character 胶囊碰撞体。
+    * 去掉对摄像机组件设置的 UsePawnControlRotation ，打开摇臂的 UsePawnControlRotation 。【？】为啥？
+    * 最后把摄像机组件附加到摇臂。
+* 连接摇臂和摄像机组件
+  * 在 BP_PlayerPawn 中调整摇臂位置。
+  * UE4 小技巧：在蓝图 viewport 中 Alt + 左键可以任意拖动视图
+  * 编译后摄像机附加到摇臂，reset 一下摄像机的 position 自动连接到摇臂末端。
+* 摇臂特性 Spring Arm Component - details
+  * `调整视点到角色距离` Camera - `Target Arm Length`
+  * `碰撞测试` Camera Collision - `Do Collision Test`
+  * `相机延迟` Lag 随角色平缓移动
+### 7. 添加角色网格
+* 素材获取
+  * 引擎启动器 - 商城 Marketplace - `animation starter pack`
+  * 进入后 add to project
+  * 选择项目和版本
+* 应用网格
+  * Content/AnimStarterPack/UE4_Mannequin/Mesh - 应用 SK_Mannequin mesh
+  * UE4 小技巧：内容浏览器右下 view options - Thumbnails - Scale 调整缩略图预览大小
+  * 在 BP_PlayerPawn 中为 Mesh 组件 - details Mesh - Skeletal Mesh - 应用该网格体，并调整位置。（Location Z = -88，Rotation Z = -90）
+  * 在场景中添加 Sky Light 使色调更柔和
+### 8. 添加角色动画 - 输入控制和蹲伏动作函数
+* 定义开始和结束函数
+    ```cpp
+    // SCharacter.h
+    protected:
+        void BeginCrouch();
+        void EndCrouch();
+
+    // SCharacter.cpp
+    void ASCharacter::BeginCrouch()
+    {
+        Crouch();
+    }
+
+    void ASCharacter::EndCrouch()
+    {
+        UnCrouch();
+    }
+    ```
+    * `Crouch()、UnCrouch()` 内置函数
+    * 允许使用蹲伏函数：NavAgentProperties 用于 AI ，但引擎底层也会检查是否为玩家角色打开该功能。
+        ```cpp
+        // SCharacter.cpp
+        #include "GameFramework/PawnMovementComponent.h"
+        ASCharacter::ASCharacter()
+        {
+            GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
+        }
+        ```
+* 添加输入控制并绑定按键
+  * project settings 添加 action mappings - Crouch - C 键
+  * 绑定按键
+    ```cpp
+    void ASCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
+    {
+        PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ASCharacter::BeginCrouch);
+        PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ASCharacter::EndCrouch);
+    }
+    ```
+* 此时未添加角色动画，摄像机视角会“下蹲”，碰撞体缩小，但模型不动。
+### 9. 添加角色动画 - 网格体模型动画
+* AnimStarterPack 包内资源
+  * 动画序列 - 内容浏览器中绿色底边，双击进入，是单一动画动作。
+  * 混合空间 - 黄色标识文件，BS（Blend Spaces）前缀，双击弹出新窗口。Shift + 拖动十字光标，混合不同的动画动作。`混合空间坐标轴`：横轴方位，[-180, 180]（可用于扫射）。纵轴速度。
+  * 动画蓝图 - `_AnimBlueprint` 后缀，将动画序列和混合空间文件整合，形成最终动作姿势
+* 动画蓝图 - 编辑器（UE4ASP_HeroTPP_AnimBlueprint）
+  * 左侧 Graphs - AnimGraph 中可看到最终动画姿势
+  * **`状态机 State Machine`** 单击查看详情
+* 动画蓝图 - **`状态机 State Machine`**
+  * 根据不同状态调整当前的动画动作
+  * 如 Speed、Direction 等（左侧 Variables 中的变量）
+* 动画蓝图 - 在 Event Graph 中获取角色输入并更新变量值
+  * Event Blueprint Update Animation 主事件结点，每帧更新，是数据更新的来源。
+  * 文件中用蓝图实现了一个 Jump ，但内置函数中已有，不需要。
+  * 只保留对速度和方向的设置部分。
+* 动画蓝图 - 将动画蓝图应用到角色
+  * BP_PlayerPawn - 选中 Mesh 组件 - details - Animation - Anim Class - UE4ASP_HeroTPP_AnimBlueprint
+* 动画蓝图 - 添加蹲伏动作
+  * UE4ASP_HeroTPP_AnimBlueprint 中
+  * 将变量 `bool Crouching` 拖到 Event Graph 中 `Set`，连上执行线。
+  * Try Get Pawn Owner -> Cast To Character, As Character -> Get Is Crouched -> Set Crouching
+  * 可以在右侧 Edit Preview 中改变变量状态，预览动作。在 Edit Defaults 中改变编译后的默认动作状态。
+### 10. Challenge：角色跳跃
+* 跳跃
+  * 查找 Jump 逻辑
+  * 设置按键
+  * 设置动画
+* p52 00:54
+
 ## 六、武器设定：hit-scan 武器（发出轨迹线、瞄准游戏世界中的目标actor）
 * Hit-scan weapon：发出轨迹线瞄准目标 Actor
   * 创建轨迹线
@@ -1154,15 +1263,141 @@ void AFPSCharacter::Fire()
   * 基础特效
 * Challenge：Grenade launcher 枪榴弹发射器
   * 类似第一个项目中的 projectile
-### 1. 
-* p54
+### 1. 创建武器类
+* 创建 C++ 类 - Actor - SWeapon
+* 添加骨骼网格体组件
+    ```cpp
+    // SWeapon.h
+    class USkeletalMeshComponent;
+    protected:
+        // 声明
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+        USkeletalMeshComponent *MeshComp;
+    // SWeapon.cpp
+    ASWeapon::ASWeapon()
+    {
+        // 创建组件实例
+        MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
+        RootComponent = MeshComp;
+    }
+    ```
+    * 【？】Character 中以碰撞体为根组件，武器中为啥就直接网格是根组件了，武器不搞碰撞体吗？
+    * 【？】这里不需要头文件……已经在 Core 里了吗？
+* 基于武器类创建步枪 BP_Rifle 
+  * UE4 小技巧：蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
+  * 选中 Cube
+* 把武器分配给角色
+  * BP_PlayerPawn - Event Graph
+  * BeginPlay -> BP_Rifle SpawnActor(`class = BP_Rifle`, Transform = Make Transform(0), `Collision Handling Override = Always Spawn, Ignore Collisions`)（collision default 时可能因为发生碰撞导致 Spawn 失败）-> AttachToComponent(`parent = Mesh Component`, `Socket Name = WeaponSocket`, `Rule = Snap to Target`)
+  * UE4 小技巧：蓝图编辑器中 details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
+* `为角色骨骼添加插槽`：确定角色拿武器的具体位置
+  * 打开 SK_Mannequin 编辑器 - Skeleton 显示骨骼
+  * search "hand" - 选择 hand_r
+  * 右键 hand_r - **`Add Socket`** - WeaponSocket
+### 2. 
+### 3. 1
+### 4. 2
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. Challenge：
+
 ## 七、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 八、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 九、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 十、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 十一、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 十二、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
 ## 十三、
+### 1. 
+### 2. 
+### 3. 
+### 4. 
+### 5. 
+### 6. 
+### 7. 
+### 8. 
+### 9. 
+
+# 注意点整理
+* 如果在蓝图中明确重写了值，那么在 C++ 里的更改不会自动生效。
+* 
+
+# 小技巧整理
+* **`查头文件`**：Shift + Alt + O 查类名，关注 Private/Classes 之后的部分 include
+* 运行中 `F1` 切……透视图？透视世界？
+* 运行时 `~` 调出控制台，`show collision` 显示碰撞体
+* 右键物体，Select -> Select all matching classes 选中所有匹配类
+* 多端运行时 Shift + F1 挪开窗口
+* 运行窗口大小调整：play - advanced settings - editor preference - play in new window - `new window size`
+* play - `Run Dedicated Server` 在专用服务器上运行，则本地运行的就是客户端
+* Save on Compile - On Success Only 节省编译后手动保存的时间
+* 在蓝图 viewport 中 Alt + 左键可以任意拖动视图
+* 内容浏览器右下 view options - Thumbnails - Scale 调整缩略图预览大小
+* 蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
+* 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
+* 
 
 # 备注
 * 【？】：挠头的地方
