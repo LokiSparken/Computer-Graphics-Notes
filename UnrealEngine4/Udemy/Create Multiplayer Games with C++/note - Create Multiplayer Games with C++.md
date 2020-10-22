@@ -1285,7 +1285,7 @@ void AFPSCharacter::Fire()
     * 【？】这里不需要头文件……已经在 Core 里了吗？
 * 基于武器类创建步枪 BP_Rifle 
   * UE4 小技巧：蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
-  * 选中 Cube
+  * 先随便选个物体
 * 把武器分配给角色
   * BP_PlayerPawn - Event Graph
   * BeginPlay -> BP_Rifle SpawnActor(`class = BP_Rifle`, Transform = Make Transform(0), `Collision Handling Override = Always Spawn, Ignore Collisions`)（collision default 时可能因为发生碰撞导致 Spawn 失败）-> AttachToComponent(`parent = Mesh Component`, `Socket Name = WeaponSocket`, `Rule = Snap to Target`)
@@ -1294,9 +1294,71 @@ void AFPSCharacter::Fire()
   * 打开 SK_Mannequin 编辑器 - Skeleton 显示骨骼
   * search "hand" - 选择 hand_r
   * 右键 hand_r - **`Add Socket`** - WeaponSocket
-### 2. 
-### 3. 1
-### 4. 2
+### 2. 导入武器资源
+* 导入武器网格体包（课程资源）
+* uasset 文件
+  * 已在其它项目中导入好的文件，无法直接拖拽入内容浏览器，要复制到 Content 目录下。
+* 在 BP_Rifle - MeshComp - details - Mesh - Skeletal Mesh - 应用 SK_Rifle 骨骼网格体
+* 调整穿模：UE4_Mannequin_Skeleton 骨骼编辑器 - 调整插槽位置
+  * UE4 小技巧：右键 Socket - `Add Preview Asset` 添加网格体预览
+  * 调整位置后运行并查看更新后的手持状态
+  * 【？】调整的明明是默认姿势位置竟然还能更新瞄准姿势的吗
+### 3. Trace line 1
+* Fire() 逻辑
+  * 用`轨迹线`确定瞄准方向
+  * 
+* 位置追踪效果
+    ```cpp
+    // SWeapon.h
+    protected:
+        UFUNCTION(BlueprintCallable, Category = "Weapon")
+        void Fire();
+    // SWeapon.cpp
+    #include "DrawDebugHelpers.h"
+    void ASWeapon::Fire()
+    {
+        // 从武器获取所有者 - 即角色
+        AActor *MyOwner = GetOwner();
+        if (MyOwner)    // 保证非空指针
+        {
+            FVector EyeLocation;
+            FRotator EyeRotation;
+            // 从控制着武器的 Actor 获取当前双眼位置和方向
+            MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
+
+            // 确定轨迹线终点
+            FVector TraceEnd = EyeLocation + EyeRotation.Vector() * 10000;
+
+            FCollisionQueryParams QueryParams;
+            QueryParams.AddIgnoreActor(MyOwner);    // 追踪时忽略控制武器的 Actor（不 打 我 自 己）
+            QueryParams.AddIgnoreActor(this);       // 追踪时忽略武器本身
+            // 定位到目标网格体的具体哪块三角网格，得到更精确的射击结果，便于在具体击中位置添加射击特效
+            // 不打开的话只击中简单碰撞包围盒
+            QueryParams.bTraceComplex = true;       
+
+            FHitResult Hit;
+            if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd, ECC_Visibility, QueryParams))
+            {
+                // 轨迹线受阻，TODO
+            }
+
+            DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::white, false, 1.0f, 0, 1.0f);
+        }
+    }
+    ```
+    * `LineTraceSingleByChannel(HitResult, Start, End, Channel);` 轨迹线受阻时返回 true 。
+    * HitResult 记录击中的物体，距离，击中方向等信息。
+    * `CollisionChannel` 目前暂时只使用可见性通道 `ECC_Visibility` ，能在世界中进行追踪。当有物体阻碍时，轨迹线受阻，利用返回结果判断物体是否能受到伤害。
+    * 可选参数 `FCollisionQueryParams 碰撞查询参数` 见注释
+    * `【！】通过补全提示给出所需参数`
+    * `DrawDebugLine()` 绘制轨迹线进行调试
+* 测试：在蓝图中调用
+  * BP_PlayerPawn - Event Graph
+  * 蓝图中将结点返回值添加为变量 SpawnActor BP_Rifle(`Owner = Self`) return value -> promote to variable - Current Weapon（记得连执行线）
+  * Left Mouse Button 事件（好像是默认绑定的按键不用设置【？】） -> Fire（从 Current Weapon 获取）
+  * UE4 小技巧：蓝图编辑器 - Ctrl + 将变量拖入蓝图（【？】好像直接是 get 了？）
+  * Current Weapon -> （如果属于 Actor 类型）Cast to BP_Rifle -> Fire
+### 4. Trace Line 2
 ### 5. 
 ### 6. 
 ### 7. 
@@ -1385,7 +1447,7 @@ void AFPSCharacter::Fire()
 * 
 
 # 小技巧整理
-* **`查头文件`**：Shift + Alt + O 查类名，关注 Private/Classes 之后的部分 include
+* **`【！】查头文件`**：Shift + Alt + O 查类名，关注 Private/Classes 之后的部分 include
 * 运行中 `F1` 切……透视图？透视世界？
 * 运行时 `~` 调出控制台，`show collision` 显示碰撞体
 * 右键物体，Select -> Select all matching classes 选中所有匹配类
@@ -1397,9 +1459,10 @@ void AFPSCharacter::Fire()
 * 内容浏览器右下 view options - Thumbnails - Scale 调整缩略图预览大小
 * 蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
 * 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
-* 
+* 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
 
 # 备注
 * 【？】：挠头的地方
+* 【！】：要学会的方法
 * （盲猜）abcd：abcd 是我猜的（
 * 
