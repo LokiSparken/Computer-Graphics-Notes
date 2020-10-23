@@ -1424,8 +1424,63 @@ void AFPSCharacter::Fire()
   * `记得把 SkeletalMesh - details - Collision - Collision Presets - BlockAll`（详细参数里有 Trace Response - Visibility ，就是当前的 LineTrace 追踪的可见性通道）
   * PointDamage: Hit Location 即击中位置，可 Draw Debug Sphere 测试
 ### 7. 枪口及伤害特效
+* 导入 WeaponEffects
+  * 枪口光效 WeaponEffects/Muzzle/P_Muzzle_large
+  * 溅血特效 WeaponEffects/BloodImpact/P_blodd_splash_02
+* 打开 Muzzle Large `粒子效果编辑器`
+  * 工具栏 `Restart Sim` 反复播放效果
+* 枪口光效应用到武器（应用粒子特效）：武器开火时，在武器网格体枪口位置产生相应特效
+    ```cpp
+    // SWeapon.cpp
+    #include "Particles/ParticleSystem.h"
+    void ASWeapon::Fire()
+    {
+        if (MuzzleEffect)   // 防空指针炸穿
+        {
+            UGameplaytStatics::SpawnEmitterAttached(MuzzleEffect, MeshComp, MuzzleSocketName);
+        }
+    }
+    ```
+    * 为了根据枪口动态调整位置，附加在枪口插槽上，而非使用 SpawnEmitterAtLocation()。
+    * SpawnEmitterAttached(特效, 网格组件, 特效要附加到的插槽名);
+    * 定义附加插槽名
+        ```cpp
+        // SWeapon.h
+        protected:
+            UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+            FName MuzzleSocketName;
+        // SWeapon.cpp
+        ASWeapon::ASWeapon()
+        {
+            MuzzleSocketName = "MuzzleSocket";
+        }
+        ```
+        * `VisibleDefaultsOnly` 仅可见，不能被编辑，因为该插槽名不需要在运行时被更改。（只在构造函数中指定。当然用 Edit~ 使其可更改也莫得问题）
+    * 定义粒子特效
+        ```cpp
+        // SWeapon.h
+        class UParticleSystem;
 
-### 8. 
+        protected:
+            UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+            UParticleSystem *MuzzleEffect;
+        ```
+* 在被击中位置附加特效，类似过程
+  * 打 Dummy 所以用 AtLocation 即可，Location 和 Rotation 从 HitResult 中获取，Rotation 可用 ImpactNormal.Rotation()，也可用“反向射击方向”（【？】InverseShotDirection？这啥？可能在 HitResult 里能找到？）
+  * 【！】反正填参注意补全提示
+* 编译后在 BP_Rifle 中给特效插槽赋值，再到骨骼网格体文件中确定 MuzzleSocket
+### 8. 烟迹光束粒子
+* WeaponEffects/BasicTracer/P_SmokeTrail
+* **`光束粒子发射器 Beam Particle Emitter`**：能确定源头及目标位置的一类发射器。在起点终点之间延展出贴图，播放粒子效果。
+  * UE4 小技巧：Play - Simulate 模拟运行粒子特效？
+  * 发射器编辑器 - Emitters - Color Over Life - details - Alpha Over Life 疯狂展开 - Point0 - Out Val 设大使效果明显
+  * `关键`：Source、Target 在 C++ 中指定
+* 简单材质 M_Beam
+  * UE4 小技巧：材质编辑器中用不同的几何体预览，有时候正方体看得更清楚
+  * `Panner` 做出移动效果
+  * `Particle Color/Alpha` 控制粒子的不透明度 `Opacity` 和颜色
+* **`指定光束粒子发射器的 Source 和 Target`**
+  * p61 03:28
 ### 9. 准星
 ### 10. Challenge：
 
@@ -1554,6 +1609,7 @@ void AFPSCharacter::Fire()
 * 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
 * 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
 * **`【！】查标识符`**：Shift + Alt + S 
+* Play - Simulate 模拟运行粒子特效？
 
 # 备注
 * 【？】：挠头的地方
