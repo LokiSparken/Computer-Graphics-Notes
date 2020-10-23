@@ -1359,12 +1359,75 @@ void AFPSCharacter::Fire()
   * UE4 小技巧：蓝图编辑器 - Ctrl + 将变量拖入蓝图（【？】好像直接是 get 了？）
   * Current Weapon -> （如果属于 Actor 类型）Cast to BP_Rifle -> Fire
 ### 4. Trace Line 2
-p57
-### 5. 
-### 6. 
-### 7. 
+* Shift + Alt + S 查 `GetActorEyesViewPoint` 有多种实现，关注 Pawn 重写的版本。
+  * `APawn::GetActorEyesViewPoint()` 中有 `GetPawnViewLocation()`
+  * 切到 `GetPawnViewLocation()` 的实现康康它在干啥：`GetActorLocation() + 眼底高度 BaseEyeHeight`
+  * `GetActorLocation()` 位置： BP_PlayerPawn - ArrowComponent 即视口中箭头的位置
+  * `BaseEyeHeight` 位置：details - search eye - Base Eye Height
+* `【！】想自定义函数的话就去康康 virtual 了没，以及访问权限级别`
+* 自定义 GetActorEyesViewPoint （改为摄像机位置）
+    ```cpp
+    // SCharacter.h
+    public:
+        virtual FVector GetPawnViewLocation() const override;
+    // SCharacter.cpp
+    FVector ASCharacter::GetPawnViewLocation() const
+    {
+        if (CameraComp)
+        {
+            return CameraComp->GetComponentLocation();
+        }
+        return Super::GetPawnViewLocation();
+    }
+    ```
+### 5. Apply Damage to Actors
+* FHitResult（Alt + G）
+  * Actor：Actor hit by the trace
+  * PhysMaterial：Physical material that was hit.
+    * 可用于根据不同材质应用不同粒子特效，或判断击中的具体位置。
+* 改进 `ASWeapon::Fire()`
+    ```cpp
+    // SWeapon.cpp
+    #include "Kismet/GameplayStatics.h"
+    void ASWeapon::Fire()
+    {
+        FVector ShotDirection = EyeRotation.Vector();
+        if (LineTraceSingleByChannel())
+        {
+            AActor *HitActor = Hit.GetActor();
+            UGameplayStatics::ApplyPointDamage(HitActor, 20.0f, ShotDirection, Hit, MyOwner->GetInstigatorController(), this,  DamageType)
+        }
+    }
+    ```
+  * `ApplyDamage`：ApplyDamage、ApplyPointDamage 点伤害、ApplyRadialDamage 放射伤害、ApplyRadialDamageWithFalloff 放射伤害后下落
+  * ApplyPointDamage：可获取射击方位、击中角色的具体部位等，可用于应用物理推力。详见接口参数列表。
+  * `TSubclassOf<class UDamageType> DamageTypeClass` 参数：传递的不是伤害类型实例而是伤害类型的一个子类（TSubclassOf）
+* 定义伤害类型的子类
+    ```cpp
+    // SWeapon.h
+    class UDamageType;
+
+    protected:
+        UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+        TSubclassOf<UDamageType> DamageType;
+    ```
+    * 传入伤害`类型子类`是 UE 实现伤害系统的方式。不使用实例，因为不用改变伤害类型中的变量，只要通过类型明确施加什么类型的作用力、应用什么样的效果。
+    * `EditDefaultsOnly` 只在编辑器中编辑（与运行时相对）
+    * `BlueprintReadOnly` 仅蓝图可读，便于在 HUD 或其它地方读取
+### 6. 创建伤害目标
+* 创建蓝图类 Actor - BP_TargetDummy
+  * 添加骨骼网格组件 SkeletalMesh - 应用 SK_Mannequin
+  * 把 SkeletalMesh 设为根组件
+* **`添加响应伤害的事件`**
+  * Event Graph - search 结点 Damage（AnyDamage 任意伤害可用、PointDamage、RadialDamage）
+  * Event PointDamage: Damage -> Print String 测试输出伤害数值
+  * `记得把 SkeletalMesh - details - Collision - Collision Presets - BlockAll`（详细参数里有 Trace Response - Visibility ，就是当前的 LineTrace 追踪的可见性通道）
+  * PointDamage: Hit Location 即击中位置，可 Draw Debug Sphere 测试
+### 7. 枪口及伤害特效
+
 ### 8. 
-### 9. Challenge：
+### 9. 准星
+### 10. Challenge：
 
 ## 七、
 * 总览
@@ -1490,6 +1553,7 @@ p57
 * 蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
 * 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
 * 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
+* **`【！】查标识符`**：Shift + Alt + S 
 
 # 备注
 * 【？】：挠头的地方
