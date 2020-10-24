@@ -1480,9 +1480,45 @@ void AFPSCharacter::Fire()
   * `Panner` 做出移动效果
   * `Particle Color/Alpha` 控制粒子的不透明度 `Opacity` 和颜色
 * **`指定光束粒子发射器的 Source 和 Target`**
-  * p61 03:28
+    ```cpp
+    // SWeapon.h
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+    UParticleSystem *TracerEffect;      // 定义粒子特效
+    // SWeapon.cpp
+    #include "Component/SkeletalMeshComponent.h"
+    #include "Particles/ParticleSystemComponent.h"
+    Fire()
+    {
+        if (TracerEffect)
+        {
+            FVector MuzzleLocation = MeshComp->GetSocketLocation(MuzzleSocketName);
+            UParticleSystemComponent *TracerComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TracerEffect, MuzzleLocation);
+            if (TracerComp)
+            {
+                TracerComp->SetVectorParameter(TracerTargetName, TracerEndPoint);
+            }
+        }
+    }
+    ```
+    * 粒子系统组件 ParticleSystemComponent 在生成粒子系统时被引擎创建
+    * `SetVectorParameter` 所需的 Target Name 在发射器编辑器 - Target - details - Target Name（错的=。=）应当是`Parameter Name`，TracerEndPoint 简单设定，击中时用命中位置，否则用默认的 TracerEnd 轨迹线终点。
+    * 最后回到 BP_Rifle 设定 SmokeTrail
 ### 9. 准星
-### 10. Challenge：
+* 项目管理：创建 Content/UI 文件夹
+* 创建 UMG - WBP_Crosshair
+  * 添加 image 控件
+  * anchor 设在中心，alignment (0.5, 0.5)，reset position，size (4, 4)
+* 在 BP_PlayerPawn 中创建 Widget 并显示
+* 调整摄像机
+  * Target Arm Length 160
+### 10. Challenge：Grenade Launcher
+* 建议
+  * Derive class from 'SWeapon'
+  * spawn actor in Fire() （为能够重写，记得 virtual 一下）
+  * 延迟爆炸
+  * 范围伤害
+  * 武器特效包中有爆炸特效素材
+* p63 02:40
 
 ## 七、
 * 总览
@@ -1549,7 +1585,9 @@ void AFPSCharacter::Fire()
     * 玩家经过时可拾起
     * 经过一定时间后重新生成道具
   * 适应多人游戏
-### 1. 
+### 1. 创建可拾取物体类
+* p105 01:54
+* 
 ### 2. 
 ### 3. 
 ### 4. 
@@ -1581,6 +1619,10 @@ void AFPSCharacter::Fire()
   * 用 Environment Query System 实现隐蔽、找到攻击玩家的最佳位置
   * 感官系统 Perception System for sight and hearing
 ### 1. 
+* UE4 小技巧：选中 NavMesh 按 P 放大，再 P 隐藏
+* 项目管理：创建 Content/AdvancedAI 文件夹
+* 基于 SCharacter 创建 BP_AdvancedAI
+* p132 01:49
 ### 2. 
 ### 3. 
 ### 4. 
@@ -1610,6 +1652,8 @@ void AFPSCharacter::Fire()
 * 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
 * **`【！】查标识符`**：Shift + Alt + S 
 * Play - Simulate 模拟运行粒子特效？
+* VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
+* 选中 NavMesh 按 P 放大，再 P 隐藏
 
 # 备注
 * 【？】：挠头的地方
