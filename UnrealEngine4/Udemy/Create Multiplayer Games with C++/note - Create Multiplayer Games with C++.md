@@ -1084,19 +1084,20 @@ void AFPSCharacter::Fire()
     ```cpp
     // SCharacter.h
     protected:
-        void MoveForward(float value);
+        void MoveForward(float Value);
 
     // SCharacter.cpp
-    void ASCharacter::MoveForward(float value)
+    void ASCharacter::MoveForward(float Value)
     {
         AddMovementInput(GetActorForwardVector() * Value);
     }
     ```
     * 【？】这参数啥玩意
-* 为不同方向做相应设置。
+* 左右移动有 `GetActorRightVector()`
 * 项目管理：创建 Content/Blueprints 文件夹
   * 基于 SCharacter 创建 BP_PlayerPawn 拖入场景
   * details - Auto Possess Player 设为 Player 0。对单玩家模式，直接分配到该 Pawn 可以简化对 Player Start 的设置等操作。
+* 【？】为什么人走起来一卡一卡的
 ### 4. 角色视野控制 - 鼠标转向
 * ① 添加输入控制 - 轴映射
   * project settings - input - `Axis Mappings`
@@ -1216,6 +1217,7 @@ void AFPSCharacter::Fire()
             GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
         }
         ```
+        * 【？】Shift + Alt + O 查 MovementComponent 除了 PawnMovementComponent 还有单独的 MovementComponent ，怎么取？（瞎几把试？（x
 * 添加输入控制并绑定按键
   * project settings 添加 action mappings - Crouch - C 键
   * 绑定按键
