@@ -139,7 +139,33 @@
   * 这种方式添加材质效果暂时还不是很好，比较粗糙
 
 # 地形材质绘制
-
+* UE4 小技巧：Landscape - details - Information 查看组件数
+* 创建地形材质球 - LandscapeMaterial
+  * 控制板 - search Landscape 地形专属材质编辑结点
+* 单贴图铺整个地形系统开销太大，一般循环平铺。
+* 平铺
+  * 普通模型材质 `U + 鼠标左键: TexCoord` 设置平铺 (u, v)
+  * 地形材质 **`LandscapeLayerCoords`**
+* **`LandscapeLayerCoords 的使用`**
+  * UE4 小技巧：图片可直接拽入材质编辑器生成结点
+  * 直接应用图片到 Base Color，创建材质实例，为 Landscape 应用材质实例：按 Landscape - Information - `分辨率（顶点）` 循环平铺。
+  * LandscapeLayerCoords -> Divide 分辨率 -> Texture Sample 的 `UVs`
+## 地形工具 - 绘制
+* 目标层
+  * 在材质球中用 **`LandscapeLayerBlend`** 创建材质层
+  * 添加图层元素
+    * 混合类型 - 高度混合，可添加高度图使其更立体。缺点：置换贴图 (0低海拔, 1高海拔)，但高度混合是叠加混合，所以纯高度混合则低海拔的 0 处会有黑色瑕疵，建议加一个权重混合。
+    * 常量图层输入：可预设颜色输入
+  * 回到目标层，对图层 `+` 有权重混合层（法线）、非权重混合层
+    * 权重混合：权重为 1 时直接覆盖
+    * 非权重混合：叠加
+* 材质函数
+  * 创建 - 材质和纹理 - 材质函数
+  * 创建结点 **`MakeMaterialAttributes`** ，将相应材质的 `Albedo -> BaseColor`，其它按下标对应连接。金属值 `Metallic = 0`。最后记得设平铺次数。（LandscapeLayerCoords->divide 并把所有 UVs 都连起来）
+  * UE4 小技巧：内容浏览器选中，应用处 `左箭头` 直接使用
+  * `应用材质函数`：三个材质函数拖进材质编辑器，在主材质结点 - details - 材质 - 使用材质属性，三个函数 -> Layer Blend -> 材质属性
+  * 此时叠三层材质就炸，要在材质函数 - 每个 Texture Simple - 材质表达式纹理采样 - `采样器源（采样方式） - 使用 共享：包裹`
+  * 可以瞎几把刷了！！！
 
 # 根据材质权重分配地表植被
 
