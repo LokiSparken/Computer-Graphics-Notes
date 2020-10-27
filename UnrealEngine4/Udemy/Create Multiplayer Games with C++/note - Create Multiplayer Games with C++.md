@@ -1251,6 +1251,10 @@ void AFPSCharacter::Fire()
   * 将变量 `bool Crouching` 拖到 Event Graph 中 `Set`，连上执行线。
   * Try Get Pawn Owner -> Cast To Character, As Character -> Get Is Crouched -> Set Crouching
   * 可以在右侧 Edit Preview 中改变变量状态，预览动作。在 Edit Defaults 中改变编译后的默认动作状态。
+* 【？】
+  * 不造为啥我这前后左右移动模型会很别扭，左下和右上就能正常走路：不能正常走路的时候拿另一个键卡一下就好了……？？？啥玩意？？？好像也是外接键盘的锅……笔记本自带键盘就完全没问题。
+  * [ok] 长按触发的 IE_Pressed 会抖：外接键盘信号不好，要用笔记本自带的键盘才能长按保持 Pressed orz
+  * Jump 也很扭曲：
 ### 10. Challenge：角色跳跃
 * 跳跃
   * 查找 Jump 逻辑
@@ -1258,7 +1262,7 @@ void AFPSCharacter::Fire()
   * 设置动画
 * p52 00:54
 
-## 六、武器设定：hit-scan 武器（发出轨迹线、瞄准游戏世界中的目标actor）
+## 六、武器设定
 * Hit-scan weapon：发出轨迹线瞄准目标 Actor
   * 创建轨迹线
   * 对 Actor 造成伤害
@@ -1305,6 +1309,9 @@ void AFPSCharacter::Fire()
   * UE4 小技巧：右键 Socket - `Add Preview Asset` 添加网格体预览
   * 调整位置后运行并查看更新后的手持状态
   * 【？】调整的明明是默认姿势位置竟然还能更新瞄准姿势的吗
+* 【？】
+  * [ok] 在骨骼预览里面不知道怎么调的时候去运行里看平移坐标轴和旋转轴颜色对应调
+  * 
 ### 3. Trace line 1
 * Fire() 逻辑
   * 用`轨迹线`确定瞄准方向
@@ -1656,6 +1663,10 @@ void AFPSCharacter::Fire()
 * Play - Simulate 模拟运行粒子特效？
 * VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
 * 选中 NavMesh 按 P 放大，再 P 隐藏
+
+# 诡异点
+* 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
+* 人物移动的【？】
 
 # 备注
 * 【？】：挠头的地方
