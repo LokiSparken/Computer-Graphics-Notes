@@ -26,11 +26,41 @@
 * `应用背包组件`
   * Character add InventoryComponent
   * 使用时 `GetOwner`，为适应非人形体类型，cast to pawn，如仓库
-  * 31：50
+  * `GetController -> Cast to PlayerController`
+* 创建丢出时 Spawn 的物体类 - Actor
+  * StaticMesh Component;
+  * 构造函数中 Set Static Mesh 为物品属性结构体 S_Item 的 StaticMesh Mesh
+  * 选个默认 Mesh 勾选 `simulate physics`
+  * Collision Presets 可自定义
+    * `WorldStatic` 防止穿地表模 Block
+    * WorldDynamic 物体间是否能碰撞 Block 撞
+    * Pawn 物体和角色是否能碰撞
 
-## 完善背包组件，创建主 UI
+## 创建主 UI
+* 创建 WBP_Main，设点 Text 在屏幕中心
+* Create、Add to viewport，设置传入 ItemInfo 
+  * 有名字时显示，否则不显示：对 Text 绑定时分支设 Return Value
+* 添加按键拾取、丢弃
 
 ## 创建背包 UI
+* 创建 WBP_ItemSlot
+  * 设计窗口右上角尺寸用 Custom 自定义
+  * 添加 Canvas Panel - Overlay
+    * 添加 Canvas Panel - Overlay - Image，大小 (60, 60)
+    * 添加 Canvas Panel - Overlay - Text 
+  * 添加 Canvas Panel - Border 用 actionbar_frame_numbers_T2 图标并调 Color and Opacity, 大小 (100, 100)
+  * Event Graph
+    * 新建 S_Item Iteminfo;
+* 创建 WBP_Bag
+  * 添加 `Wrap Box` 整个背包 UI 板块，Text 放背包名
+  * Event Graph - `Get Owning Player（客户端获取控制器，GetPlayerPawn 仅单机有效） -> GetControlledPawn -> GetComponentsByClass(InventoryComponent)[0]`
+  * Event Graph - `UpdateItemList() - Wrap Box -> Clear Children -> for -> Create WBP_ItemSlot Widget -> WarpBox.AddChild`
+* InventoryComponent
+  * SetInventoryUIVisibility() 控制背包 UI 可见性
+  * 获取角色输入，更改 bool InventoryVisible;
+  * 控制 UI 的显示与隐藏 `Set Visibility(Hiden)`
+  * 控制鼠标的显示与隐藏 `Set show mouse cursor`
+  * 设置玩家输入类型 `Set Input Mode Game Only/Game and UI(aim UI)`
 
 ## 背包拖拽功能
 
