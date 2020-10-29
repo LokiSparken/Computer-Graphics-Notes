@@ -1534,8 +1534,50 @@ void AFPSCharacter::Fire()
   * 开镜狙击 Aiming down sights
   * 后座力导致的摄像机抖动 Camera shakes
   * 多表面类型 Multiple physical surface types（用于生成不同的粒子效果，击中不同材质的表面产生不同效果）
-  * 
-### 1. 
+### 1. 开镜狙击 Add aim down sights
+* 变焦 Zoom / 开镜 Aim down sight 功能
+* 关键：设置 Camera 的 FieldOfView
+    ```cpp
+    // SCharacter.h
+    protected:
+        bool bWantsToZoom;
+        UPROPERTY(EditDefaultsOnly, Category = "Player")
+        float ZoomedFOV;
+        float DefaultFOV;
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        DefaultFOV = CameraComp->FieldOfView;
+        ZoomedFOV = 65.0f;
+    }
+    
+    Tick()
+    {
+        float CurrentFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+        CameraComp->SetFieldOfView(ZoomedFOV);
+    }
+    ```
+* 右键设置 bWantsToZoom
+* **`摄像机平滑过渡：插值`**
+    ```cpp
+    // SCharacter.h
+    protected:
+        UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100))
+        float ZoomInterpSpeed;
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        ZoomInterpSpeed = 20;
+    }
+    Tick()
+    {
+        float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+        float NewFOV = FMath::FInterpTo(CameraComp->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+        CameraComp->SetFieldOfView(NewFOV);
+    }
+    ```
+    * `meta` 
+* 
 ### 2. 
 ### 3. 
 ### 4. 
