@@ -27,6 +27,7 @@
   * Character add InventoryComponent
   * 使用时 `GetOwner`，为适应非人形体类型，cast to pawn，如仓库
   * `GetController -> Cast to PlayerController`
+  * 按键设置：`FlipFlop` 按一下 A 再按一下 B
 * 创建丢出时 Spawn 的物体类 - Actor
   * StaticMesh Component;
   * 构造函数中 Set Static Mesh 为物品属性结构体 S_Item 的 StaticMesh Mesh
@@ -54,7 +55,7 @@
 * 创建 WBP_Bag
   * 添加 `Wrap Box` 整个背包 UI 板块，Text 放背包名
   * Event Graph - `Get Owning Player（客户端获取控制器，GetPlayerPawn 仅单机有效） -> GetControlledPawn -> GetComponentsByClass(InventoryComponent)[0]`
-  * Event Graph - `UpdateItemList() - Wrap Box -> Clear Children -> for -> Create WBP_ItemSlot Widget -> WarpBox.AddChild`
+  * `把 ItemSlot 放入容器 Wrap Box`：Event Graph - `UpdateItemList() - Wrap Box -> Clear Children -> for InventoryItem.GetItemList() -> Create WBP_ItemSlot Widget -> WarpBox.AddChild`
 * InventoryComponent
   * SetInventoryUIVisibility() 控制背包 UI 可见性
   * 获取角色输入，更改 bool InventoryVisible;

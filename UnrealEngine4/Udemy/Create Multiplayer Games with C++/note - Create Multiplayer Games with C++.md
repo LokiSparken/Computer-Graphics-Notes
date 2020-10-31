@@ -1534,7 +1534,6 @@ void AFPSCharacter::Fire()
   * 开镜狙击 Aiming down sights
   * 后座力导致的摄像机抖动 Camera shakes
   * 多表面类型 Multiple physical surface types（用于生成不同的粒子效果，击中不同材质的表面产生不同效果）
-  * 
 ### 1. 
 ### 2. 
 ### 3. 
