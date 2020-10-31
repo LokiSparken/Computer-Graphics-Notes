@@ -1534,10 +1534,115 @@ void AFPSCharacter::Fire()
   * 开镜狙击 Aiming down sights
   * 后座力导致的摄像机抖动 Camera shakes
   * 多表面类型 Multiple physical surface types（用于生成不同的粒子效果，击中不同材质的表面产生不同效果）
-### 1. 
-### 2. 
-### 3. 
-### 4. 
+### 1. 开镜狙击 Add aim down sights
+* 变焦 Zoom / 开镜 Aim down sight 功能
+* 关键：设置 Camera 的 FieldOfView
+    ```cpp
+    // SCharacter.h
+    protected:
+        bool bWantsToZoom;
+        UPROPERTY(EditDefaultsOnly, Category = "Player")
+        float ZoomedFOV;
+        float DefaultFOV;
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        DefaultFOV = CameraComp->FieldOfView;
+        ZoomedFOV = 65.0f;
+    }
+    
+    Tick()
+    {
+        float CurrentFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+        CameraComp->SetFieldOfView(ZoomedFOV);
+    }
+    ```
+* 右键设置 bWantsToZoom
+* **`摄像机平滑过渡：插值`**
+    ```cpp
+    // SCharacter.h
+    protected:
+        UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100))
+        float ZoomInterpSpeed;
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        ZoomInterpSpeed = 20;
+    }
+    Tick()
+    {
+        float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+        float NewFOV = FMath::FInterpTo(CameraComp->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+        CameraComp->SetFieldOfView(NewFOV);
+    }
+    ```
+    * `UCLASS、USTRUCT、UPROPERTY 参数定义位置`：\Engine\Source\Runtime\CoreUObject\Public\UObject\ObjectMacros.h
+    * `BlueprintMetadata 结构定义位置`：\Engine\Source\Editor\BlueprintGraph\Classes\EdGraphSchema_K2.h
+### 2. 控制台变量
+* 控制台变量：微调，如启用/禁用 Debug 函数
+```cpp
+// SWeapon.cpp
+static int32 DebugWeaponDrawing = 0;
+FAutoConsoleVariableRef CVARDebugWeaponDrawing
+(
+    TEXT("COOP.DebugWeapons"), 
+    DebugWeaponDrawing, 
+    TEXT("Draw Debug Lines for Weapons"), 
+    ECVF_Cheat
+);
+
+Fire()
+{
+    if (DebugWeaponDrawing > 0)
+    {
+        DrawDebugLine(...);
+    }
+}
+```
+* `ECVF_Cheat`：只有在游戏中启用该标志后，函数才能被调用
+### 3. 整理代码
+* 调整 Weapon 类的代码，如：
+  * Fire() 中特效 MuzzleFlash、TracerEffect 部分剥离为单独的 PlayFireEffects
+* 把鼠标左键 Fire() 从蓝图改到 cpp
+* `spawn 武器（C++实现）`
+```cpp
+// SCharacter.h
+class ASWeapon;
+protected:
+    ASWeapon *CurrentWeapon;
+
+    // 指定要 Spawn 的类型
+    UPROERTY(EditDefaultsOnly, Category = "Player")
+    TSubclassOf<ASWeapon> StarterWeaponClass;
+
+    UPROPERTY(VisibleDefaultsOnly, Category = "Player")
+    FName WeaponAttachSocketName;
+// SCharacter.cpp
+#include "SWeapon.h"
+construction()
+{
+    WeaponAttachSocketName = "WeaponSocket";
+}
+void ASCharacter::BeginPlay()
+{
+    // Spawn a weapon
+    // Spawn 参数
+    FActorSpawnParameters  SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    
+    CurrentWeapon = GetWorld()->SpawnActor<ASWeapon>(StarterWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+    if (CurrentWeapon)
+    {
+        CurrentWeapon->SetOwner(this);
+        CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
+    }
+}
+```
+* 把 SWeapon::Fire() 调为 public
+* 注意：`C++ 中某个函数 private 后其它 C++ 类无法访问，但蓝图函数可以，要禁用蓝图调用需在 UFUNTION 中指定 BlueprintProtected 关键词`
+* 编译后在 BP_PlayerPawn 给 StarterWeaponClass 赋值为 BP_Rifle
+### 4. 摄像机抖动
+
 ### 5. 
 ### 6. 
 ### 7. 
