@@ -1642,8 +1642,37 @@ void ASCharacter::BeginPlay()
 * 注意：`C++ 中某个函数 private 后其它 C++ 类无法访问，但蓝图函数可以，要禁用蓝图调用需在 UFUNTION 中指定 BlueprintProtected 关键词`
 * 编译后在 BP_PlayerPawn 给 StarterWeaponClass 赋值为 BP_Rifle
 ### 4. 摄像机抖动
-
-### 5. 
+* PlayerController的实现
+  * Shift+Alt+O ClientPlayCameraShake/Anim
+```cpp
+// SWeapon.h
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+    TSubclassOf<UCameraShake> FireCamShake;
+// SWeapon.cpp
+void ASWeapon::PlayFireEffects(FVector TraceEnd)
+{
+    APawn *MyOwner = Cast<APawn>(GetOwner());
+    if (MyOwner)
+    {
+        APlayerController *PC = Cast<APlayerController>(MyOwner->GetController());
+        if (PC)
+        {
+            PC->ClientPlayCameraShake>(FireCamShake);
+        }
+    }
+}
+```
+* 到 BP_Rifle 为 FireCamShake 赋值
+  * 在 Content/Blueprints 新建 Blueprint Class - parent:CameraShake - CamShake_RifleFire 并设 Duration = 0.2，Rot.Roll Amplitude = 0.5, Frequency = 30.0, FOVOscillation Initial Offset = Zero，随便调
+  * 用于赋值
+### 5. 自定义表面类型
+* `设定表面类型` Edit - Project Settings - Physics
+  * 设一个 SurfaceType1 = FleshDefault 默认肉体效果、SurfaceType2 = FleshVulnerable 易伤部位
+* `应用表面类型` 在骨骼网格体对应的 `SK_xxx_PhysicsAsset` 中选中某部位 - details - Collision - `Phys Material Override`
+  * UE4 小技巧：骨骼网格体选中一部分，Ctrl+A 全选
+* 创建新材质 Content/Core - `Physics - Physics Material Class` - PhysMat_FleshDefault/Vulnerable
+  * Physical Properties - Surface Type 应用相应表面类型
 ### 6. 
 ### 7. 
 ### 8. 
@@ -1767,6 +1796,7 @@ void ASCharacter::BeginPlay()
 * Play - Simulate 模拟运行粒子特效？
 * VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
 * 选中 NavMesh 按 P 放大，再 P 隐藏
+* 骨骼网格体选中一部分，Ctrl+A 全选（？不就是通用快捷键吗！！！人傻了！！！）
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
