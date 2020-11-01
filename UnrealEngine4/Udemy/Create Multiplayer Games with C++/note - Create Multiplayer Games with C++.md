@@ -1673,17 +1673,149 @@ void ASWeapon::PlayFireEffects(FVector TraceEnd)
   * UE4 小技巧：骨骼网格体选中一部分，Ctrl+A 全选
 * 创建新材质 Content/Core - `Physics - Physics Material Class` - PhysMat_FleshDefault/Vulnerable
   * Physical Properties - Surface Type 应用相应表面类型
-### 6. 
-### 7. 
-### 8. 
-### 9. 
+### 6. 自定义表面类型的应用
+```cpp
+// SWeapon.h
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+    UParticleSystem *DefaultImpactEffect;   // 把原来的单一效果改掉
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+    UParticleSystem *FleshImpackEffect;
+// SWeapon.cpp
+#include "PhysicalMaterials/PhysicalMaterial.h"
+Fire()
+{
+    if (LineTrace())
+    {
+        EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
+        UParticleSyetem *SelectedEffect = nullptr;
+        switch (SurfaceType)
+        {
+        case SurfaceType1:
+            // SelectedEffect = FleshImpackEffect;
+            // break;
+        case SurfaceType2:
+            SelectedEffect = FleshImpackEffect;
+            break;
+        default:
+            SelectedEffect = DefaultImpackEffect;
+            break;
+        }
+        if (SelectedEffect)
+        {
+            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+        }
+    }
+}
+```
+* Hit.PhysMaterial 是 `TWeakObjectPtr` 弱指针
+* VS 小技巧：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
+* 更规范一点，增强可读性
+    ```cpp
+    // Source/CoopGame.h
+    #define SURFACE_FLESHDEFAULT        SurfaceType1
+    #define SURFACE_FLESHVULNERABLE     SurfaceType2
+    // SWeapon.cpp
+    #include "CoopGame.h"
+    // 替换原来的 SUrfaceType1/2
+    ```
+* 编译后在 BP_Rifle 为 DefaultImpackEffect、FleshImpactEffect 赋值 
+* ？：没有溅血效果
+* **`Debug`**
+  * VS 小技巧：VS - Debug - Attach to Process - UE4Editor.exe
+  * 如果直接从 VS 运行应该自动 Attach，分别运行时需手动 Attach
+  * 在新增部分前设断点，看到 Hit.PhysMaterial nullptr，展开信息，查看是否击中 SkeletalMesh 等。回到前面的 Collision 碰撞设置，QueryParams 未设置返回物理材质。所以 `QueryParams.bReturnPhysicalMaterial = true;`
+  * VS 小技巧：解除所有断点 Debug - Detach All
+### 7. 自定义碰撞通道
+* 之前在 LineTraceByChannel 中使用的通道是 ECC_Visibility 可见性通道
+* 创建自定义通道：拥有更多权限
+  * ① 使用 `ECC_GameTraceChannel` 系列，类似 SurfaceType 系列，在 CoopGame.h 中增加宏定义 `#define COLLISION_WEAPON ECC_GameTraceChannel1`
+  * ② `通知编译器使用自定义通道`：Project settings - Engine - Collision - `Trace Channels - New Trace Channel - Name:Weapon` 第一项即对应 ECC_GameTraceChannel1
+  * ③ `应用自定义通道`：BP_targetDummy - SkeletalMesh - details - Collision - Collision Presets = Custom ，在下面列表可看到 Weapon 。`使用 Weapon 通道时，释放了 Visibility 通道，就可用于其它功能。`
+### 8. Bonus 伤害特效
+```cpp
+// SWeapon.h
+protected:
+    UPROPERTY(...)
+    float BaseDamage;
+// SWeapon.cpp
+// 初始化并替换原 Damage 传入伤害值
+Fire()
+{
+    float ActualDamage = BaseDamage;
+    if (SurfaceType = SURFACE_FLESHVULNERABLE)
+    {
+        ActualDamage *= 4.0f;
+    }
+}
+```
+* `Draw Debug String`：在 BP_TargetDummy 中应用，打印 Damage 值，在伤害处显示
+### 9. 武器自动开火
+* 把 Fire() 移回 protected，创建 public StartFire()、StopFire()
+```cpp
+// SWeapon.h
+protected:
+    FTimerHandle TimerHandle_TimeBetweenShots;
+// SWeapon.cpp
+#include "TimerManager.h"
+void ASWeapon::StartFire()
+{
+    // 设置定时器循环执行 Fire()，每 1s 调用一次，first delay 触发后首次调用延迟，不设默认为前面的 rate
+    GetWorldTimerManager().SetTimer(TimerHandle_TimeBetweenShots, this, &ASWeapon::Fire, 1.0f, true, 0.0f);
+}
+
+void ASWeapon::StopFire()
+{
+    GetWorldTimeManager().ClearTimer(TimerHandle_TimeBetweenShots);
+}
+// 最后在人物中更改按键绑定和调用函数
+```
+* 【！】：还还还还是要通过接口看需要的东西哟w
+* ？：手动狂点比自动开火快——监控上次开火时间
+```cpp
+// SWeapon.h
+protected:
+    float LastFireTime;
+
+    // RPM - Bullets per minute fired by weapon 每分钟发射子弹数
+    UPROPERTY(...)
+    float RateOfFire;   // 把频率抽成变量，并公开到编辑器中便于后续设计调整
+
+    // Derived from RateOfFire 转换为每秒发射子弹数
+    float TimeBetweenShots;
+// SWeapon.cpp
+// 初始化频率
+ASWeapon()
+{
+    RateOfFire = 600;
+}
+
+BeginPlay()
+{
+    TimeBetweenShots = 60 / RateOfFire;
+}
+
+StartFire()
+{
+    // 就是动态取得firstdelay = 开火设定间隔 + 时间变化量（负值），即 开火设定间隔 - 时间变化量，即剩余还需等待多久间隔
+    float FirstDelay = FMath::Max(LastFireTime + TimeBetweenShots - GetWorld()->TimeSeconds, 0);
+    // 由于 firstdelay < 0 时改用 rate，因此 clamp 限制一下
+    GetWorldTimerManager().SetTimer(..., rate = TimerBetweenShots, ..., FirstDelay);
+}
+```
+### 10. Activity：设计实现自己的武器特性
+* 示例：添加弹药动作，为武器实现装弹过程，完成子弹扫射，武器反冲效果；能量积蓄武器。
+* Idea -> 分解为具体任务并实现
+  * `google`/look into `engine code` or `prototype in Blueprint` first
 
 ## 八、
 * 总览
   * 自定义组件（记录生命值、侦听传入的伤害事件，集成到一个组件中，可解耦并分别应用到玩家和 AI ）
   * 角色死亡效果
   * UMG 生命值反馈
-### 1. 
+### 1. 生命值组件
+
 ### 2. 
 ### 3. 
 ### 4. 
@@ -1797,6 +1929,9 @@ void ASWeapon::PlayFireEffects(FVector TraceEnd)
 * VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
 * 选中 NavMesh 按 P 放大，再 P 隐藏
 * 骨骼网格体选中一部分，Ctrl+A 全选（？不就是通用快捷键吗！！！人傻了！！！）
+* VS 小技巧：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
+* VS 小技巧：VS - Debug - Attach to Process - UE4Editor.exe
+* VS 小技巧：解除所有断点 Debug - Detach All
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
