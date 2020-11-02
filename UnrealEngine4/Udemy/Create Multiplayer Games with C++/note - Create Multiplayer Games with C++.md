@@ -1848,7 +1848,24 @@ BeginPlay()
 ```
 * 动态注册事件
   * ① 绑定代理函数 `On<Event>.AddDynamic(this, &<HandleFunction>);`
-  * ② 定义代理函数 
+  * ② 定义代理函数 疯狂 Alt+G 找到宏定义给出的代理函数接口
+  * `③ 代理函数需标记为 UFUNTION`
+* 就此实现了：在角色中添加该组件，并将该组件的相应函数绑定到角色以触发相应事件
+* 定义、初始化、在 HandleTakeAnyDamage 控制生命值变化、并 `FMath::Clamp()` 到指定范围。
+* 日志输出
+  * `UE_LOG(LogTemp, Log/Warning/Error, TEXT(""));`
+* ？：不是每次都能造成伤害
+  * CapsuleComponent - Weapon 通道处于 Block 状态
+    ```cpp
+    // SCharacter.cpp
+    #include "Components/CapsuleComponents.h"
+    #include "CoopGame.h"
+    ASCharacter()
+    {
+        // 使胶囊体组件忽略对武器追踪的碰撞，即使武器追踪可穿透胶囊体击中角色
+        GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
+    }
+    ```
 ### 3. 自定义事件
 ### 4. 死亡动画
 ### 5. 
