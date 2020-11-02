@@ -1529,7 +1529,7 @@ void AFPSCharacter::Fire()
   * 武器特效包中有爆炸特效素材
 * p63 02:40
 
-## 七、
+## 七、武器设定 2
 * 总览
   * 开镜狙击 Aiming down sights
   * 后座力导致的摄像机抖动 Camera shakes
