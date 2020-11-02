@@ -1815,15 +1815,62 @@ StartFire()
   * 角色死亡效果
   * UMG 生命值反馈
 ### 1. 生命值组件
+* 创建 Actor Component - Public/Components/SHealthComponent
+  * Actor Component 记录变量、触发事件
+  * Scene Component 提供 Transform 、表示游戏世界中呈现的特定视觉效果
+```cpp
+// SHealthComponent.h
+UCLASS( ClassGroup=(COOP), meta=(BlueprintSpawnableComponent) )
 
-### 2. 
-### 3. 
-### 4. 
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+    float Health;
+```
+* UCLASS 参数
+  * `ClassGroup` 添加组件时下拉列表分类
+  * `meta BlueprintSpawnableComponent` 可在蓝图中添加该组件
+* 组件列表中，Scene Component 在树形层级结构中，Actor Component 在下方
+### 2. 伤害事件
+* 将 HealthComponent 组件与事件 OnTakeDamage 关联，以自动反馈 TakeHit 事件
+```cpp
+// SHealthComponent.h
+public:
+    void HandleTakeAnyDamage(...);
+// SHealthComponent.cpp
+BeginPlay()
+{
+    AActor *MyOwner = GetOwner();
+    if (MyOwner)
+    {
+        MyOwner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+    }
+}
+```
+* 动态注册事件
+  * ① 绑定代理函数 `On<Event>.AddDynamic(this, &<HandleFunction>);`
+  * ② 定义代理函数 疯狂 Alt+G 找到宏定义给出的代理函数接口
+  * `③ 代理函数需标记为 UFUNTION`
+* 就此实现了：在角色中添加该组件，并将该组件的相应函数绑定到角色以触发相应事件
+* 定义、初始化、在 HandleTakeAnyDamage 控制生命值变化、并 `FMath::Clamp()` 到指定范围。
+* 日志输出
+  * `UE_LOG(LogTemp, Log/Warning/Error, TEXT(""));`
+* ？：不是每次都能造成伤害
+  * CapsuleComponent - Weapon 通道处于 Block 状态
+    ```cpp
+    // SCharacter.cpp
+    #include "Components/CapsuleComponents.h"
+    #include "CoopGame.h"
+    ASCharacter()
+    {
+        // 使胶囊体组件忽略对武器追踪的碰撞，即使武器追踪可穿透胶囊体击中角色
+        GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
+    }
+    ```
+### 3. 自定义事件
+### 4. 死亡动画
 ### 5. 
-### 6. 
-### 7. 
-### 8. 
-### 9. 
+### 6. UMG 生命值 UI
+### 7. Challenge：
 
 ## 九、联网
 * 总览
