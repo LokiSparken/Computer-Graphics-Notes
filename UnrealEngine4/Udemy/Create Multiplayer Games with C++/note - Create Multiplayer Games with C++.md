@@ -1815,15 +1815,45 @@ StartFire()
   * 角色死亡效果
   * UMG 生命值反馈
 ### 1. 生命值组件
+* 创建 Actor Component - Public/Components/SHealthComponent
+  * Actor Component 记录变量、触发事件
+  * Scene Component 提供 Transform 、表示游戏世界中呈现的特定视觉效果
+```cpp
+// SHealthComponent.h
+UCLASS( ClassGroup=(COOP), meta=(BlueprintSpawnableComponent) )
 
-### 2. 
-### 3. 
-### 4. 
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+    float Health;
+```
+* UCLASS 参数
+  * `ClassGroup` 添加组件时下拉列表分类
+  * `meta BlueprintSpawnableComponent` 可在蓝图中添加该组件
+* 组件列表中，Scene Component 在树形层级结构中，Actor Component 在下方
+### 2. 伤害事件
+* 将 HealthComponent 组件与事件 OnTakeDamage 关联，以自动反馈 TakeHit 事件
+```cpp
+// SHealthComponent.h
+public:
+    void HandleTakeAnyDamage(...);
+// SHealthComponent.cpp
+BeginPlay()
+{
+    AActor *MyOwner = GetOwner();
+    if (MyOwner)
+    {
+        MyOwner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+    }
+}
+```
+* 动态注册事件
+  * ① 绑定代理函数 `On<Event>.AddDynamic(this, &<HandleFunction>);`
+  * ② 定义代理函数 
+### 3. 自定义事件
+### 4. 死亡动画
 ### 5. 
-### 6. 
-### 7. 
-### 8. 
-### 9. 
+### 6. UMG 生命值 UI
+### 7. Challenge：
 
 ## 九、联网
 * 总览
