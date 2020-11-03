@@ -1809,7 +1809,7 @@ StartFire()
 * Idea -> 分解为具体任务并实现
   * `google`/look into `engine code` or `prototype in Blueprint` first
 
-## 八、
+## 八、伤害反馈
 * 总览
   * 自定义组件（记录生命值、侦听传入的伤害事件，集成到一个组件中，可解耦并分别应用到玩家和 AI ）
   * 角色死亡效果
@@ -1867,10 +1867,134 @@ BeginPlay()
     }
     ```
 ### 3. 自定义事件
+```cpp
+// SHealthComponent.h
+// OnHealthChanged event
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHealthChangedSignature, UShealthComponent*, HealthComp, float, Health, float, HealthDelta, const class UDamageType *, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
+
+public:
+    // 公开给蓝图赋值
+    UPROPERTY(BlueprintAssignable, Category = "Events")
+    FOnHealthChangedSignature OnHealthChanged;
+
+// SHealthComponent.cpp
+HandleTakeAnyDamage()
+{
+    // Broadcast(填入在宏中声明的参数列表)
+    OnHealthChanged.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
+}
+```
+* ① `DECLARE_DYNAMIC_MULTICAST_DELEGATE(事件类型名，触发组件，参数列表)` 声明动态组播代理
+  * 参数列表与 HandleTakeAnyDamage 类似，Damage -> HealthDelta，其余参数可仿照搬运
+* ② 添加至 SHealthComponent 类，通常需要便于在蓝图中访问
+  * `BlueprintAssignable` 可在蓝图中赋值（公开到蓝图的事件列表中）
+* ③ `调用并进行广播`：OnHealthChanged.`Broadcast(填入在宏中声明的参数列表)`
+* 应用：`对某事件作出特定反馈`
 ### 4. 死亡动画
-### 5. 
+* 用 C++ 添加生命值组件（把 BP 中的删掉）
+    ```cpp
+    // SCharacter.h
+    class USHealthComponent;
+    protected:
+        USHealthComponent *HealthComp;
+    // SCharacter.cpp
+    #include "SHealthComponent.h"
+    ASCharacter()
+    {
+        HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComp"));
+    }
+    ```
+* 添加事件绑定
+    ```cpp
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+    }
+    ```
+* 定义代理函数：死亡
+  * 死亡逻辑 1：禁用玩家对角色的控制、禁用移动组件
+  * 死亡逻辑 2：触发死亡后关闭胶囊体组件的碰撞属性，不再需要查询或生成物理效果
+  * 死亡逻辑 3：播放死亡动画
+    ```cpp
+    // SCharacter.h
+    protected:
+        UFUNCTION()
+        void OnHealthChanged(...);
+
+        UPROPERTY(BlueprintReadOnly, Category = "Player")
+        bool bDied;     // 避免重复调用，以及用于播放动画蓝图
+    // SCharacter.cpp
+    OnHealthChanged(...)
+    {
+        if (Health <= 0.0f && !bDied)   
+        {
+            bDired = true;
+            // 停止移动
+            GetMovementComponent()->StopMovementImmediately();
+            GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+            // 等待销毁时从控制器解除控制
+            DetachFromControllerPendingDestroy();       
+            // 十秒后销毁该角色
+            SetLifeSpan(10.0f);
+
+        }
+    }
+    ```
+* **`更新动画蓝图`**
+  * 到 AnimStarterPack 中 Filters - Animation Blueprint 进入 UE4ASP_HeroTPP_AnimBlueprint
+  * 打开 `AnimGraph`，创建结点 Play Dealth_1
+  * 创建结点 `BlendPosesbybool(ActiveValue=bDied, TruePose=PlayDeath_1, FalsePose=Locomotion)` -> FinalAnimationPose
+  * 取消 Play Dealth_1 的循环：details - 取消勾选 Loop
+* **`通知动画蓝图角色死亡信息`**
+  * ① 把死亡标记 bDied 公开到蓝图
+  * ② 在 AnimBlueprint - Event Graph 中：Character -> Cast to SCharacter -> GetbDied() -> 赋值到动画蓝图的变量 bDied （在 AnimGraph 中使用的 ActiveValue）
+* 自杀测试
+  * 主界面 Modes 基本图形 - Pain Causing Volume
+  * 设置 Damage Per Second、Pain Interval 等
+* 注意这里死亡时武器未销毁（诶，爆装备了！（
+### 5. 生命值提示 UI 材质
+* 把生命值组件公开到蓝图
+* 将贴图 T_HealthMask.png 导入到 Content/UI
+  * Level Of Detail - Texture Group = UI
+  * Texture - sRGB = false（一般地，为灰阶遮罩纹理禁用 sRGB 项）
+* 创建 Content/UI/M_HealthIndicator 材质
+  * 效果：屏幕中央 Logo 提示，血条越少 Logo 越清晰
+  * ① 把贴图拽到材质编辑器变成 Texture Sample 结点
+  * ② Material 主属性设置
+    * Blend Mode = Masked 设为遮罩（划掉）
+    * Shading Model = Unlit 不显示阴影（划掉）
+    * Material Domain = User Interface 直接设为 UI
+    * UE4 小技巧：材质编辑器 - Palette 中右对齐的标识键+鼠标左键快速创建该结点，如 Constant 1 则 1+Left Mouse 快速创建常量值
+  * ③ Multiply(TextureSample.Base, TextureSample.Alpha) -> Opacity Mask
+  * ④ 1 -> Final Color
+  * ⑤ 小技巧 Debug：Time -> frac(取小数)（可在 [0, 1] 之间调节动画时长，可用于 preview Mesh and ...? 快速调试/预览动画网格体 p80 03:40）
+  * ⑥ 把 ③ 中的 TextureSample.Base 改为 Multiply(TextureSample.Base, Frac)【哦豁！材质动起来了艹】（再给 Time 乘个值可以降速）
+  * ⑦ `Static Switch Parameter` - details - General - Parameter Name = DebugAnimate，True 时 Frac，False 时输入  Param Alpha = 0（设其 Slider Max = 1，最大化显示效果）
 ### 6. UMG 生命值 UI
-### 7. Challenge：
+* 使用材质：创建使用 5 中材质的 Widget 
+* WBP_HealthIndicator
+  * 添加 image，居中，size (300, 300)，Appearance 设 Brush
+* 在 BP_PlayerPawn 的 BeginPlay 中加 Sequence 创建该 Widget
+* `OnHealthChanged 事件参数问题`：把 HealthComp 参数名改一下 OwingHealthComponent，否则会和组件名冲突
+* `利用 OnHealthChanged 事件添加反馈给 WBP_HealthIndicator`
+  * WBP_HealthIndicator - Event Graph
+  * Event Construct(): GetOwingPlayerPawn -> GetComponentbyClass(SHealthComponent) -> isValid -> BindEventtoOnHealthChanged(Target = HealthComponent, Event = OnHealthChanged)
+  * OnHealthChanged 执行线-> `Image.GetDynamicMaterial` 创建动态材质或返回之前所创建的材质 -> `SetScalarParameterValue`( Parameter Name = `Alpha`（材质中创建的 Param Alpha）, `Value = Clamp(OnHealthChanged.Health/DefaultHealth, 0, 1)`)（值做限制，避免超出范围）
+* ？：反效果
+  * Health/DefaultHealth => 1-Health/DefaultHealth
+* 把主材质 Final Color 改成红色
+### 7. Challenge：爆炸桶
+* 红色炸药桶：被击中几次，爆炸（从地上弹起，余波炸开附近物体），变色
+* 提示
+  * 需要响应 Weapon 带来的伤害，可以利用生命值组件，Health = 0 时炸
+  * 播放粒子效果
+  * 改变圆柱网格体的表面材质
+  * 向上弹起
+  * 炸开附近物体（RadialForceComponent）
+* 资源中有网格体与材质
+* p82 01:25
 
 ## 九、联网
 * 总览
@@ -1958,27 +2082,32 @@ BeginPlay()
 * 
 
 # 小技巧整理
-* **`【！】查头文件`**：Shift + Alt + O 查类名，关注 Private/Classes 之后的部分 include
-* 运行中 `F1` 切……透视图？透视世界？
-* 运行时 `~` 调出控制台，`show collision` 显示碰撞体
-* 右键物体，Select -> Select all matching classes 选中所有匹配类
-* 多端运行时 Shift + F1 挪开窗口
-* 运行窗口大小调整：play - advanced settings - editor preference - play in new window - `new window size`
-* play - `Run Dedicated Server` 在专用服务器上运行，则本地运行的就是客户端
-* Save on Compile - On Success Only 节省编译后手动保存的时间
-* 在蓝图 viewport 中 Alt + 左键可以任意拖动视图
-* 内容浏览器右下 view options - Thumbnails - Scale 调整缩略图预览大小
-* 蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
-* 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
-* 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
-* **`【！】查标识符`**：Shift + Alt + S 
-* Play - Simulate 模拟运行粒子特效？
-* VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
-* 选中 NavMesh 按 P 放大，再 P 隐藏
-* 骨骼网格体选中一部分，Ctrl+A 全选（？不就是通用快捷键吗！！！人傻了！！！）
-* VS 小技巧：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
-* VS 小技巧：VS - Debug - Attach to Process - UE4Editor.exe
-* VS 小技巧：解除所有断点 Debug - Detach All
+* UE4
+  * **`【！】查头文件`**：Shift + Alt + O 查类名，关注 Private/Classes 之后的部分 include
+  * 运行中 `F1` 切……透视图？透视世界？
+  * 运行时 `~` 调出控制台，`show collision` 显示碰撞体
+  * 右键物体，Select -> Select all matching classes 选中所有匹配类
+  * 多端运行时 Shift + F1 挪开窗口
+  * 运行窗口大小调整：play - advanced settings - editor preference - play in new window - `new window size`
+  * play - `Run Dedicated Server` 在专用服务器上运行，则本地运行的就是客户端
+  * Save on Compile - On Success Only 节省编译后手动保存的时间
+  * 在蓝图 viewport 中 Alt + 左键可以任意拖动视图
+  * 内容浏览器右下 view options - Thumbnails - Scale 调整缩略图预览大小
+  * 蓝图编辑器 - details - 选择网格 - view options - `show engine content` 显示引擎自带的一些资源
+  * 蓝图编辑器 - details - mesh - 已选资源下的 search 按钮可跳转到内容浏览器资源所在处
+  * 骨骼编辑器 - Skeleton - 右键 Socket - `Add Preview Asset` 添加网格体预览
+  * **`【！】查标识符`**：Shift + Alt + S 
+  * Play - Simulate 模拟运行粒子特效？
+  * 选中 NavMesh 按 P 放大，再 P 隐藏
+  * 骨骼网格体选中一部分，Ctrl+A 全选（？不就是通用快捷键吗！！！人傻了！！！）
+  * 材质编辑器 - Palette 中右对齐的标识键+鼠标左键快速创建该结点，如 Constant 1 则 1+Left Mouse 快速创建常量值
+  * 小技巧 Debug：Time -> frac(取小数)（可在 [0, 1] 之间调节动画时长，可用于 preview Mesh and ...? 快速调试/预览动画网格体 p80 03:40）
+* VS
+  * VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
+  * VS 小技巧：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
+  * VS 小技巧：VS - Debug - Attach to Process - UE4Editor.exe
+  * VS 小技巧：解除所有断点 Debug - Detach All
+  * 
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
