@@ -2288,8 +2288,61 @@ HandleTakeAnyDamage()
 * 总览
   * 滚动追踪球体（接近玩家，爆炸）：AI 基础原理，Navigation 及 C++ 中如何为其编写基本行为
   * 适应多人游戏
-### 1. 
-### 2. 
+### 1. 创建可拾取物体类
+* 创建 C++ 类 - parent = Pawn - Public/AI/STrackerBot
+  * 添加静态网格体组件 VisibleDefaultsOnly & Category = "Components"，并设为根节点
+  * 【？】疑惑重现，什么时候要设为根组件？设不设根组件有啥区别？
+  * 移除玩家输入组件
+* 创建基于 STrackerBot 的蓝图类 BP_TrackerBot
+  * Static Mesh = ArcadeEditorSphere (Show Engine Content)
+  * 整个小球：创建 Content/Meshes ，把资源复制进去，重命名该球为 SM_TrackerBot，打开静态网格体编辑器 - details - Build Scale = (0.2, 0.2, 0.2)
+  * 整个材质：M_TrackerBot，Base Color = (1, 1, 1)，并应用。
+  * UE4 小技巧：选中物体+INS 放到地面。（纳尼？不是 END 放地上吗！难道都可以吗！）
+* 扩大 Floor 面积
+* 放入 Nav Mesh Bounds Volume ，沉入 Floor，放到和 Floor 差不多大。
+  * 消除 BP_TrackerBot 对 Nav Mesh 的影响：即取消 BP_TrackerBot - MeshComp - details - Can Ever Affect Navigation，C++ 中在构造时 `MeshComp->bCanEverAffectNavigation = false;`（error：无法访问受保护对象，因此 `SetCanEver...(false);`）
+* 放入一些 Cube 拉长，在场景中瞎几把布局一下，给 AI 制造障碍。
+### 2. Move-to
+* 移动方法 1：`Move to Location`
+  * BeginPlay() -> SimpleMovetoLocation(Controller = GetAIController(Self), Goal = MakeVector(0, 0, 0))
+  * Error：移动失败，不允许 AI Controller 移动
+  * 设置 AI Controller 的移动：【！】在组件中搜索 `move`，查看相关项。添加 Floating Pawn Movement。
+  * 动起来了！！！
+* 移动方法 2：`Move to Actor`
+  * 类似，目标 Actor 暂用 GetPlayerPawn（不适用于 multiplayer ）
+* 移动方法 3：`Find Path to Actor Synchronously`
+  * Custom Event: FindNextPathPoint() -> FindPathtoActorSynchronously(PathStart = GetActorLocation(), GoalActor = GetPlayerPawn()) -> GetPathPoints()
+    * `GetPathPoints()` 包含了移动路径上所有点。
+    * UE4 小技巧：看“点”的时候可以 draw debug sphere 看看是些啥。测试时记得 BeginPlay() 调用。
+    * UE4 小技巧：编辑器按 P 禁用 Nav Mesh 的渲染。
+* 滚动效果逻辑
+  * 对球施加物理作用力。
+  * 为了调整滚动方向，对移动路径分段，总是移动到下一路径点。
+* 在 C++ 中获取移动路径点
+    ```cpp
+    // STrackerBot.h
+    protected:
+        FVector GetNextPathPoint();
+    // STrackerBot.cpp
+    #include "Kismet/GamePlayStatics.h"
+    #include "GameFramework/Character.h"    // 用于 PlayerPawn
+    #include "AI/Navigation/NavigationPath.h"
+    #include "AI/Navigation/NavigationSystem.h"
+    FVector ASTrackerBot::GetNextPathPoint()
+    {
+        ACharacter *PlayerPawn = UGameplayStatics::GetPlayerCharacter(this, 0);  // 不适用于 multiplayer
+        UNavigationPath *NavPath = UNavigationSystem::FindPathToActorSynchronously(this, GetActorLocation(), PlayerPawn);
+
+        if (NavPath->PathPoints.Num() > 1)
+        {
+            return NavPath->PathPoints[1];
+        }
+        return GetActorLocation();
+    }
+    ```
+    * `UObject *WorldContextObject = this` 参数告知引擎处于哪个世界场景（当前关卡），提供上下文信息。
+    * 【？】`UGameplayStatics` 里有些啥，为啥他一下子就想到去这里面找角色信息，嘤。
+    * `PathPoints` 数组中第一个路径点为当前位置，因此取出第二个路径点即下一个位置。 
 ### 3. 
 ### 4. 
 ### 5. 
@@ -2305,9 +2358,7 @@ HandleTakeAnyDamage()
     * 玩家经过时可拾起
     * 经过一定时间后重新生成道具
   * 适应多人游戏
-### 1. 创建可拾取物体类
-* p105 01:54
-* 
+### 1. 
 ### 2. 
 ### 3. 
 ### 4. 
@@ -2378,6 +2429,9 @@ HandleTakeAnyDamage()
   * 材质编辑器 - Palette 中右对齐的标识键+鼠标左键快速创建该结点，如 Constant 1 则 1+Left Mouse 快速创建常量值
   * 小技巧 Debug：Time -> frac(取小数)（可在 [0, 1] 之间调节动画时长，可用于 preview Mesh and ...? 快速调试/预览动画网格体 p80 03:40）
   * 设置完如果不生效记得检查编辑器是否因热重载问题没有及时更新。不过直接从 VS 编译打开编辑器貌似就不会有介个问题。
+  * 选中物体+INS 放到地面。（纳尼？不是 END 放地上吗！难道都可以吗！）
+  * 看“点”的时候可以 draw debug sphere 看看是些啥。
+  * 编辑器按 P 禁用 Nav Mesh 的渲染。
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
