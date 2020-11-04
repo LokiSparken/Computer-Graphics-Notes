@@ -1057,7 +1057,7 @@ void AFPSCharacter::Fire()
   * 进入控制台，`> open 127.0.0.1` 联机
   * 与其他人联机：WinNoEditor 整个打包，获取他人 IP，再用 :7777 做端口（失败则可能是因为路由器的NAT规则比较严格，可在7777端口上做转发）
 
-## 五、Coop Game 1
+## 五、Coop Game 1 - 角色基本组件及动画
 * 总览
   * 玩家的基本移动 Basic movements
   * 添加角色动画 Character animations
@@ -1999,15 +1999,290 @@ HandleTakeAnyDamage()
 ## 九、联网
 * 总览
   * 为之前几章内容做联机设置
-### 1. 
-### 2. 
-### 3. 
-### 4. 
-### 5. 
-### 6. 
-### 7. 
-### 8. 
-### 9. 
+### 1. Bug Play
+* 喜闻乐见的 Bug Play 时间
+  * Number of Players = 2
+  * Run Dedicated Server 在专用服务器上运行
+  * Editor Preferences - Level Editor - Play 运行相关设置
+* 现象
+  * Client 窗口处于观战状态：之前对一个 BP_PlayerPawn 设置的 Auto Possess = Player 0 在多人模式下不起作用，改为多个 Player Start、创建新 BP_TestGameMode 并令 Default Pawn Class = BP_PlayerPawn ，最后在 World Settings 中应用该 GameMode。则开始后 GameMode 从 Player Start 中随机选取一个点，生成相应的 Pawn Class 并给出控制权。
+  * 人物移动等已自动同步
+  * Client 的人物射击在 Server 中不显示，反之亦然
+  * 人物武器是同步的：在 BeginPlay() 时生成了武器，该阶段在 CS 同时执行（针对同一角色对象，BeginPlay() 会在客户端和服务器上都运行一次）。由于没有设置 replication ，所以此时客户端和服务器上的两个角色是独立的。然鹅希望在服务器生成武器，通知客户端复制（引擎系统内部进行），最后客户端生成武器。
+### 2. 武器联网 1 - SpawnActor 与 Variable 的同步
+* ① 只在服务器端生成武器：`Role == ROLE_Authority` 检查是否在服务器端
+    ```cpp
+    // SCharacter.cpp
+    BeginPlay()
+    {
+        DefaultFOV = ...;
+        HealthComp->...;
+
+        if (Role == ROLE_Authority)
+        {
+            // other code
+        }
+    }
+    ```
+* ② Replicate SpawnActor(Weapon)：打开 replicate ，经系统处理，使客户端的武器相关数据与服务端同步。（UE4 小技巧：设置完如果不生效记得检查编辑器是否因热重载问题没有及时更新。不过直接从 VS 编译打开编辑器貌似就不会有介个问题。）
+    ```cpp
+    // SWeapon.cpp
+    ASWeapon::ASWeapon()
+    {
+        SetReplicates(true);
+    }
+    ```
+* ③ Replicate Variable(CurrentWeapon)：（VS 小技巧：查找，F3 下一项）开火时从 CurrentWeapon 变量调用 StartFire() ，因此客户端没有 CurrentWeapon 变量则无法成功调用。
+    ```cpp
+    // SCharacter.h
+    protected:
+        UPROPERTY(Replicated)
+        ASWeapon *CurrentWeapon;
+    // SCharacter.cpp
+    #include "Net/UnrealNetwork.h"
+    void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+    {
+        Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+        DOREPLIFETIME(ASCharacter, CurrentWeapon);
+    }
+    ```
+    * Step 1：对变量标识 `Replicated` 属性
+    * Step 2：通过 `GetLifetimeReplicatedProps` 函数解释如何复制该变量。默认通知所有相连客户端进行复制。
+### 3. 武器联网 2 - Fire() 函数同步（客户端向服务端发送函数执行请求）
+* 问题：客户端能开火了，但是只有开火端能看到粒子特效
+* 分析：希望 Fire() 函数中的相关处理在各端同步
+* 步骤
+  * ① **`创建能发送至服务器的函数`**
+    ```cpp
+    // SWeapon.h
+    protected:
+        UFUNCTION(Server, Reliable, WithValidation)
+        void ServerFire();
+    ```
+    * 服务器函数的函数名必须有 Server 前缀，客户端函数则要 Client 前缀。
+    * `Server` 关键词，确保调用 ServerFire() 时，请求发送至主机服务器，而不是在客户端上运行
+    * `Reliable` 可靠连接，保证最终能连接上服务器，`Unreliable` 不保证最终能执行。（通常 Gameplay 中的重要组件都应用 Reliable，但不太重要的部分可以用 Unreliable 减轻负载，因为它 more lightly）
+    * `WithValidation` 只要明确是在服务器上运行，就需要指定该标识
+  * ② **`实现服务器函数`**
+    ```cpp
+    // SWeapon.cpp
+    void ASWeapon::ServerFire_Implementation()
+    {
+        Fire();
+    }
+
+    bool ASWeapon::ServerFire_Validate()
+    {
+        return true;
+    }
+    ```
+    * 实现时，需要 `_Implementation` 后缀。
+    * 由于指定了关键词 `WithValidation`，所以需要返回 `bool` 的、以 `_Validate` 为后缀的函数。一般用于检验代码正确性，有问题则调用该函数的客户端会从服务器断开连接。此处暂时不进行该项处理，直接返回真。
+  * ③ **`调用服务器函数`**
+    ```cpp
+    // SWeapon.cpp
+    void ASWeapon::Fire()
+    {
+        if (Role < ROLE_Authority)
+        {
+            ServerFire();
+            return;
+        }
+    }
+    ```
+    * 在跑 Fire() 逻辑前 check 一下本机，如果不是服务端则用服务器函数发送请求。
+  * 问题：此时客户端开火只在服务端看到效果 hhh，因为各种粒子效果也只在服务端运行。
+  * 方案：去掉客户端调用处的 return，则服务端、开火客户端都跑了一遍完整的，都有效果。但是把服务端放到专用服务器，开两个客户端，那么非调用客户端处还没收到相关通知。
+  * Error：服务端放到专用服务器时，客户端和服务端都执行了 BP_PlayerPawn 中添加 HUD 的行为，即使没有本地控制的 PlayerPawn 也会执行 HUD 的创建。=> 添加本地控制检查 `BeginPlay() -> if(IsLocallyControlled()) -> Sequence `【？】p86 08:40 有听没有懂？是指因为运行了三个端但是只有两个 PlayerStart 所以有一个没有生成出 BP_PlayerPawn 所以那个端的 HUD 没有 owner 所以炸了？自己试的时候记得看下报错报的啥。
+### 4. 武器联网 3 - 多客户端同步（服务端执行后通知其它客户端）
+* 分析：区分哪些部分只需要在服务端执行，哪些要在各客户端同步
+  * 服务端执行：Damage 实际伤害
+  * 客户端同步：武器攻击附带的效果，冲击波和声效等
+* 同步逻辑
+  * 开火客户端 Fire() 时调用服务器函数 ServerFire() 通知服务端执行函数 Fire()。
+  * 服务端执行，记录武器特效生成时所需信息（武器追踪的起点终点），该信息由指定了 replicate 的结构体变量同步到其它客户端。
+  * 最后其它客户端根据相应信息执行特效生成部分，显示效果。
+* `定义结构体`：记录武器攻击效果生成时所需的信息，用于通知其它客户端
+    ```cpp
+    // SWeapon.h
+    USTRUCT()
+    struct FHitScanTrace
+    {
+        GENERATED_BODY()
+    public:
+        UPROPERTY()
+        FVector_NetQuantize TraceFrom;
+
+        UPROPERTY()
+        FVector_NetQuantize TraceTo;
+    }
+    ```
+    * 由于与联网相关，所以创建 `FVector_NetQuantize/10/100/Normal`（精确到个位/一位小数/两位小数/[-1, 1]） 包装矢量，降低精度，减少数据传输量
+* `服务端执行武器追踪时，记录特效所需信息，并将信息同步到其它客户端`
+    ```cpp
+    // SWeapon.h
+    protected:
+        UPROPERTY(ReplicateUsing=OnRep_HitScanTrace)
+        FHitScanTrace HitScanTrace;
+
+        UFUNCTION()
+        void OnRep_HitScanTrace();
+
+    // SWeapon.cpp
+    #include "Net/UnrealNetwork.h"
+    Fire()
+    {
+        // PlayFireEffects(TracerEndPoint);
+        if (Role == ROLE_Authority)
+        {
+            HitScanTrace.TraceTo = TracerEndPoint;
+        }
+    }
+
+    void ASWeapon::OnRep_HisScanTrace()
+    {
+        // play cosmetic FX
+        PlayFireEffects(HitScanTrace.TraceTo);
+    }
+
+    // 记得指定如何同步变量
+    void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+    {
+        Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+        DOREPLIFETIME_(ASCharacter, HitScanTrace);
+    }
+    ```
+    * `ReplicatedUsing=FunctionName` 每次 replicate 该属性时都触发指定函数 FunctionName
+    * `GetLifetimeReplicatedProps()` 不需要在头文件中声明，因为 Unreal Head Tool 中已经做好了处理
+    * `_CONDITION(..., ..., COND_SkipOwner);` 略过向服务端发送请求的客户端
+### 5. 武器联网 4 - 多客户端同步（续）
+* 问题
+  * 一、不在 PlayFireEffects() 中的特效未同步到其它客户端：主要是针对不同表面的击中效果，所以要在同步的 HitScanTrace 结构体中增加击中的表面类型信息
+  * 二、对着同一个地方多次开火时，由于结构体内信息未发生变化，所以服务器认为不再需要复制
+* 处理问题一：① 在 HitScanTrace 中增加表面类型信息
+    ```cpp
+    // SWeapon.h
+    struct FHitScanTrace
+    {
+    public:
+        UPROPERTY()
+        TEnumAsByte<EPhysicalSurface> SurfaceType;
+    }
+    ```
+    * `TEnumAsByte`：不能直接传入并复制枚举类，所以将枚举转换为字节。（只是建议，doc：Template to store enumeration values as bytes in a type-safe way.）
+* 处理问题一：② 将击中效果封装到单独的函数
+    ```cpp
+    // SWeapon.h
+    protected:
+        void PlayImpactEffects(EPhysicalSurface SurfaceType, FVector ImpactPoint);
+
+    // SWeapon.cpp
+    PlayImpactEffects(...)
+    {
+        UParticleSystem *SelectedEffect = nullptr;
+        ...
+        if (SelectedEffect) 
+        {
+            FVector MuzzleLocation = MeshComp->GetSocketLocation(MuzzleSocketName);
+            FVector ShotDirection = ImpactPoint - MuzzleLocation;
+            ShotDirection.Normalize();
+
+            SpawnEmitterAtLocation(..., ImpactPoint, ShotDirection.Rotation());
+        }
+    }
+    ```
+    * ImpactNormal.Rotation 使粒子效果根据射击方位调整粒子效果的 rotation，手动算一个。
+    * 注意：第三人称游戏，视觉感受的轨迹线和实际摄像机播放的轨迹线有不同。
+* 处理问题一：③ 调用击中效果函数
+    ```cpp
+    // 本地客户端与服务器执行
+    Fire()
+    {
+        ApplyPointDamage();
+        PlayImpactEffects(SurfaceType, Hit.ImpactPoint);
+        ...
+    }
+
+    // 通知其它客户端执行
+    OnRep_HitScanTrace()
+    {
+        PlayImpactEffects(HitScantrace.SurfaceType, HitScanTrace.TraceTo);
+    }
+    ```
+* 处理问题一（及二）：④ 记录击中的表面类型信息
+    ```cpp
+    // SWeapon.cpp
+    Fire()
+    {
+        EPhysicalSurface SurfaceType = SUrfaceType_Default;
+        FHitResult Hit;
+        if (LineTrace()) 
+        {
+            SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
+            // ...
+        }
+        if (Role == ROLE_Authority)
+        {
+            HitScanTrace.SurfaceType = SurfaceType;
+        }
+    }
+    ```
+    * 【？】对问题二的处理，好像就是把 if (LineTrace()) 内的 SurfaceType 声明拿到前面了？为啥这样就可以“即便射击未受阻碍，也不缓存上次击中的情形”？哦这和问题二无关来着？只是重置一下表面类型吧……并且这里每次更新成新的 SurfaceType 就可以顺便解决问题二？可是 SurfaceType 的值也很可能一直重复的吧？？？试一下记得试一下=。= p88 06:06
+* 问题：此时多客户端效果同步，但有明显延迟。因为 Epic 的动态更新速率以每 Actor 为单位进行，单个 Actor 没有发生太大变化的话，更新特定网络连接的速率会动态降低。
+    ```cpp
+    // SWeapon.cpp
+    ASWeapon()
+    {
+        NetUpdateFrequency = 66.0f;
+        MinNetUpdateFrequency = 33.0f;
+    }
+    ```
+    * `设置网络更新频率`
+    * 对这两个量 Alt+G 到 Actor.h 中查找 `InitializeDefaults()` 设置的默认值为 100.0f 和 2.0f。（100 高了点，一般游戏帧率也就 60）
+### 6. 伤害反馈联网
+* Bug Play
+  * Server 打 Client：生命值组件生效，死透了！也禁用了对角色的控制。但是没有死亡动画，死了以后视角也不太对，生命值 UI 标记也莫得。
+  * Client 打 Server：服务端一切正常，但客户端看不到其死的过程，但销毁生效。
+* ① `复制生命值变量，确保针对伤害事件的反馈只在服务端发生`
+  * Replicated 组件
+    ```cpp
+    // SHealthComponent.cpp
+    #include "Net/UnrealNetwork.h"
+    USHealthComponent::USHealthComponent()
+    {
+        SetIsReplicated(true);
+    }
+    ```
+  * BeginPlay() 中，仅在服务端绑定伤害事件的代理函数
+    ```cpp
+    BeginPlay()
+    {
+        // only hook if we are server
+        if (GetOwnerRole() == ROLE_Authority)
+        {
+            AActor *MyOwner = GetOwner();
+            if (MyOwner)
+            {
+                MyOwner->OnTakeAnyDamage.AddDynamic(...);
+            }
+        }
+    }
+    ```
+    * `GetOwnerRole()` 组件没有 Role 的概念，需要通过拥有该组件的 Actor 来获取。
+  * 为生命值组件中的变量 Health 添加 `Replicated` 标识，并用 `GetLifetimeReplicatedProps()` 说明如何复制该变量。
+  * 看效果：BP_PlayerPawn - Tick() -> if(IsLocallyControlled) -> PrintString(HealthComp.Health, Duration = 0)
+* ② 动画同步：同步 bDied 变量即可
+### 7. Challenge：爆炸桶联网
+* 将 Intro 八 Challenge 的爆炸桶联网：联网前，不管在哪打都只有服务端有效果。
+  * 把受波及的物体 `Static Mesh Replicate Movement` 属性打开才能同步受冲击效果。
+  * 物理效果的延迟问题，可以不用太苛刻，先实现效果同步。
+* 提示
+  * 确保服务器将所有效果信息复制给客户端
+  * 两者都能产生效果
+  * bool bExploded
+* p90 02:46
 
 ## 十、基础 AI
 * 总览
@@ -2102,12 +2377,13 @@ HandleTakeAnyDamage()
   * 骨骼网格体选中一部分，Ctrl+A 全选（？不就是通用快捷键吗！！！人傻了！！！）
   * 材质编辑器 - Palette 中右对齐的标识键+鼠标左键快速创建该结点，如 Constant 1 则 1+Left Mouse 快速创建常量值
   * 小技巧 Debug：Time -> frac(取小数)（可在 [0, 1] 之间调节动画时长，可用于 preview Mesh and ...? 快速调试/预览动画网格体 p80 03:40）
+  * 设置完如果不生效记得检查编辑器是否因热重载问题没有及时更新。不过直接从 VS 编译打开编辑器貌似就不会有介个问题。
 * VS
-  * VS小番茄小技巧：ESC + 向下箭头切重载的接口信息
-  * VS 小技巧：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
-  * VS 小技巧：VS - Debug - Attach to Process - UE4Editor.exe
-  * VS 小技巧：解除所有断点 Debug - Detach All
-  * 
+  * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
+  * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
+  * `运行时调试 UE4`：VS - Debug - Attach to Process - UE4Editor.exe
+  * 解除所有断点 Debug - Detach All
+  * 查找，F3 下一项
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
