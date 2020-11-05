@@ -2489,8 +2489,38 @@ Tick()
   * 使用计时器 `GetWorldTimerManager` ，并设已启动自毁标志。
   * 【？】为啥这里写的 ApplyDamage 参数是我打我自己（p98 03:49），后面又说每次计时器更新对玩家触发一次伤害？。【check】05:06 damage to itself，翻译错了。
   * VS 小技巧：自动格式化 Edit - Advanced - `Format Document`
-### 8. 添加音效 1
-### 9. 添加音效 2
+### 8. 添加音效 1 - Cue & Attenuation
+* 资源：TrackerSounds 音效包
+* 项目管理：新建 Content/TrackerBot 并把相关的 Meshes 和 Blueprint 都放入，再把音效资源也放进去。
+* 需求
+  * 在启动自毁处添加预警音效 
+  * 在最终爆炸处添加爆炸音效
+* 实现
+  * UGameplayStatics::PlaySoundAttached(USoundCue *SelfDestructSound, RootComponent);（改成 Spawn ，Play 已弃用）
+  * 炸了就不会再移动了，直接 PlaySoundAtLocation （注意 check 空指针，不过 PlaySound 里已经做了保护）
+* 应用：蓝图中给 SoundCue 赋值
+* `创建音效文件 Cue`
+  * 根据所需 Sound Wave 创建 Sound Cue，并应用到 BP_TrackerBot 的 Sound Cue
+  * `音量衰减`：创建文件 Sounds - `Sound Attenuation` - TrackerBotSoundAttenuation，details - `Distance Algorithm = Natural Sound`。
+  * `应用音量衰减`：在 Cue - Output - `AttenuationSettings` = TrackerBotSoundAttenuation
+### 9. 添加音效 2 - 
+* 需求
+  * 发出滚动声（当且仅当滚动时发声）
+  * 使滚动声体现出滚动速率
+* 实现：发出滚动声音
+  * `音量衰减`（方法二）：根据 ball_roll_03_loop 创建 Cue，Output - details - 勾选 OverrideAttenuation
+    * Distance Algorithm = Natural Sound
+    * Radius = 300
+    * Falloff Distance = 2000
+  * 应用：BP_TrackerBot 中添加`组件 Audio` - AudioComp - details - Sound = ball_roll_03_loop_Cue
+* 修 Bug：球体弹跳不正常
+  * 查看碰撞体：SM_TrackerBot 查看 collision - simple collision，非球体碰撞体
+  * 删除碰撞体：Collision - Remove Collision
+  * 重新生成碰撞体：Collision - Add Sphere Simplified Collision
+* 实现：声音与滚动速率匹配
+  * BP_TrackerBot - Event Graph - Tick() -> AudioComp.SetVolumeMultiplier(OutRange = MapRangeClamped(Value = GetVelocity().VectorLength, InRange = [10, 1000], OutRange = [0, 2]))
+  * Bug：OutRange 最小值 0 自动禁用，设为 0.1
+  * 滚动声循环：Cue - Looping
 ### 10. 联网设置 1
 ### 11. 联网设置 2
 ### 12. Challenge：
