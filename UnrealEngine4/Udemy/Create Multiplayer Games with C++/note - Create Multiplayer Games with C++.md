@@ -2343,13 +2343,157 @@ HandleTakeAnyDamage()
     * `UObject *WorldContextObject = this` 参数告知引擎处于哪个世界场景（当前关卡），提供上下文信息。
     * 【？】`UGameplayStatics` 里有些啥，为啥他一下子就想到去这里面找角色信息，嘤。
     * `PathPoints` 数组中第一个路径点为当前位置，因此取出第二个路径点即下一个位置。 
-### 3. 
-### 4. 
-### 5. 
-### 6. 
-### 7. 
-### 8. 
-### 9. 
+### 3. 添加物理滚动效果
+* 步骤
+  * 打开物理模拟
+  * 检查到目标距离，还挺远就施加推力
+```cpp
+// STrackerBot.cpp
+Construction()
+{
+    // 打开物理模拟属性
+    MeshComp->SetSimulatePhyscis(true);
+}
+
+BeginPlay()
+{
+    // find initial move-to
+    FVector NextPathPoint = GetNextPathPoint();
+}
+
+// STrackerBot.h
+protected:
+    // next point in navigation path
+    FVector NextPathPoint;
+
+    UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+    float MovementForce;
+
+    UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+    bool bUseVelocityChange;
+
+    UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+    float RequiedDistanceToTarget;
+
+// STrackerBot.cpp
+// 初始化 bUseVelocityChange = true; MovementForce = 1000; Required = 100;
+Tick()
+{
+    // 直接 Equal 可能因精度问题错过目标
+    // if (!GetActorLocation().Equals(NextPathPoint))
+    float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
+    if ( DistanceToTarget <= RequiredDistanceToTarget )
+    {
+        NextPathPoint = GetNextPathPoint();
+
+        DrawDebugString(GetWorld(), GetActorLocation(), "Target Reached!");
+    }
+    else
+    {
+        // keep moving towards next target
+        // 施加推力：求方向，归一化，乘上力的大小
+        FVector ForceDirection = NextPathPoint - GetActorLocation();
+        ForceDirection.Normalize();
+        ForceDirection *= MovementForce;
+
+        MechComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
+
+        DrawDebugDirectionalArrow(GetWorld(), GetActorLocation(), GetActorLocation() + ForceDirection, 32, FColor::Yellow, false, 0.0f, 0, 1.0f);
+    }
+
+    DrawDebugSphere(GetWorld(), NextPathPoint, 20, 12, FColor::Yellow, 4.0f, 1.0f);
+}
+```
+* 【？】为什么 Tick 了还要 BeginPlay 里调一下？
+* 不动的原因
+  * 检查寻路正确
+  * 打开速率变化
+  * 也可能力不够大
+### 4. 添加生命值组件
+* 需求：对 TrackerBot 施加伤害，被击中时闪烁，反馈血条，HP = 0 时爆炸（也是攻击手段，离玩家很近时也炸）
+* 实现
+  * ① 添加生命值组件，公开到编辑器，创建实例
+  * ② 动态注册反馈函数到 OnHealthChanged 事件
+  * ③ 定义代理函数 HandleTakeDamage
+    ```cpp
+    void HandleTakeDamage(...)
+    {
+        // Explode on hitpoints == 0
+        // @TODO: Pulse the material on hit
+        UE_LOG(LogTemp, Log, TEXT("Health %s of %s"), *FString::SanitizeFloat(Health), *GetName());
+    }
+    ```
+    * `double 转 FString`：`FString::SanitizeFloat(double);`
+    * `debug print 对象名`：`GetName();`
+    * bug：代理函数不生效，检查是否标记 UFUNCTION()，否则会注册失败。
+    * bug：参数名不要和组件名瞎几把撞
+### 5. 脉冲闪烁材质
+* Play -> `Lighting Quality` -> High
+  * 消除主界面 `LIGHTING NEEDS TO BE REBUILD`
+  * 提升场景显示效果
+* 需求
+  * 被击中时闪烁
+* 实现：被击中时闪烁
+  * ① 0+鼠标左键创建结点，重命名为 LastTimeDamageTaken
+  * ② 添加时间结点 `Time`(Period = 1.0) （即周期设为 [0, 1]）
+  * ③ Subtract(Time, LastTimeDamageTaken) -> Emissive Color
+  * 此时可断开 Base Color 观察闪烁更明显
+  * ④ Clamp(Subtract, 0, 1) 【？】“不希望当禁用这项（Time）时值超出范围”。说起来 LastTimeDamageTaken 是啥量啊……（是 GetWorld()->TimeSeconds）不禁用 Time 的时候不会超吗=。=
+  * ⑤ 1-Clamp（使光线由明到暗）
+  * ⑥ Power(1-Clamp, 2, Exponent = 6.0)（使效果更？迅速？变化更快？，而不是缓慢线性变化）
+  * ⑦ Multiply(Subtract, 4)（更快一点）
+* 实现：看出滚动效果（添加纹理）
+  * ① 1+鼠标左键创建 Texture Sample ，Texture = T_Default_Material_Grid_M。到该纹理编辑器中 View - (Blue, Alpha)，Blue -> BaseColor
+  * ② 添加 `TexCoord`(UTiling = 4.0, VTiling = 4.0) 使其平铺，也可以用 Multiply
+  * ③ Multiply((蓝色), Texture Sample) -> BaseColor
+* 实现：`击中时应用闪烁材质`
+    ```cpp
+    // STrackerBot.h
+    protected:
+        // Dynamic material to pulse on damage
+        UMaterialInstanceDynamic *MatInst;
+    // STrackerBot.cpp
+    HandleTakeDamage()
+    {
+        // 0: 指出材质，此时该材质为网格体上第一个，也是唯一一个材质
+        if (MatInst == nullptr)
+        {
+            MatInst = MeshComp->CreateAndSetDynamicMaterialInstanceDynamicFromMaterial(0, MeshComp->GetMaterial(0)); 
+        }
+        if (MatInst)    // 防空指针
+        {
+            MatInst->SetScalarParameterValue("LastTimeDamageTaken", GetWorld()->TimeSeconds);
+        }
+    }
+    ```
+    * 【？】`UMaterialInterface` *Parent = MeshComp->GetMaterial(0); 嗷……应该是指根据这个材质创建一个材质实例？可是那不是和第一个参数意思重复了吗=。=
+    * `创建动态材质实例`：如果直接静态应用材质实例，会影响关卡中其它 TrackerBot，所以在运行时动态创建材质实例并应用。
+    * 注意：当没给网格体组件材质赋值时，创建实例会失败，导致空指针，所以要防一哈。
+    * `设置材质参数`：`Inst.SetScalarParameterValue("参数名", 值);` 
+    * 取消 M_TrackerBot 中的 Time Period
+### 6. 自毁效果
+* 需求
+  * HP = 0 时爆炸（绑定特效、应用伤害 ApplyRadialDamage）
+  * 自毁（销毁 TrackerBot）
+* 实现：p97 SelfDestruct()
+  * 注意：添加标记，保证不重复炸。因为炸过还可能留在同一帧画面。【？】记得康康它是怎么反复炸的（逃
+  * 可以 DrawDebugSphere 看下爆炸位置
+* 应用：在 HandleTakeDamage 中调用
+### 7. 在玩家附近爆炸
+* 需求
+  * 在玩家附近，设定时器，定时器每次更新，对玩家触发一次伤害。
+  * 最终爆炸。
+* 实现
+  * 添加球体组件，设置半径，`SetCollisionEnabled(ECollisionEnabled::QueryOnly);` 不需要应用物理效果，`SetCollisionResponseToAllChannels(ECR_Ignore);`，`SetCollisionToChannel(ECC_Pawn, ECR_Overlap);` 限制物理引擎需处理的事件（编译后在蓝图编辑器 Collision 中检查），`SetupAttachment(RootComponent)`【？】迷惑再现：为啥要这样设昂不挂载到根组件下会怎么样……记得试一下哈
+  * 注册 Overlap 事件，绑定代理函数 `NotifyActorBeginOverlap(AActor *OtherActor)` ，当有 OtherActor 重叠时通知自身，并调用该代理函数（p98 02:27 附近）
+  * 使用计时器 `GetWorldTimerManager` ，并设已启动自毁标志。
+  * 【？】为啥这里写的 ApplyDamage 参数是我打我自己（p98 03:49），后面又说每次计时器更新对玩家触发一次伤害？。【check】05:06 damage to itself，翻译错了。
+  * VS 小技巧：自动格式化 Edit - Advanced - `Format Document`
+### 8. 添加音效 1
+### 9. 添加音效 2
+### 10. 联网设置 1
+### 11. 联网设置 2
+### 12. Challenge：
 
 ## 十一、功能道具
 * 总览
@@ -2438,6 +2582,7 @@ HandleTakeAnyDamage()
   * `运行时调试 UE4`：VS - Debug - Attach to Process - UE4Editor.exe
   * 解除所有断点 Debug - Detach All
   * 查找，F3 下一项
+  * 自动格式化 Edit - Advanced - `Format Document`
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
