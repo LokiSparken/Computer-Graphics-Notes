@@ -2522,8 +2522,58 @@ Tick()
   * Bug：OutRange 最小值 0 自动禁用，设为 0.1
   * 滚动声循环：Cue - Looping
 ### 10. 联网设置 1
+* Bug Play：Number of Players = 2
+* 问题：直接炸
+  * 导航系统 NavigationSystem 尝试在客户端和服务端上同时运行（因为在 BeginPlay() 里调用了一波获取下一路径点）。
+  * 但是`默认情况下客户端上不加载导航网格体`，因为一般 AI 只受服务器管理，客户端不需要进行寻路计算。
+  * 项目设置中有更改的选项，不过此处只需让服务端调用（ROLE == ROLE_Authority）。Tick() 中同理。
 ### 11. 联网设置 2
-### 12. Challenge：
+* 问题：客户端看不到闪烁及爆炸效果
+* 分析：生命值组件在服务端更新 HP，值被复制，但作出相应反馈的代理函数只在服务端绑定到 OnTakeAnyDamage 事件（SHealthComponent::BeginPlay()），并在 HandleTakeAnyDamage 中做广播。
+* `使生命值组件在客户端上也触发 OnTakeAnyDamage 事件`
+  * 方法一：创建包含所有相关信息的结构体
+  * 方法二：ReplicatedUsing 变量 Health，使其更改时触发 OnRep_Health 函数
+    ```cpp
+    // SHealthComponent.cpp
+    OnRep_Health(float OldHealth)
+    {
+        float Damage = OldHealth - Health;
+        OnHealthChanged.Broadcast(this, Health, Damage, nullptr, nullptr, nullptr);
+    }
+    ```
+    * UE4 coding 小技巧：`ReplicatedUsing 函数` 可用所标识的变量的上一次更新的值作为一个参数。
+* 把 SelfDestruct() 中除了爆炸特效、声效以外的伤害应用和销毁放在 ROLE == ROLE_Authority 中
+* 同理，NotifyActorBeginOverlap() 中的计时器也只在服务端跑
+* 注：如果在专用服务器上跑的话还要做修改，目前暂时不考虑。
+* 问题：客户端看不到自毁前的爆炸
+* 分析：Destroy() 太快客户端来不及炸 
+* 处理方法
+  * Destroy(); => SetLifeSpan(2.0f);
+  * 并且为这续的两秒做处理：制造这球已经炸没了的假象，即设为不可见，取消物理碰撞模拟，取消自动寻路
+    ```cpp
+    // STrackerBot.cpp
+    SelfDestruct()
+    {
+        PlaySound();
+        
+        MeshComp->SetVisibility(false, true);
+        MeshComp->SetCollision(ECollisionEnabled::NoCollision);
+    }
+
+    Tick() { if (Role == ROLE_Authority && !bExploded) {...} }
+    NotifyActorBeginOverlap() { 同上 }
+    ```
+### 12. Challenge：爆炸联动
+* 需求
+  * TrackerBot 根据周围同伴个数增大爆炸威力。
+  * 闪光效果提示联动中，同伴数越多闪烁强度越大，伤害越大。
+* 提示
+  * 每秒检查附近 AI 数
+  * 将该值存储为 PowerLevel
+  * 应用伤害前根据 PowerLevel bonus 伤害值
+  * update Material-variable "PowerLevelAlpha" based on PowerLevel：float Alpha = PowerLevel / (float)MaxPowerLevel; 根据能量值更新材质变量，Alpha $\in$ [0, 1]，为了避免整数除以整除转一个到浮点。（ PowerLevel = 附近 AI 数所以必然是整数除以整数）
+* 有资源
+* p103 03:41
 
 ## 十一、功能道具
 * 总览
@@ -2606,6 +2656,7 @@ Tick()
   * 选中物体+INS 放到地面。（纳尼？不是 END 放地上吗！难道都可以吗！）
   * 看“点”的时候可以 draw debug sphere 看看是些啥。
   * 编辑器按 P 禁用 Nav Mesh 的渲染。
+  * coding 小技巧：`ReplicatedUsing 函数` 可用所标识的变量的上一次更新的值作为一个参数。
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
