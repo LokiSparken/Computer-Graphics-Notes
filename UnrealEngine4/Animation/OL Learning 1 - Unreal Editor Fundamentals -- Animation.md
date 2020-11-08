@@ -8,7 +8,7 @@
 
 ## 混合空间和动画蓝图
 * Duplicate BP_ThirdPersonCharacter 为 BP_WolfCharacter
-  * 把人形骨骼网格体换成狼，调整胶囊体
+  * 把人形骨骼网格体换成狼，调整胶囊体（Shape - Capsule Half Height/Radius）
 * ParagonShinbi - Characters - Heroes - Shinbi - Shinbi_Wolf - Animations
 ### **`混合空间`**
 * 创建混合空间
@@ -59,7 +59,7 @@
 
 ## 调整完善已有动画
 ### 调整 Jump
-* 打开单个动画动作文件 Temp_Wolf_Attack ，可 Stop 并拖动状态条查看动画。复制一份 Temp_Wolf_Jump 开始乱搞（不。
+* 打开单个动画动作文件 Temp_Wolf_LeapAttack ，可 Stop 并拖动状态条查看动画。复制一份 Temp_Wolf_Jump 开始乱搞（不。
 * 在 Curves 下的 Opacity 为透明效果轨道（Track）
     
     ![](Images/1.png)
