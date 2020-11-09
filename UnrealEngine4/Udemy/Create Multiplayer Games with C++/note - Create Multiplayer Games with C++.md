@@ -2779,10 +2779,28 @@ Tick()
 * 修改
   * 分析：失效时重置了 bIsPowerupActive = false，设可见性时如果用 not bIsPowerupActive 就重新可见了。【？】可是为什么第一次正常，是失效后的 bug 当成是重新生成的新道具了？
   * fix：SetVisibility() -> Destroy()、OnExpired()：Destroy()
-### 10. 联网 2 - Base Class
-### 11. 联网 3
-### 12. Activity：
-
+### 10. Base Class 共享基类
+* 把两种道具中相同的部分封装到一个基类
+  * Duplicate Powerup_HealthRegen - BP_PowerupBase，把具体道具特性删掉（颜色、某些事件的实现、相关变量、一些属性的初始化）
+  * 更改两个道具的父类：Class Settings - `Parent Class` = BP_PowerupBase。
+  * 删掉重复部分，加速道具中的事件函数 OnExpired() 右键 `Add call to parent function` 替换 Destroy()
+### 11. 联网 2 - GetPlayerPawn() 的问题
+* 在回血道具的蓝图实现中用到了 `GetPlayerPawn() ：只在服务端运行，获取由 Host 检索到的第一个 Player Pawn`
+  * Fix：OnPowerupTicked()：`for(GetAllActorsOfClass(Actor Class = SCharacter))` 群体 buff 了
+* 加速道具中同理，但只针对当前触发该重叠事件的对象（p115 04:03）
+  * Fix：通知蓝图触发重叠事件的对象，check valid
+    ```cpp
+    // SPowerupActor.cpp
+    ActivatePowerup(AActor *ActiveFor)  
+    {
+        OnActivated(ActiveFor);
+    }
+    ```
+* 测试
+  * 客户端服务端均有效。【？】这回怎么不测专用服务器了（
+### 12. Activity：另一种增益道具
+* 攻击力翻倍？
+* 地图炮？（这是不是不算增益道具了（
 
 ## 十二、游戏规则
 * 总览
