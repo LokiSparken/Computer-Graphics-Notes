@@ -2715,11 +2715,72 @@ Tick()
     * 【？】因为效果不好又调成 Add(Multiply(Multiply(蓝, 2)), Fresnel(Exponent = 4.0))？？？why？？？
 * 复制蓝色 RGB 到 PoingLight Component - Light Color
 * 拾取后同时隐藏 PointLight：直接 Attach 到道具网格体下，SetVisibility 时 `Propagate to Children = true`
-### 7. 回血道具
-### 8. 
-### 9. 
-### 10. 
-### 11. 
+### 7. 回血道具 1
+* BP_Powerup_HealthRegen : SPowerupActor
+  * 类似设置，网格体 HealthIcon，实现事件
+  * OnPowerupTicked()：通过生命值组件修改生命值，在生命值组件提供接口 void Heal(float HealAmount);（BlueprintCallable, Category HealthComponent），注意判定是否已经去世（，以及回血的时候可以用 Clamp 做限制。Debug 小技巧：`*FString::SanitizeFloat(float)` 去尾 0 输出。最后广播。蓝图中调用处给出 HealingAmount。
+    ```cpp
+    // SHealthComponent.cpp
+    void Heal(float HealAmount)
+    {
+        if (HealthAmount <= 0.0f || Health <= 0.0f)
+        {
+            return;
+        }
+        Health = FMath::Clamp(Health + HealAmount, 0.0f, DefaultHealth);
+        UE_LOG(LogTemp, Log, TEXT("Health changed: %s (+%s)"), *FString::SanitizeFloat(Health), *FString::SanitizeFloat(HealAmount));
+        OnHealthChanged.Broadcast(this, Health, -HealAmount, nullptr, nullptr, nullptr);
+    }
+    ```
+  * 初始化 PowerupInterval = 0.5，次数 4
+* 添加毒区掉点血做测试：Modes - `pain causing volume`
+* 在 BP_TestPickup 把 PowerUpClass 添加到 Instance（在主界面 details 可见并编辑）：EditDefaultsOnly => `EditInstanceOnly` 在蓝图中无法编辑，需要放入关卡后在主界面改类型，便于设计关卡
+### 8. 回血道具 2
+* MI_PowerupHealth : M_Powerup
+* `在材质实例中更改材质参数`
+  * 在 M_Powerup 给颜色结点设 `Paramater Name` = Color
+  * MI_PowerupHealth - Vector Parameter Value - Color 绿
+* 另与加速道具相同，设光照函数等
+* 道具旋转效果：BP_Powerup_HealthRegen - Event Graph - 添加组件 RotatingMovement ，默认设置 RotationRate.Z = 180
+* 把 CooldownDuration 也设为 EditInstanceOnly，初始化为 10s
+### 9. 联网 1 - OnRep 通知函数
+* Bug Play！
+  * Number = 2
+  * BP_TestPickup - Replicates = true
+  * BP_Powerup_HealthRegen - Replicates = true
+* 现象
+  * Server 拾取后 Client 中的未消失
+  * 但 Client 中也会重新生成
+* 修改
+  * check SPowerupActor：构造时打开复制 SetReplicates(true);
+  * check SPickupActor：打开 replicates，令 BeginPlay()、NotifyActorBeginOverlap() 只在服务端运行
+  * check Powerup_HealthRegen：SetVisibility 由于 OnActivate() 在 NotifyActorBeginOverlap() 调用所以也只跑在服务端 => 对呈现感官效果的部分单独封装到某个函数，`用变量`的 ReplicatedUsing=OnRep_xxx `触发事件`。由于在蓝图中设置呈现效果等比较方便，再封一层用蓝图实现。最后记得 GetLifetimexxx 指定复制规则。
+    ```cpp
+    // SPowerupActor.h
+    protected:
+        UPROPERTY(ReplicatedUsing=OnRep_PowerupActive)
+        bool bIsPowerupActive;
+
+        UFUNCTION()
+        void OnRep_PowerupActive();
+
+        UFUNCTION(BlueprintImplementableEvent, Category = "Powerups")
+        void OnPowerupStateChanged(bool bNewIsActive);
+    // SPowerupActor.cpp
+    OnRep_PowerupActive()
+    {
+        OnPowerupStateChanged(bIsPowerupActive);
+    }
+    ```
+  * Powerup_HealthRegen 中实现 OnPowerupStateChanged()：设置可见性
+  * 初始化 bIsPowerupActive = false，在道具激活时更改，并调用 OnRep_PowerupActive() （`OnRep 通知函数：ActivatePowerup() 只在服务端调用，更改相关变量 bIsPowerupActive 时，服务端通知各客户端复制该变量，客户端触发该通知函数并运行，但是不会在服务器调用，所以为了在服务端生效需要手调一下`），在道具失效时重置，并调用 OnRep_PowerupActive()
+* 现象
+  * 只能捡一次
+* 修改
+  * 分析：失效时重置了 bIsPowerupActive = false，设可见性时如果用 not bIsPowerupActive 就重新可见了。【？】可是为什么第一次正常，是失效后的 bug 当成是重新生成的新道具了？
+  * fix：SetVisibility() -> Destroy()、OnExpired()：Destroy()
+### 10. 联网 2 - Base Class
+### 11. 联网 3
 ### 12. Activity：
 
 
@@ -2797,6 +2858,7 @@ Tick()
   * 编辑器按 P 禁用 Nav Mesh 的渲染。
   * coding 小技巧：`ReplicatedUsing 函数` 可用所标识的变量的上一次更新的值作为一个参数。
   * 选中 Static Mesh，在材质编辑器视口点茶壶，`预览材质应用到网格体上的效果`
+  * Debug 小技巧：`*FString::SanitizeFloat(float)` 去尾 0 输出
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
