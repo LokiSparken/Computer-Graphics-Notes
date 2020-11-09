@@ -2582,15 +2582,47 @@ Tick()
     * 玩家经过时可拾起
     * 经过一定时间后重新生成道具
   * 适应多人游戏
-### 1. 
-### 2. 
-### 3. 
-### 4. 
+### 1. 创建可拾取物品类
+* SPickupActor : Actor
+* 需求
+  * 道具在所处位置附近一定范围内给出可见提示
+* 资源管理：Content/Powerups 与增强道具相关的所有资源
+* 实现
+  * 球体组件（根）、贴花组件（附加到根）
+  * NotifyActorBeginOverlap（默认调用了 BP Handler，所以重写的话要 Super 一下，之前 TrackerBot 中的就遗漏了一些蓝图功能）
+  * 基于 SPickupActor 创建 BP_TestPickup 
+    * 视口 show floor `查看 decal 效果`，调整 Rotation `DecalComp->SetRelativeRotation(FRotator(90, 0, 0));`
+    * 调整球体大小 `SphereComp->SetSphereRadius(75.0f);`
+    * 使贴花与球体组件大小适配 `DecalComp->DecalSize = FVector(64, 75, 75);` (thickness, match sphere, match sphere) （【！】在蓝图编辑器里看组件基本属性名）
+### 2. Power-up 类道具
+* SPowerupActor : SPickupActor
+* 需求
+  * 道具被拾起后
+    * 隐藏在所处位置呈现的视觉效果
+    * 对作用的玩家产生特效或在地图中触发事件
+    * 失效后自毁
+* 实现
+  * 在蓝图中实现道具激发/buff中/道具失效事件 void OnActivate/OnPowerupTicked/OnExpired(); (Category = "Powerup")
+  * 指定增益间隔 float PowerupInterval、总增益次数 int32 TotalNumberOfTicks 初始化都为 0
+  * ActivatePowerup() 通过计时器定时触发事件：当 PowerupInterval > 0 时，WorldTimerManager.SetTimer()、Handle、绑定自定义事件 OnTickPowerup 注意标记 UFUNCTION 才能成功识别并绑定
+  * 实现事件 OnTickPowerup：记录已增益次数 int32 TicksPocessed、检查道具是否还有效决定继续更新还是调用 OnExpired() 并移除计时器 TimerManager.ClearTimer()、
+### 3. Activity：增益道具 Ideas
+* 本章实现
+  * 加速 10s
+  * 回血
+* Others：地图炮（当前地图敌军全灭），本章 Challenge：自行乱搞一个道具
+### 4. 加速道具
 ### 5. 
 ### 6. 
 ### 7. 
 ### 8. 
 ### 9. 
+### 10. 
+### 11. 
+### 12. Activity：
+### . 
+### . 
+### . 
 
 ## 十二、游戏规则
 * 总览
