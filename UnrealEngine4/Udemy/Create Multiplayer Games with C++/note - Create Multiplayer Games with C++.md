@@ -2611,8 +2611,27 @@ Tick()
   * 加速 10s
   * 回血
 * Others：地图炮（当前地图敌军全灭），本章 Challenge：自行乱搞一个道具
-### 4. 加速道具
-### 5. 
+### 4. 加速道具 1
+* 道具资源包
+  * 注意导入 uasset 的方式，路径一致
+#### 准备材质
+* M_PowerupDecal：给出道具拾取范围指示（圈贴花）
+  * 选中主节点
+    * Material Domain = Deferred Decal
+    * Blend Mode = Translucent 半透明
+    * Decal Blend Mode = DBuffer Translucent Color_Roughness
+  * TextureSample(T_CircleMask3).任意通道 -> Opacity
+  * 3+Click Vector(白) -> Base Color
+  * Roughness = 0
+* BP_TestPickup 中应用到 DecalComp
+#### 加速道具
+* (BP_)Powerup_SuperSpeed : SPowerupActor
+  * 为啥命名不要 BP ，我就要（x
+* 初始化增益次数、buff 时间
+* 实现 OnActivate/OnPowerupTicked/OnExpired()
+  * OnActivated()：由于增益效果是加速，所以获取角色移动组件，暂时性修改其最大移动速度（GetPlayerPown()->GetComponentbyClass(CharacterMovementComponent).SetMaxWalkSpeed(GetMaxSpeed*2);）
+  * OnExpired()：同理除以2
+### 5. 加速道具 2
 ### 6. 
 ### 7. 
 ### 8. 
@@ -2620,9 +2639,7 @@ Tick()
 ### 10. 
 ### 11. 
 ### 12. Activity：
-### . 
-### . 
-### . 
+
 
 ## 十二、游戏规则
 * 总览
@@ -2638,6 +2655,10 @@ Tick()
 ### 7. 
 ### 8. 
 ### 9. 
+### 10. 
+### 11. 
+### 12. 
+### 13. 
 
 ## 十三、高级 AI
 * 总览
@@ -2658,6 +2679,10 @@ Tick()
 ### 7. 
 ### 8. 
 ### 9. 
+### 10. 
+### 11. 
+### 12. 
+### 13. Challenge：
 
 # 注意点整理
 * 如果在蓝图中明确重写了值，那么在 C++ 里的更改不会自动生效。
