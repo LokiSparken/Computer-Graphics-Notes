@@ -2605,7 +2605,7 @@ Tick()
   * 在蓝图中实现道具激发/buff中/道具失效事件 void OnActivate/OnPowerupTicked/OnExpired(); (Category = "Powerup")
   * 指定增益间隔 float PowerupInterval、总增益次数 int32 TotalNumberOfTicks 初始化都为 0
   * ActivatePowerup() 通过计时器定时触发事件：当 PowerupInterval > 0 时，WorldTimerManager.SetTimer()、Handle、绑定自定义事件 OnTickPowerup 注意标记 UFUNCTION 才能成功识别并绑定
-  * 实现事件 OnTickPowerup：记录已增益次数 int32 TicksPocessed、检查道具是否还有效决定继续更新还是调用 OnExpired() 并移除计时器 TimerManager.ClearTimer()、
+  * 实现事件 OnTickPowerup：增加已增益次数 int32 TicksPocessed、检查道具是否还有效决定继续更新还是调用 OnExpired() 并移除计时器 TimerManager.ClearTimer()、
 ### 3. Activity：增益道具 Ideas
 * 本章实现
   * 加速 10s
@@ -2614,6 +2614,7 @@ Tick()
 ### 4. 加速道具 1
 * 道具资源包
   * 注意导入 uasset 的方式，路径一致
+  * 导入 Icon.fbx：Combine Meshes
 #### 准备材质
 * M_PowerupDecal：给出道具拾取范围指示（圈贴花）
   * 选中主节点
@@ -2629,11 +2630,92 @@ Tick()
   * 为啥命名不要 BP ，我就要（x
 * 初始化增益次数、buff 时间
 * 实现 OnActivate/OnPowerupTicked/OnExpired()
-  * OnActivated()：由于增益效果是加速，所以获取角色移动组件，暂时性修改其最大移动速度（GetPlayerPown()->GetComponentbyClass(CharacterMovementComponent).SetMaxWalkSpeed(GetMaxSpeed*2);）
-  * OnExpired()：同理除以2
+  * OnActivated()：① 由于增益效果是加速，所以获取角色移动组件，暂时性修改其最大移动速度（GetPlayerPown()->GetComponentbyClass(CharacterMovementComponent).SetMaxWalkSpeed(GetMaxSpeed*2);），② 隐藏道具
+  * OnExpired()：同理除以2，并销毁
 ### 5. 加速道具 2
-### 6. 
-### 7. 
+* 生成道具、跟踪记录生成的增益效果 【？】
+    ```cpp
+    // SPickupActor.h
+    class ASPowerupActor;
+    protected:
+        // 指定要生成的道具类型
+        UPROPERTY(EditDefaultsOnly, Category = "PickupActor")
+        TSubclassOf<ASPowerupActor> PowerUpClass;
+
+        // 生成道具
+        void Respawn();
+        // 生成的道具实例
+        ASPowerupActor *PowerUpInstance;
+        // 拾取后生成间隔时间
+        UPROPERTY(EditDefaultsOnly, Category = "PickupActor")
+        float ColldownDuration;
+        // 生成间隔计时器
+        FTimerHandle TimerHandle_RespawnTimer;
+
+    // SPickupActor.cpp
+    BeginPlay()
+    {
+        Respawn();
+    }
+
+    Respawn()
+    {
+        if (PowerUpClass == nullptr)    // 保护！
+        {
+            UE_LOG(LogTemp, Warning, TEXT("PowerUpClass is nullptr in %s. Please update your Blueprint."), *GetName());
+            return;
+        }
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+        PowerUpInstance = GetWorld()->SpawnActor<ASPowerupActor>(PowerUpClass, GetTransform(), SpawnParams);
+    }
+
+    NotifyActorBeginOverlap(AActor *OtherActor)
+    {
+        Super;
+        if (PowerUpInstance)
+        {
+            PowerUpInstance->ActivatePowerup();
+            PowerUpInstance = nullptr;
+
+            // Set timer to respawn
+            GetWorldTimerManager().SetTimer(TimerHandle_RespawnTimer, this, &ASPickupActor::Respawn, ColldownDuration);
+        }
+    }
+    ```
+    * 在 PickupActor 中完成：生成道具，被拾起后计时，到一定时间再次生成相同道具
+* BP_Powerup_SuperSpeed
+  * Static Mesh = SpeedIcon
+* BP_TestPickup
+  * PowerUpClass = BP_Powerup_SuperSpeed
+  * CooldownDuration = 5
+### 6. 加速道具 3
+* Bug：拾取后降速，去掉 OnExpired() 的实现捡不起来了（
+  * OnActivated() 没调（
+* 【？】把 OnTickPowerup 拾取时的立即触发效果去掉，即 10s 以后 【check】因为 OnTickPowerup 的实现进去就直接 +1 并 check 了，所以直接触发的话一上来就跪掉
+* 创建材质 M_Powerup
+  * Base Color = 3+Click Vector(蓝)
+  * Emissive Color = Multiply(Vector(蓝), 4)
+* 创建材质实例 MI_PowerupSpeed
+* 应用实例 SpeedIcon - Material = MI_PowerupSpeed
+* 添加光源 BP_Powerup_SuperSpeed （使光源呈现闪光效果，也可以 Tick() 从 CPU 传值到 GPU）
+  * Add Component `PointLight`
+  * 创建材质 M_PowerupLightFunction （光源函数，GPU 中运行）：Material Domain = `Light Function`，Emissive = `Sine_Remapped(Multiply(Time, 0.7), 0.2, default = 1)`
+  * PointLight - details - Light Function - ~ Material = M_PowerupLightFunction
+  * Attenuation Radius = 200
+  * `Cast Shadows = false` 节省开销
+* 把 M_PowerupLightFunction 的 Emissive 用到 M_Powerup
+  * Multiply(Multiply()) -> Emissive 发光
+    * Time 节点是同步的
+    * 效果：本身发光，又加灯效果更好一点【？】
+  * M_Powrup - `Shading Model = Unlit 取消表面被灯源照出不同亮度的效果`
+  * `菲涅尔节点` Emissive = Multiply(Multiply(Multiply()), Fresnel(Exponent = 2.0))
+    * UE4 小技巧：选中 Static Mesh，在材质编辑器视口点茶壶，`预览材质应用到网格体上的效果`
+    * 【？】因为效果不好又调成 Add(Multiply(Multiply(蓝, 2)), Fresnel(Exponent = 4.0))？？？why？？？
+* 复制蓝色 RGB 到 PoingLight Component - Light Color
+* 拾取后同时隐藏 PointLight：直接 Attach 到道具网格体下，SetVisibility 时 `Propagate to Children = true`
+### 7. 回血道具
 ### 8. 
 ### 9. 
 ### 10. 
@@ -2714,6 +2796,7 @@ Tick()
   * 看“点”的时候可以 draw debug sphere 看看是些啥。
   * 编辑器按 P 禁用 Nav Mesh 的渲染。
   * coding 小技巧：`ReplicatedUsing 函数` 可用所标识的变量的上一次更新的值作为一个参数。
+  * 选中 Static Mesh，在材质编辑器视口点茶壶，`预览材质应用到网格体上的效果`
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
