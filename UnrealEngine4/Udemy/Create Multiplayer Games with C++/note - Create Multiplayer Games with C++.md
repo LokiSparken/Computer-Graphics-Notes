@@ -3018,7 +3018,7 @@ CheckWaveState()
   * UE4 VS Debug 小技巧：编译模式从 Development Editor 改成 `DebugGame Editor`，给出更多调试信息
   * 原因：检查敌军状态的时候 IsPlayerControlled() ，但场景里之前测试的时候放了个不受控的 BP_Character 用来被打（……，所以被当成 AI 了
 * UE4 小技巧：World Settings - World - Kill Z = -4000 掉下这个高度的自动销毁
-### 6. Game-Over State
+### 6. Game-Over 逻辑
 * 需求：玩家全部去世时结束游戏。
 * 实现：类似 check 敌军 AI 状态。
 ```cpp
@@ -3053,15 +3053,7 @@ Tick(float DeltaSeconds)
 * TODO
   * Game Over 时对玩家的提示信息。
   * 游戏结束了 TrackerBot 还在往玩家那跑（
-### 7. 
-### 8. 
-### 9. 
-### 10. 
-### 11. 
-### 12. 
-### 13. 
-
-### p124
+### 7. Game State
 * 为了将游戏模式所需的一些变量复制给客户端 => Game State
 * SGameState : GameStateBase 设置枚举类型，复制到客户端，并在更改时触发事件修改给玩家的提示
     ```cpp
@@ -3125,11 +3117,119 @@ Tick(float DeltaSeconds)
     // 在 GameMode 各处对应修改 GameState（p125 02:20）
     ```
     * `ensureAlways`：调用时给出通知
-### p125
+### 8. Replicate Game State
 * BP_GameState : SGameState
-  * 实现 WaveStateChanged()
+  * 实现 WaveStateChanged()，先输出当前状态
 * BP_GameMode 中使用 BP_GameState
-* 02：29
+* 问题：只有客户端能输出
+* 分析：来了！又是它！OnRep 事件在服务端不会运行！所以更改 State 状态后要针对服务端的情况处理一下。
+    ```cpp
+    // SGameMode.cpp
+    SetWaveState()
+    {
+        // ...
+        if (ensureAlways(GS))
+        {
+            // GS->WaveState = NewState;
+            GS->SetWaveState(NewState);
+        }
+    }
+
+    // SGameState.h
+    public:
+        void SetWaveState(EWaveState NewState);
+    // SGameState.cpp
+    SetWaveState(EWaveState NewState)
+    {
+        if (Role == ROLE_Authority)
+        {
+            EWaveState OldState = WaveState;
+
+            WaveState = NewState;
+            OnRep_WaveState(OldState);
+        }
+    }
+    ```
+    * 【？】p125 05:30 提到一个 RepNotify 标记，不过这里用的还是 ReplicatedUsing 吧？口误？以及翻译 miss ？
+### 9. 积分统计（Player State）
+* 玩家控制的角色 Pawn 在游戏中是可能销毁并重新生成的，而 Player Controller 是持久的，但其无法进行复制，只存在于控制它的客户端及服务端上。=> 用 Player State 复制相关信息。
+* SPlayerState : PlayerState
+  * Player State 已有 Score 量，但 BlueprintReadOnly，因此给出一个让蓝图可修改的接口
+    ```cpp
+    // SPlayerState.h
+    public:
+        UFUNCTION(BlueprintCallable, Category = "PlayerState")
+        void AddScore(float ScoreDelta);
+    // SPlayerState.cpp
+    AddScore(float ScoreDelta)
+    {
+        Score += ScoreDelta;
+    }
+    ```
+  * 在 GameMode 中设置默认的 PlayerState
+* 在玩家控制的 Pawn 被击杀时给出反馈：**`自定义事件及代理函数接口类型`**
+    ```cpp
+    // SGameMode.h
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActorKilled, AActor *, VictimActor, AActor *, KillerActor) // Killed Actor, killer actor
+
+    public:
+        UPROPERTY(BlueprintAssignable, Category = "GameMode")
+        FOnActorKilled OnActorKilled;
+    ```
+    * 命名好习惯？：killed 和 killer 相似度比较高所以换个词
+    * 自定义事件：声明代理、添加到类、调用处广播
+    * 在生命值变化时广播，注意设标记，死亡后不再处理受伤事件
+        ```cpp
+        // 定义并初始化 bool bIsDead;
+        // SHealthComponent.cpp
+        HandleTakeAnyDamage()
+        {
+            if (Damage <= 0.0f || bIsDead)
+            {
+                return;
+            }
+            Health = ...;
+            bIsDead = Health <= 0.0f;
+            OnHealthChanged.Broadcast(...);
+            if (bIsDead)
+            {
+                ASGameMode *GM = Cast<ASGameMode>(GetWorld()->GetAuthGameMode());
+                if (GM)
+                {
+                    GM->OnActorKilled.Broadcast(GetOwner(), DamageCauser);
+                }
+            }
+        }
+        ```
+* BP_TestGameMode 中测试
+  * Event Graph - BeginPlay()：OnActorKilled_Event 击杀敌军加分
+  * 蓝图 Debug 小技巧：右键节点 Toggle breakpoint
+  * bug：killerActor 为武器 => 增加 KillerController
+### 10. BSP-Tools
+#### 几何画刷
+* subtract 只影响之前放入的几何体，可通过 order 调整
+* UE4 小技巧
+  * 空格切平移/旋转/缩放
+  * 选中所有表面应用材质
+* Lighting Quality - Preview
+* Lit - Optimization Viewmodes - Lightmap Density 查看光照贴图
+* Lightmap Resolution 光照贴图分辨率 default = 32 （每光照贴图像素的单位数量，越低效果越好）
+  * 影响烘焙速度和游戏时所占内存
+* 不带自动 UV 的材质拉伸后手调，再对所有表面 Align Surface Planar
+#### 几何体编辑模式（Shift+5）
+* 更改单顶点、表面
+* Extrude 只适用于局部坐标系
+### 11. Activity：设计关卡
+### 12. 关卡测试
+* 导入关卡资源并放道具、NavMesh（P 显示）
+* UE4 关卡小技巧：视口 Lit -> Unlit 去光照
+* 注意为关卡应用 GameMode ，直接 project settings 设默认 GameMode
+* UE4 测试小技巧：play 时 F1 开透视（
+### 13. 复活机制
+* void RestartDeadPlayers()
+  * check 去世玩家：Player Controller Iterator 检查是否支配 Pawn
+  * RestartPlayer(Controller)
+* Bug：血条提示 UI 死后没重置
 
 ## 十三、高级 AI
 * 总览
@@ -3189,6 +3289,8 @@ Tick(float DeltaSeconds)
   * Debug 小技巧：`*FString::SanitizeFloat(float)` 去尾 0 输出
   * UE4 VS Debug 小技巧：编译模式从 Development Editor 改成 `DebugGame Editor`，给出更多信息
   * World Settings - World - Kill Z = -4000 掉下这个高度的自动销毁
+  * 关卡小技巧：视口 Lit -> Unlit 去光照
+  * 测试小技巧：play 时 F1 开透视（
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
@@ -3196,6 +3298,7 @@ Tick(float DeltaSeconds)
   * 解除所有断点 Debug - Detach All
   * 查找，F3 下一项
   * 自动格式化 Edit - Advanced - `Format Document`
+  * 空格切平移/旋转/缩放
 
 # 诡异点
 * 编译报错 ntdll.pdb not included 多编译两次好像就好了。？？？
