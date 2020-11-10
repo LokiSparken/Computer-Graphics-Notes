@@ -717,7 +717,7 @@ void AFPSCharacter::Fire()
 * 为目标物创建简单材质
   * 新建 Content/Materials/M_Objective 闪光材质
   
-  ![](images/1.png)
+  ![](images/CMGCpp1.png)
   * `Sine_Remapped` 两 Value 值可改变脉冲频率
 * 尝试多人游（爆）戏（炸）
   * Play - Multiplayer Options - Number of Players 设为 2，同时打开两个客户端（实际上打开的是一个服务器和一个客户端）
@@ -2807,12 +2807,252 @@ Tick()
   * 创建关卡：BSP Geometry Tools，画出粗略可用于测试游戏功能的关卡
   * 关键元素：玩家 Player Spawns、敌军 Enemy Spawns、增益道具 Power-up Locations
   * `创建游戏模式`：批量生成敌军、杀敌得分、处理 Win & Lose 等游戏状态、玩家复活 Respawn Players
-### 1. 
-### 2. 
-### 3. 
-### 4. 
-### 5. 
-### 6. 
+### 1. Game Mode
+* 规则：生成敌军，击杀得分
+* 创建 SGameMode : Game Mode Base
+  * 删掉默认生成的 CoopGameGameModeBase.h/.cpp
+  * generate visual studio project files
+  * Alt+Shift+O 查看 Game Mode 相关文件（GameMode、GameModeBase、SGameMode）
+* `GameMode : Game Mode Base`
+  * Game Mode 额外包括了 namespace MatchState （未立即开始游戏的一些匹配状态）
+  * 当前只需 Game Mode Base 中的 class PlayerState、GameState 等
+* 本教程
+  * GameMode：只存在于服务端，客户端上没有副本
+  * GameState：由于 GameMode 不能用于客户端，所以用 GameState 存放复制信息
+  * PlayerState：包含玩家的所有基本信息（持久化的那种），因为客户端没有玩家控制器（只存在于 Host 或服务端）
+### 2. Environment Query System 场景查询系统
+#### `用场景查询系统 EQS 查找动态位置`（蓝图）
+* `创建 EQS`
+  * ① 保证编辑器`启用 EQS`：Editor Settings - search environment - General - Experimental - AI - `Environment Querying System = true` 并重启编辑器
+  * ② `创建场景查询`：创建 `Artificial Intelligence - Environment Query` - EQS_FindSpawnLocation
+  * ③ `指定查询范围`：Update Graph - Root -> `Points: Grid` 在查询器周围生成简单网格
+  * ④ **`创建场景查询上下文`**：查询器可定义为 Game Mode，但其不具备位置信息，那么在查询器周围生成网格就无意义。
+    * 创建 Blueprint - `EnvQueryContext_BlueprintBase` - EnvQueryContext_BotSpawns
+    * Functions - Override - Provide Actors Set
+    * （运行该蓝图时会运行其中所有实现的 Functions ，返回并供 EQS 使用）
+    * Provide Actors Set -> GetAllActorsOfClass(ActorClass = TargetPoint) -> Return Node
+  * ⑤ `使用场景查询上下文`：EQS_FindSpawnLocation - Generate Around = EnvQueryContext_BotSpawns
+* `EQS 测试`
+  * ① 使用场景查询：Blueprint - EQSTestingPawn - BP_EQSTestingPawn，拖入场景，details - Query Template = EQS_FindSpawnLocation
+  * ② 放置查询点：Modes - Target Point
+  * ③ 移动 TestingPawn ：画面更新后在 Target Point 附近生成点状网格
+* `在 GameMode 使用 EQS`：BP_TestGameMode
+  * 修改父类：Class Settings - Parent Class = SGameMode
+  * 使用场景查询：BeginPlay()：`RunEQSQuery`(QueryTemplate = EQS_FindSpawnLocation, Querier = Self, RunMode = RandomItemfromBest25%)
+#### 测试
+* 添加测试：EQS_FindSpawnLocation
+  * SimpleGrid: generate around Querier 右键 `Add Test` Distance：离查询器的距离（查询器指 GameMode【？】因为 GameMode 用了这玩意所以查询器就是 GameMode 吗=。=？？？）此时这一项没用，因为 GameMode 没有位置信息。
+* 创建查找玩家的场景查询上下文
+  * Blueprint - EnvQueryContext_BlueprintBase - EnvironmentQueryContext_AllPlayers
+  * 同样实现 Provide Actors Set，ActorClass = SCharacter（有需求时可以遍历一下数组 check 玩家是否存活）
+* 在测试中指定对象
+  * EQS_FindSpawnLocation 选中 Test: Distance - `Distance To` = EnvQueryContext_AllPlayers
+  * 设置过滤条件：Filter Type = Minimum，Float Value Min = 200 （即：排除离玩家 200 单位长度以内的范围，不生成 AI。可在 Preview 预览过滤范围）
+  * 主界面中更新的点状网格显示分值，被过滤掉的为蓝色，0
+### 3. 生成 AI
+* BP_TestGameMode - Event Graph
+  * RunEQSQuery() -> Assign `OnQueryFinished()` 事件节点（异步运行，所以要先 check 状态）
+  * OnQueryFinishedEvent()
+    * QueryStatus -> Switch on EEnvQueryStatus
+    * QueryInstance -> Get Results as Locations
+    * EEnvQueryStatus.Success -> for(Results) element -> Draw Debug Sphere -> SpawnActor(Class = BP_TrackerBot, Transform = element.MakeTransform, Collision Handling Override = Try to adjust location, don't spawn if still colliding 避免在地板等内部生成)
+* 问题：生成位置嵌在地板里
+* EQS_FindSpawnLocation
+  * Distance - Post Projection Vertical Offset = 50 调整垂直偏移（在主界面看偏移效果）
+* 炸了（
+  * STrackerBot.cpp::GetNextPathPoint() check NavPath NULL
+### 4. 批量生成 AI
+```cpp
+// SGameMode.h
+protected:
+    FTimerHandle TimerHandle_BotSpawner;
+
+    // 这波生成多少个 Bots to spawn in current wave
+    int32 NrOfBotsToSpawn;
+
+    // 第几波
+    int32 WaveCount;
+
+    // 生成下一波敌军 AI 时间间隔
+    UPROPERTY(EditDefaultsOnly, Category = "GameMode")
+    float TimeBetweenWaves;
+
+protected:
+    // hook for BP to spawn a single bot
+    UFUNCTION(BlueprintImplementableEvent, Category = "GameMode")
+    void SpawnNewBot();
+
+    void SpawnBotTimerElapsed();
+
+    // start spawning bots
+    void StartWave();
+
+    // stop spawning bots
+    void EndWave();
+
+    // set timer for next startwave
+    void PrepareForNextWave();
+
+public:
+    ASGameMode();
+    virtual void StartPlay() override;
+
+// SGameMode.cpp
+ASGameMode()
+{
+    TimeBetweenWaves = 2.0f;
+}
+
+StartWave()
+{
+    // 计算这波要生成多少只
+    WaveCount++;
+    NrOfBotsToSpawn = 2 * WaveCount;
+    // 用计时器调用
+    GetWorldTimerManager().SetTimer(TimerHandle_BotSpawner, this, &ASGameMode::SpawnBotTimerElapsed, 1.0f, true, 0.0f);
+}
+
+EndWave()
+{
+    GetWorldTimerManager().ClearTimer(TimerHandle_BotSpawner);
+
+    PrepareForNextWave();
+}
+
+PrepareForNextWave()
+{
+    FTimerHandle TimerHandle_NextWaveStart;
+    GetWorldTimerManager().SetTimer(TimerHandle_NextWaveStart, this, &ASGameMode::StartWave, TimeBetweenWaves, false);
+}
+
+StartPlay()
+{
+    Super::StartPlay();
+    PrepareForNextWave();
+}
+
+SpawnBotTimerElapsed()
+{
+    SpawnNewBot();
+    NrOfBotsToSpawn--;
+    if (NrOfBotsToSpawn <= 0)
+    {
+        EndWave();
+    }
+}
+```
+
+![](images/CMGCpp2.jpg)
+
+* 【！】注意看计时器的不同版本适用不同的需求，这里以 rate = 1.0f 频率生成新 AI
+* TimerHandle 设为属性成员，便于之后在其它函数关闭对该项的计时，取消生成新 AI
+* `给计时器加限制条件的方式`
+  * if (xxx) SetTimer(); 然后直接 Clear() 显然是乱搞（
+  * 所以在进触发函数里面做 check
+  * 并且这种逻辑在 C++ 里好实现，所以不要丢蓝图，哪里方便哪里搞
+* 【！】想在“游戏开始”阶段乱搞？：GameModeBase.h 里找 StartPlay() ，check virtual & public
+* 【？】在 StartPlay() 和 EndWave() 都调了 Prepare() ，但先调的计时器没清空，那它不就没结束？一直在跑？还重复调用的话不会越来越多吗=。=？（可是 p121 10:58 Tomlooman：EndWave() 中 Prepare() 否则无法循环）【check】因为 Prepare() 的计时器 loop = false 所以调一次只会触发一次。嗷……所以所谓的生成间隔是在前一波生成完了 EndWave() 以后到下一波生成之间的时间间隔，用于下一波计时器的 FirstDelay。
+* 最后到 BP_TestGameMode 中实现 SpawnNewBot()，即把原来 BeginPlay() 接的 RunEQSQuery() 实现生成 AI 全部接给 SpawnNewBot()
+### 5. 修改生成逻辑
+* 需求：前一波死光再生成新一波
+* 逻辑
+  * 在 Prepare() 前检查敌军状态：通过场景的 Pawn 迭代器获取对象，忽略空 Pawn 和玩家，对敌军 AI 通过生命值组件检查血条状态
+  * 在生命值组件给出获取 Health 值的接口
+```cpp
+// SGameMode.h
+protected:
+    void CheckWaveState();
+
+    FTimerHandle TimerHandle_NextWaveStart;
+
+// SGameMode.cpp
+CheckWaveState()
+{
+    // 已经准备生成下一波 AI：检查计时器是否触发
+    bool bIsPreparingForWave = GetWorldTimerManager().IsTimerActive(TimerHandle_NextWaveStart);
+    // 上一波 AI 还没生成完
+    if (NrOfBotsToSpawn > 0 || bIsPreparingForWave)
+    {
+        return;
+    }
+    // 上一波 AI 还没死光
+    bool bIsAnyBotAlive = false;
+    for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+    {
+        APawn *TestPawn = It->Get();
+        if (TestPawn == nullptr || TestPawn->IsPlayerControlled())
+        {
+            continue;
+        }
+
+        USHealthComponent *HealthComp = Cast<USHealthComponent>(TestPawn->GetComponentByClass(USHealthComponent::StaticClass()));
+        if (HealthComp && HealthComp->GetHealth() > 0.0f)
+        {
+            bIsAnyBotAlive = true;
+            break;
+        }
+    }
+
+    if (!bIsAnyBotAlive)
+    {
+        PrepareForNextWave();
+    }
+}
+```
+* 【！】忘了啥玩意如何使用：Ctrl+Shift+F 在 Solution 中查有没在哪用的示例
+* 注意 `corner case`：已经在 Prepare() 了，但是第一只还没生完，此时会再次调用。因此在前面 check 一下当前是否已经计算出了要生成的 AI 数，说明已经在 Prepare()。
+* 低频更新对敌军状态的 check
+  * 方法一：设计时器
+  * 方法二：降低 Tick 频率并用 Tick()
+    ```cpp
+    // SGameMode.cpp
+    ASGameMode()
+    {
+        PrimaryActorTick.bCanEverTick = true;   // 默认情况下，GameMode 中禁用 Tick
+        PrimaryActorTick.TickInterval = 1.0f;   // 每秒更新一次
+    }
+    // 重写 Tick() 并调用 CheckWaveState()
+    ```
+* Bug：不生成下一波 AI 惹
+  * 加断点
+  * UE4 VS Debug 小技巧：编译模式从 Development Editor 改成 `DebugGame Editor`，给出更多调试信息
+  * 原因：检查敌军状态的时候 IsPlayerControlled() ，但场景里之前测试的时候放了个不受控的 BP_Character 用来被打（……，所以被当成 AI 了
+* UE4 小技巧：World Settings - World - Kill Z = -4000 掉下这个高度的自动销毁
+### 6. Game-Over State
+* 需求：玩家全部去世时结束游戏。
+* 实现：类似 check 敌军 AI 状态。
+```cpp
+// SGameMode.h
+protected:
+    void CheckAnyPlayerAlive();
+// SGameMode.cpp
+CheckAnyPlayerAlive()
+{
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        APlayerController *PC = It->Get();
+        if (PC && PC->GetPawn())
+        {
+            APawn *MyPawn = PC->GetPawn();
+            USHealthComponent *HealthComp = Cast<USHealthComponent>(MyPawn->GetComponentByClass(USHealthComponent::StaticClass()));
+            if (ensure(HealthComp) && HealthComp->GetHealth() > 0.0f)
+            {
+                return;
+            }
+        }
+    }
+    GameOver();
+}
+
+Tick(float DeltaSeconds)
+{
+    CheckAnyPlayerAlive();
+}
+```
+* `ensure()`：`assert` 结果为假时会中断程序，保证出问题的情况不在生命值组件。【？】和直接判检查组件指针是否为空比，就是快速定位一哈？
+* TODO
+  * Game Over 时对玩家的提示信息。
+  * 游戏结束了 TrackerBot 还在往玩家那跑（
 ### 7. 
 ### 8. 
 ### 9. 
@@ -2877,6 +3117,8 @@ Tick()
   * coding 小技巧：`ReplicatedUsing 函数` 可用所标识的变量的上一次更新的值作为一个参数。
   * 选中 Static Mesh，在材质编辑器视口点茶壶，`预览材质应用到网格体上的效果`
   * Debug 小技巧：`*FString::SanitizeFloat(float)` 去尾 0 输出
+  * UE4 VS Debug 小技巧：编译模式从 Development Editor 改成 `DebugGame Editor`，给出更多信息
+  * World Settings - World - Kill Z = -4000 掉下这个高度的自动销毁
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
