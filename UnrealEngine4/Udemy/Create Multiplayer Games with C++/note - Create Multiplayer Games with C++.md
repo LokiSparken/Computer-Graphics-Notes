@@ -3061,6 +3061,76 @@ Tick(float DeltaSeconds)
 ### 12. 
 ### 13. 
 
+### p124
+* 为了将游戏模式所需的一些变量复制给客户端 => Game State
+* SGameState : GameStateBase 设置枚举类型，复制到客户端，并在更改时触发事件修改给玩家的提示
+    ```cpp
+    // SGameState.h
+    UENUM(BlueprintType)        // 公开给蓝图，便于后面根据状态使用 HUD 给玩家做提示 UI
+    enum class EWaveState : uint8
+    {
+        WaitingToStart,
+        WaveInProgress,
+        WaitingToComplete,
+        WaveComplete,
+        GameOver
+    };
+
+    protected:
+        UFUNCTION()
+        void OnRep_WaveState(EWaveState OldState);  // OnRep 事件函数首个参数为变量旧值
+
+        UFUNCTION(BlueprintImplementableEvent, Category = "GameState")
+        void WaveStateChanged(EWaveState NewState, EWaveState OldState);
+
+    public:
+        UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_WaveState, Category = "GameState")
+        EWaveState WaveState;
+
+    // SGameState.cpp
+    OnRep_WaveState(EWaveState OldState)
+    {
+        WaveStateChanged(WaveState, OldState);
+    }
+
+    // 复制变量，记得 GetLifetimeReplicatedProps()
+    ```
+    * `uint8` 目前蓝图只支持扩展自该类型的枚举类型
+* `在 GameMode 中使用 GameState`
+    ```cpp
+    // SGameMode.cpp
+    ASGameMode()
+    {
+        GameStateClass = ASGameState::StaticClass();    // 修改默认使用的 Game State
+    }
+    ```
+* `在 GameMode 中获取并修改 GameState`
+    ```cpp
+    // SGameMode.h
+    enum class EWaveState : uint8;
+
+    protected:
+        void SetWaveState(EWaveState NewState);
+
+    // SGameMode.cpp
+    SetWaveState(EWaveState NewState)
+    {
+        ASGameState *GS = GetGameState<ASGameState>();
+        if (ensureAlways(GS))
+        {
+            GS->WaveState = NewState;
+        }
+    }
+
+    // 在 GameMode 各处对应修改 GameState（p125 02:20）
+    ```
+    * `ensureAlways`：调用时给出通知
+### p125
+* BP_GameState : SGameState
+  * 实现 WaveStateChanged()
+* BP_GameMode 中使用 BP_GameState
+* 02：29
+
 ## 十三、高级 AI
 * 总览
   * 人形敌军、使用武器
