@@ -3259,24 +3259,168 @@ Tick(float DeltaSeconds)
   * BP_AdvancedAI BeginPlay()：GetAIController(Self) -> `RunBehaviorTree(BT)`
 ### 2. 用 EQS 找掩护
 * AI - EQ - EQS_FindMoveTo
-  * Root -> Donut（圆环） -> `Distance Test`(FilterType = Minimum, ScoringFact = -1 反向权重) & `Trace Test`(Context = EQC_AllPlayers（确保在 EQC_AllPlayers 返回的是玩家）)
+  * Root -> Donut（圆环）(UseSpiralPattern = true 随机分布测试点) -> 到玩家距离 `Distance Test`(FilterType = Minimum, ScoringFactor = -2.0 反向加权权重) & 测试点与玩家之间是否有掩体 `Trace Test`(Context = EQC_AllPlayers（确保在 EQC_AllPlayers 返回的是玩家）, `TestPurpose` = ScoreOnly) & 测试掩体高度 Trace(测试点 ItemHeightOffset = 100, ContextHeightOffset = 100, BoolMatch = false【？】, 投影数据 Trace Mode = Navigation【？】)【？】所有 test 都是筛选有效测试点的条件来着？
   * 应用到 EQSTestingPawn
-  * p133 03:39
-### 3. 
-### 4. 
-### 5. 
-### 6. 
-### 7. 
-### 8. 
-### 9. 
-### 10. 
-### 11. 
-### 12. 
-### 13. Challenge：
+### 3. 自定义 Behavior Tree Decorator
+* BT_AdvancedAI
+  * Root -> Sequence - Movement Sequence -> 
+    * RunEQSQuery - Find move to location with cover(Template = EQS_FindMoveTo, BlackboardKey = TargetDestination, `RunMode` = SingleBestItem)
+    * MoveTo - Move to target destination to engage()
+    * Wait
+#### 设定攻击对象
+* BB NewKey - Object Actor &TargetActor (Description - Target to attack)
+* BP SetValueasObject(KeyName = MakeLiteralName(TargetActor), value = GetPlayerPawn(0))
+* UE4 调试小技巧：`'` 运行时打开 **`Gameplay 调试器`**，`3` 切换模式，调出 EQS 信息
+#### 选择性使用 EQS - Decorator
+* BT 中添加选择器 Selector
+* Selector 1：如 Sequence 右键 Add Decorator - `Blackboard (Based Condition)` 检测 BB Key 值，还可`自定义 Decorator`
+  * Content/AdvancedAI - Blueprint class - Decorator_DistanceTo : `BTDecorator_BlueprintBase`
+  * Functions Override - `Perform Condition Check AI`
+  * 实现：检测 AI Pawn 和 Target Actor 间距
+    * 与 Target Actor 位置作差，判定
+    * 获取 Target Actor：GetBlackboardValueasActor(Key = BlackboardKey) 检查valid -> GetActorLocation()
+    * eye BlackboardKey & Distance 显示到 BT 界面
+  * UE4 小技巧：Alt+P 运行
+  * Decorator.`Inverse Condition`、`Observer aborts`（像是 while 的 condition）
+### 4. 完善 AI 移动
+* Selector 1：
+  * Sequence -> MoveTo - MoveToPlayer
+* 设定具体目标
+  * BP EnvQueryContext_TargetActor : EnvQueryContext_BlueprintBase
+  * ProvideSingleActor()：QuerierActor（AI Pawn）.GetBlackboard() -> GetValueasObject(KeyName = MakeLiteralName(TargetActor)) cast to actor
+  * 在 EQS_FindMoveTo 更改 TraceTest.Context
+* 在 EQS_FindMoveTo 优化场景查询
+  * 在 distance to querier 的基础上 distance to target actor 
+### 5. 视觉感知
+* BP_AdvancedAI 添加组件 AIPerception
+  * Senses Config - add element - AI Sight config(Detection all true, `DominantSense` = Sight)
+* 在 BT 中应用
+  * check 是否感应到玩家，更新 BB.TargetActor 值
+  * ① 创建服务 BP Service_SelectTargetActor : `BTService_BlueprintBase`（服务 Tick 不是每帧一次）
+  * ② 实现 Override ReceiveTickAI()：ControlledPawn.GetComponentbyClass(AIPerception).`GetKnownPerceivedActors`（对应 AIPerception 组件中 Sight Sense - `Max Age`，感知后最大记录时间） -> SetBlackboardValue
+  * ③ 应用到 BT：Selector 右键 Add Service（该 Selector 处于活动状态时，该 Service 一直有效）
+  * 调整 AI 视野范围：感知系统默认 Sight 为摄像机视野，把 BP_AI 的摄像机 spring arm length = 0，调整到眼睛位置。组件 Sense 属性调整视野半径等。（2500, 2500, 60）
+  * bug：先 move 再转向 => BT 加 selector
+### 6. Move to nearest player - EQS
+* 为行为树添加接近玩家所在区域的逻辑
+* 创建 EQS_FindNearestPlayer
+  * Root -> ActorsOfClass(generate set of actors of Actor around Querier) 范围内查找指定类对象，test distance 按需求设 score，取消 radius 项，默认全地图
+* 在 BT 使用新 EQS
+* 设置 selector 下的优先级：Notify Observer = OnResultChanged, Observer aborts = Lower Priority 
+### 7. AI Fire
+* 在 SCharacter.h 把 Start/EndFire() 公开到蓝图并 public 给行为树
+* 行为树中，设定完目标玩家值后 wait 0.5s ，执行任务
+#### Task
+* 创建任务 BP Task_AttackTarget : BPTask_BlueprintBase
+* 实现 ReceiveExecuteAI()
+  * Pawn 转 SCharacter（cast 失败 `Finish Abort`） 调 StartFire()，delay 一下 EndFire() -> `Finish Execute(success = true)`（该任务处于 sequence 中，如果 success = false 会终止 sequence）
+#### 瞄准
+* Sequence - Add Service - Default Focus - BBKey = TargetActor
+### 8. 调整 AI 武器（降低射击精度）
+#### 降低精度
+* 给 ShotDirection 加偏移：`FMath::VRandCone()` 随机椎体函数
+    ```cpp
+    // SWeapon.h
+    // Bullet spread in degrees
+    UPROPERTY(..., meta = (ClampMin=0.0f))
+    float BulletSpread;
+
+    // initial = 1.0f
+
+    // SWeapon.cpp
+    // ShotDirection
+    float HaldRad = FMath::DegreesToRadians(BulletSpread);
+    ShotDirection = FMath::VRandCone(ShotDirection, HalfRad, HalfRad);  // 水平/垂直
+    ```
+* BP_Rifle_AI：Bullet Spread = 4.0、Bullet Damage = 10 应用到 AI
+### 9. 在 Game Mode 中生成新 AI
+* BP_TestGameMode 中 Spawn 的时候随机 Select 两种 AI
+* 记得在场景内加 target point
+* Bug：新 AI 鲨了 Bot
+### 10. 队友设定
+#### 队伍编号
+```cpp
+// SHealthComponent.h
+private:
+    // 看需求要不要 replicated
+    // UPROPERTY(EditDefaultsOnly, Replicated, BlueprintReadOnly, Category = "HealthComponent")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+    uint8 TeamNum;
+public:
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "HealthComponent")
+    static bool IsFriendly(AActor *ActorA, AActor *ActorB);
+// SHealthComponent.cpp
+// default = 255;
+bool IsFriendly(...)
+{
+    if (nullptr) return true;
+    USHealthComponent *HealthCompA = Cast<USHealthComponent>(ActorA->GetComponentByClass(USHealthComponent::StaticClass()));
+    ...
+    if (Comp nullptr) return true;
+    return ATNum == BTNum;
+}
+// HandleTakeAnyDamage 开火前 check 是否友军
+```
+* uint8 $\in$ [0, 255]，比 int32 省内存，减小网络传输量
+* check function 设为类静态函数便于使用
+* 一致性：无法判定是否友军时默认情况相同
+* `BlueprintPure` 不需执行引脚
+#### Bug
+* 修改玩家队伍编号
+* 允许 TrackerBot 自伤：判友军前先判是否自身
+* 注意 HandleTakeAnyDamage 中的 DamageCauser 是武器，ApplyPointDamage() 传入改为 MyOwner
+### 11. Improve Target Selection
+* 优化 Service_SelectTargetActor
+  * for( GetKnownPerceivedActors(AISense_Sight) )
+  * check 是否友军 【？】IsFriendly() 去掉了执行引脚变得好整，那一般哪些情况可以去 execute pin 呢= =
+  * check 是否活体
+  * 选择最近目标
+### 12. 改进 Tracker Bot
+* Bug：TrackerBot 还炸 AI
+  * NotifyActorBeginOverlap() check 友军
+* 给 TrackerBot 加攻击最近目标，check 友军/存活状态
+  * GetNextPathPoint()
+  * Q：遍历玩家（PawnIterator）
+  * 最大值宏：FLT_MAX
+* 优化寻路
+  * 找到某路后，计时重新寻路防卡死
+  * TimerHandle_RefreshPath
+* 隐藏 Debug Drawing
+  * 类似 SWeapon 中的 CVAR 在 TrackerBot 里加
+### 13. Challenge：AI Flee
+* 效果
+  * 血条低的时候跑路找掩体
+  * 自愈
+* 提示
+  * 低血条：BT check Health
+  * 找掩体：EQS find cover position
+  * 自愈：heal self（HealthComponent）
+* p144 02:44
+
+## 总结
+### Congratulations！
+### 打包
+* Project Settings
+  * Maps & Modes
+    * Default GameMode
+    * Game Default Map - Blockout_P
+* Packaging Settings 默认
+* 联机
+  * run .exe (2)
+  * exe A（host）
+    * ~
+    * open Blockout_P?listen
+  * exe B
+    * ~
+    * open 127.0.0.1(:7777)
+### More Info
+* www.tomlooman.com
+* unreal-engine-4.zeef.com
 
 # 注意点整理
 * 如果在蓝图中明确重写了值，那么在 C++ 里的更改不会自动生效。
 * 
+
 
 # 小技巧整理
 * UE4
@@ -3310,6 +3454,8 @@ Tick(float DeltaSeconds)
   * World Settings - World - Kill Z = -4000 掉下这个高度的自动销毁
   * 关卡小技巧：视口 Lit -> Unlit 去光照
   * 测试小技巧：play 时 F1 开透视（
+  * Alt+P 运行
+  * 调试小技巧：`'` 运行时打开 **`Gameplay 调试器`**，`3` 切换模式，调出 EQS 信息，`4` 显示 Perception 感知组件信息，`F2` sight sense area，
 * VS
   * 小番茄小技巧：ESC + 向下箭头切重载的接口信息
   * `重命名`：选中，（小番茄快捷键）Alt+Shift+R 在项目中 Rename 某量
