@@ -3237,12 +3237,31 @@ Tick(float DeltaSeconds)
   * 行为树 Behavior Trees
   * 用 Environment Query System 实现隐蔽、找到攻击玩家的最佳位置
   * 感官系统 Perception System for sight and hearing
-### 1. 
+### 1. 行为树
 * UE4 小技巧：选中 NavMesh 按 P 放大，再 P 隐藏
 * 项目管理：创建 Content/AdvancedAI 文件夹
-* 基于 SCharacter 创建 BP_AdvancedAI
-* p132 01:49
-### 2. 
+* BP_AdvancedAI : SCharacter
+  * 设置骨骼、Location.Z = -90、Rotation.Z = -90
+  * 应用动画蓝图
+  * 选择武器类 Starter Weapon Class
+  * Auto Possess AI = Placed in World or Spawned
+#### 行为树
+* 创建 AI - `Behavior Tree` - BT_AdvancedAI（`决策`）
+* 创建 AI - `Blackboard` - BB_AdvancedAI（`存行为树可用的数据`）
+  * BP_AdvancedAI 中设变量值（蓝图）：`GetBlackboard`(Self) -> SetValueasVector
+  * 也可导入数据
+* BT_AdvancedAI
+  * 应用 BB
+  * 行为树结点
+    * `Sequence`：从左到右执行（顺序对应右上编号）
+    * `Selector`：if
+* 测试
+  * BP_AdvancedAI BeginPlay()：GetAIController(Self) -> `RunBehaviorTree(BT)`
+### 2. 用 EQS 找掩护
+* AI - EQ - EQS_FindMoveTo
+  * Root -> Donut（圆环） -> `Distance Test`(FilterType = Minimum, ScoringFact = -1 反向权重) & `Trace Test`(Context = EQC_AllPlayers（确保在 EQC_AllPlayers 返回的是玩家）)
+  * 应用到 EQSTestingPawn
+  * p133 03:39
 ### 3. 
 ### 4. 
 ### 5. 
