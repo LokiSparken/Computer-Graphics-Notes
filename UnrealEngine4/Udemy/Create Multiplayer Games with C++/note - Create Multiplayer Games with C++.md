@@ -351,8 +351,8 @@ void AFPSGameMode::CompleteMission(APawn *InstigatorPawn)
         }
     }
     ```
-    * `UGameplayStatics` 中均为静态函数
-    * `PlaySound2D` 播放声效，将信号传输至音频引擎
+    * **`UGameplayStatics` 中均为静态函数**
+    * `PlaySound2D` 播放声效，**将信号传输至音频引擎**
 ### 5. 视角切换
 * 蓝图实现：`BP_GameMode` 中
   * 用 **`Sequence`** 接出另一条执行线
@@ -419,7 +419,6 @@ void AFPSGameMode::CompleteMission(APawn *InstigatorPawn)
   * 可以把物体（如蓝色方块）也弹飞：Generate Overlap Events on blue cubes
 * 关键点
   * 碰撞组件：球体/盒体碰撞组件，判定人物或物体是否与其重叠
-  * 
 * p22 02:23
 
 ## 三、AI 基础
