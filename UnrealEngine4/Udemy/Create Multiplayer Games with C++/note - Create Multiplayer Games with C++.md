@@ -171,7 +171,7 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
   * 主界面 World Settings - GameMode - GameMove Override 设为 BP_GameMode
 * **`发生事件时修改文本信息`**
   * bind get text 0 - GetObjectiveText
-  * 创建变量 Text - GetObjective、ExtractArea 并设置对应文本
+  * 创建变量 Text - GetObjective("Find and Loot the objective.")、ExtractArea("Extract the stolen objective!") 并设置对应文本
   * get text 蓝图界面中 select，index = Boolean
   * 通过结点 **`Get Owning Player Pawn`** 找到玩家控制的 Pawn ，Return Value 用 `isValid` 或 `Cast To FPSCharatcer` 检查是否有效，此用 Cast （转换成功即有效）
   * 根据相应情况显示文本
@@ -180,7 +180,7 @@ SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
   * Sphere Component，Create and Destroy
   * Physics：`AddForce()`、`AddRadialForce()`
   * Find Nearby Actors：`SphereComp->GetOverlappingComponents` in `Tick()`
-  * check all actors `Generate Overlap Events`
+  * check all actors **`Generate Overlap Events`**
 * p15 02:42
 
 ## 二、游戏规则
