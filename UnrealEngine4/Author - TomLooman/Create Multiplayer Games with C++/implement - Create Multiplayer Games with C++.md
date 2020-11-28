@@ -28,6 +28,9 @@ PrimComp->AddRadialForce(GetActorLocation(), SphereRadius, ForceStrength, ERadia
 * AddRadialForce() 外推力 => 施加负 Force
 
 ## 二、游戏规则
+* UGameplayStatics::GetAllActorsOfClass()
+### Challenge
+* 
 
 ## 三、AI 基础
 
