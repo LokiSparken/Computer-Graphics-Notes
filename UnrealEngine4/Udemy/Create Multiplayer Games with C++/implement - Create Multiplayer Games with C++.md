@@ -33,6 +33,12 @@ PrimComp->AddRadialForce(GetActorLocation(), SphereRadius, ForceStrength, ERadia
 * 
 
 ## 三、AI 基础
+* 使用 DelegateSignature 时注意参数名不要和引擎内容撞车（当然撞了会报错所以面向 error 改名就好（
+  * `error : Function parameter: 'Instigator' cannot be defined in 'OnHearNoise' as it is already defined in scope 'Class /Script/Engine.Actor' (shadowing is not allowed)`
+  * 果然不允许覆盖呢（
+* 
+### Challenge
+
 
 ## 四、实现联网
 

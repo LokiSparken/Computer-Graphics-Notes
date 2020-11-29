@@ -433,7 +433,7 @@ void AFPSGameMode::CompleteMission(APawn *InstigatorPawn)
   * 增加 Content 资源
 * 基于 FPSAIGuard 创建 BP_Guard
   * `使用模型`：Mesh - details - Mesh - skeletal Mesh 使用导入的 DwarfGrunt_R_new
-  * 调整位置 -80，调整胶囊碰撞体高度 Shape - Capsule Half H... = 60
+  * 调整位置 -80，调整胶囊碰撞体高度 Shape - Capsule Half Height = 60
   * 面向 X 轴方向（红轴方向）：Rotation_Z = -90
   * `设置动画效果`：details - animation - animation mode - use animation assets，anim to play 中选择动画效果 Idle
 * **`人形体感应组件 PawnSensingComponent`**
