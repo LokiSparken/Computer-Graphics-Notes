@@ -1,2 +1,3 @@
 # Computer-Graphics-notes
-My road to Computer Graphics.
+All notes about my daydream for game developing & my Atlantis.
+
