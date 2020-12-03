@@ -86,7 +86,7 @@
 
 ### 建模 Modeling
 #### Modeling - Maya
-1. - [ ] UE4零基础独立游戏开发系列教程【maya专辑模型篇】 | CG学习笔记 | bilibili
+1. - [ ] UE4零基础独立游戏开发系列教程【maya专辑模型篇】 | CG学习笔记 | bilibili | `开头 2min 笑得我腹肌八块 2333`
 #### Modeling - ZBrush
 1. - [ ] UE4零基础独立游戏开发系列教程【ZBrush入门篇】 | CG学习笔记 | bilibili
 
