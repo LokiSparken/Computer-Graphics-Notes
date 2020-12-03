@@ -217,9 +217,14 @@
   * [环境配置](#环境配置)
   * [HW1](#hw1)
   * [HW2](#hw2)
+  * [HW3](#hw3)
+  * [HW4](#hw4)
   * [HW5](#hw5)
+  * [HW6](#hw6)
+  * [HW7](#hw7)
+  * [HW8](#hw8)
   * [FAQ](#faq)
-    * [HW3](#hw3)
+    * [HW3](#hw3-1)
 * [More](#more)
   * [相关论文](#相关论文)
 * [备用](#备用)
@@ -2443,9 +2448,21 @@ $$ H = T + E $$
   * `cmake ..`
   * `make`编译
   * `./Transformation`可执行文件名，在CMakeLists.txt中可修改
+* GUI
+  * VcXsrv - XLaunch - disable access control
+  * wsl: xfce4-session
+* Win10 WSL(ubuntu 18.04LTS) 忘记密码 orz 我怕不是个铁憨憨
+  * Windows Powershell
+    * `ubuntu1804 config --default-user root`
+    * `ubuntu1804`
+  * root@username:~#
+    * `passwd root`
 ## HW1
 * 框架里main函数里的两个输入给出的zNear, zFar是正，由于看向-z轴所以应该改为负数。
 * 绕任意轴旋转敲罗德里格斯的时候注意对偶矩阵
+* res
+  * 模型矩阵 (3, 3) = 1
+  * ？这都能敲错？我怕不是个憨批？……并且结果竟然没出事……图形太简单了？
 ## HW2
 * `std::transform(l, r, res, op)`
   * 将`(l, r)`范围内的每个元素作为`op`的第一参数调用`op`，结果存入`res`开头的范围内
@@ -2453,6 +2470,9 @@ $$ H = T + E $$
 * MSAA
   * 维护四倍大小的sample_frame_buf和sample_depth_buf
   * 四个采样点采样完根据四个采样色值resolve该像素点的颜色
+## HW3
+
+## HW4
 ## HW5
 * primary ray生成
   * https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays
@@ -2467,6 +2487,9 @@ $$ H = T + E $$
 * 射线与三角网格相交
   * 虽然学的时候感觉分解成与平面相交，再判交点是否在三角形内感觉很友好
   * 事实证明写代码的时候不用推导，数学就是代码简化之光啊（……
+## HW6
+## HW7
+## HW8
 
 ## FAQ
 ### HW3
