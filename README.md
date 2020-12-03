@@ -1,10 +1,46 @@
-# Computer-Graphics-notes
-**`All notes about my daydream for game developing & my Atlantis.`**
+> # Computer-Graphics-notes
+> **`All notes about my daydream for game developing & my Atlantis.`**
+
+列出一些学习资源，存放笔记的目录结构和学习资源列表分类不尽相同。
 
 格式说明
 * 课程/书籍/资源名称 | 作者/来源 | 资源类型/发布平台 | `备注`
 
+<!-- TOC -->
+
+* [C++ 是不可能会用的](#c-是不可能会用的)
+* [工程是不可能会写的](#工程是不可能会写的)
+* [其它](#其它)
+* [Basic](#basic)
+* [Rendering](#rendering)
+* [API](#api)
+  * [DirectX 12](#directx-12)
+* [Engine](#engine)
+* [GPU](#gpu)
+* [Simulating](#simulating)
+* [文章资料](#文章资料)
+* [综合教程](#综合教程)
+* [基本主题](#基本主题)
+  * [NPC AI](#npc-ai)
+  * [动画 Animation](#动画-animation)
+  * [地形 Landscape](#地形-landscape)
+  * [光照 Lighting](#光照-lighting)
+  * [材质 Material](#材质-material)
+  * [建模 Modeling](#建模-modeling)
+    * [Modeling - Maya](#modeling---maya)
+    * [Modeling - ZBrush](#modeling---zbrush)
+  * [UI](#ui)
+  * [特效 VFX](#特效-vfx)
+    * [VFX - Niagara](#vfx---niagara)
+* [技术分享](#技术分享)
+  * [Unreal Open Day 2020](#unreal-open-day-2020)
+* [文章资料](#文章资料-1)
+* [想变强喵w](#想变强喵w)
+
+<!-- /TOC -->
+
 > # 计算机基础
+> 空空如也，莫得基础 :)
 ## C++ 是不可能会用的
 - [ ] C++ Primer
 - [ ] Effective C++
@@ -19,6 +55,9 @@
 - [ ] 计算机网络（自顶向下方法）
 
 > # Welcome to the world of CG & Engine!
+## Basic
+* 【授权翻译】如何开始学习图形学编程 | https://zhuanlan.zhihu.com/p/55518151 | `真正遇到的第一个资料，虽然只爬了一点点……`
+* Computer Graphics (CSE167x) | Ravi Ramamoorthi | edX | `爬了数学部分`
 ## Rendering
 1. - Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
    - [x] Ray Tracing in one weekend
@@ -40,7 +79,10 @@
   - [ ] *Placeholder*
 
 ## Engine
+- Game Engine Series | The Cherno | YouTube | `更新至93p`
+- 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
 - [ ] 游戏引擎架构
+- [ ] Unity Shader 入门精要
 
 ## GPU
 
@@ -49,6 +91,12 @@
 ## 文章资料
 1. - [ ] 由浅入深学习PBR的原理和实现 | 0向往0 | https://www.cnblogs.com/timlly/p/10631718.html | `PBR概览`
 2. - [ ] Filament 文档 | https://jerkwin.github.io/filamentcn/ | `PBR资料`
+3. - Behind the Pixels | 文刀秋二 | 知乎
+   - [ ] 基于物理着色（一）
+   - [ ] 基于物理着色（二）- Microfacet材质和多层材质
+   - [ ] 基于物理着色（三）- Disney和UE4的实现
+   - [ ] 基于物理着色（四）- 次表面散射
+4. 
 
 > # Unreal 虚幻引擎
 ## 综合教程
@@ -126,13 +174,17 @@
      * [ ] 总结
      * [ ] Subsystems
    * [ ] UObject
-3. - TomLooman Blog | tomlooman.com
+3. - TomLooman 博客 | tomlooman.com
    - [ ] *Placeholder*
 4. - [ ] UE4行为树详解 | ksun | 知乎
 5. - [ ] 浅析UE4-BehaviorTree的特性 | Lights999 | 知乎
 6. - 剖析虚幻渲染体系 | 0向往0 | https://www.cnblogs.com/timlly/p/13512787.html | `PBR概览博客作者又更新惹！！！`
    - [ ] 剖析虚幻渲染体系（01）- 综述和基础
-7. 
+7. - Orfeas 博客 | [Orfeas |](https://www.orfeasel.com/) | `UE4 C++`
+   - [ ] *Placeholder*
+8. - 浅墨的游戏编程 | 毛星云 | 知乎
+   - [ ] *Placeholder*
+9.  
 
 > # Others
 
@@ -140,9 +192,15 @@
 > # To Be Continued...
 
 ## 想变强喵w
-### Rendering！
-1. - [ ] *Placeholder*
-
+* Shader
 * RenderDoc
 * Houdini
 * 
+
+---
+
+* 考虑整理的笔记？
+  * CSE 167 Math
+  * RT I & II
+  * GAMES101
+  * ...

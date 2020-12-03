@@ -1,4 +1,6 @@
 > # <i class="fa fa-star"></i> CSE 167x: Computer Graphics
+> * Ravi Ramamoorthi
+
 # Lesson
 ## <i class="fa fa-star"></i> **Unit 0**
 ### **Lecture 1: Course Overview**
