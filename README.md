@@ -6,6 +6,7 @@
 格式说明
 * 课程/书籍/资源名称 | 作者/来源 | 资源类型/发布平台 | `备注`
 
+目录
 <!-- TOC -->
 
 * [C++ 是不可能会用的](#c-是不可能会用的)
@@ -19,7 +20,8 @@
 * [GPU](#gpu)
 * [Simulating](#simulating)
 * [文章资料](#文章资料)
-* [综合教程](#综合教程)
+* [好东西！](#好东西)
+* [入门教程](#入门教程)
 * [基本主题](#基本主题)
   * [NPC AI](#npc-ai)
   * [动画 Animation](#动画-animation)
@@ -33,9 +35,13 @@
   * [特效 VFX](#特效-vfx)
     * [VFX - Niagara](#vfx---niagara)
 * [技术分享](#技术分享)
-  * [Unreal Open Day 2020](#unreal-open-day-2020)
+  * [Unreal Fest Online 2020 | bilibili](#unreal-fest-online-2020--bilibili)
+  * [Unreal Open Day 2020 | bilibili](#unreal-open-day-2020--bilibili)
+  * [Fest Europe 2019 | bilibili](#fest-europe-2019--bilibili)
+  * [Unreal Engine GDC 2019 | bilibili](#unreal-engine-gdc-2019--bilibili)
+  * [Inside Unreal | YouTube](#inside-unreal--youtube)
 * [文章资料](#文章资料-1)
-* [想变强喵w](#想变强喵w)
+* [好东西！](#好东西-1)
 
 <!-- /TOC -->
 
@@ -53,10 +59,14 @@
 
 ## 其它
 - [ ] 计算机网络（自顶向下方法）
+- [ ] 操作系统概念
+- [ ] 深入理解计算机系统结构
+- [ ] 编译原理
+- [ ] 
 
 > # Welcome to the world of CG & Engine!
 ## Basic
-* 【授权翻译】如何开始学习图形学编程 | https://zhuanlan.zhihu.com/p/55518151 | `真正遇到的第一个资料，虽然只爬了一点点……`
+* [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
 * Computer Graphics (CSE167x) | Ravi Ramamoorthi | edX | `爬了数学部分`
 ## Rendering
 1. - Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
@@ -96,10 +106,14 @@
    - [ ] 基于物理着色（二）- Microfacet材质和多层材质
    - [ ] 基于物理着色（三）- Disney和UE4的实现
    - [ ] 基于物理着色（四）- 次表面散射
-4. 
+4. - 浅墨的游戏编程 | 毛星云 | 知乎
+   - [ ] *Placeholder*
+
+## 好东西！
+* [IMGUI](github.com/ocornut/imgui)
 
 > # Unreal 虚幻引擎
-## 综合教程
+## 入门教程
 1. - [x] 三维弹球（蓝图） | 后天星期六 | 泰课在线
 2. - [x] 用C++带你走进虚幻4 | 后天星期六 | 泰课在线
 3. - [ ] 坦克大战（C++） | 后天星期六 | 泰课在线 | 看了 TomLooman 所以小男神剩下的部分应该要咕了
@@ -116,7 +130,6 @@
 4. - [ ] Character Animation in UE4 | Unreal Engine Livestream | Live Training | YouTube
 5. - [x] UE4 Animation Montage | 安宁Ken | bilibili
 6. - [ ] first hour in sequencer
-7. - [x] Enhancing Animation with Control Rig | GDC 2019 | YouTube
 
 ### 地形 Landscape
 1. - [ ] UE4零基础入门到独立游戏开发【Landscape地貌篇】 | CG学习笔记 | bilibili
@@ -148,12 +161,35 @@
 2. 
 
 ## 技术分享
-### Unreal Open Day 2020
-1. - [ ] 2020虚幻引擎4移动平台上的更新 | Epic Games - Mobile Team Leader & Mobile Rendering Programmer | Unreal Open Day 2020 | bilibili
-2. - [ ] 虚幻引擎移动端ComputeShader的应用 | 刘炜 | Unreal Open Day 2020 | bilibili
-3. - [ ] 深入GAS架构设计 | 大钊 | Unreal Open Day 2020 | bilibili
-4. - [ ] Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程 | Directive Games TA & Houdini Lead TD | Unreal Open Day 2020 | bilibili
-5. - [ ] *Placeholder*
+### [Unreal Fest Online 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealFestOnline)
+1. - [ ] Optimizing and Building UI for AAA Games 用虚幻示意图形（UMG）UI设计器优化并构建3A级UI(官方字幕) | Carey Hickling
+### [Unreal Open Day 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealOpenDay2020)
+1. - [ ] 2020虚幻引擎4移动平台上的更新 | Epic Games - Mobile Team Leader & Mobile Rendering Programmer
+2. - [ ] 虚幻引擎移动端ComputeShader的应用 | 刘炜
+3. - [ ] 深入GAS架构设计 | 大钊
+4. - [ ] Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程 | Directive Games TA & Houdini Lead TD
+5. - [ ] 虚幻引擎4开放世界ARPG《幻塔》技术分享 | 幻塔 丁许朋
+### [Fest Europe 2019 | bilibili](https://space.bilibili.com/138827797/video?tid=0&page=1&keyword=FestEurope2019&order=pubdate)
+1. - [ ] Using the Gameplay Ability System 使用游戏玩法技能系统
+2. - [ ] Gameplay Abilities Meet Behavior Trees 游戏技能系统搭配行为树
+3. - [ ] Digital Material with the Substance Tools UE4里的Substance流程
+4. - [x] UE4 Pixel Streaming UE4像素流技术
+5. - [ ] 100 Unreal Engine 4 Tips & Tricks 100个UE4的小技巧
+6. - [ ] Engine Tools for Performance on Open World Games 开放大世界引擎性能优化工具
+7. - [ ] 充分利用动画蓝图优势-《堡垒之夜》中的动态动作
+### [Unreal Engine GDC 2019 | bilibili](www.bilibili.com/video/av61595751)
+1. - [ ] A Hands-on Look at Using Ray Tracing in Games with UE 4.22
+2. - [ ] Building Effects with Niagara and Blueprint
+3. - [ ] Causing Chaos - The Future of Physics and Destruction in Unreal Engine
+4. - [x] Enhancing Animation with Control Rig
+5. - [ ] Learning to Make Games with UE4 and Action RPG
+6. - [ ] New Animation Features in Unreal Engine
+7. - [ ] Order from Chaos - Destruction in UE4
+8. - [ ] Ray Tracing in Unreal Engine 4.22
+9. - [ ] Refracting the Mesh Drawing Pipeline for Unreal Engine 4.22
+10. - [ ] Unreal Engine's Audio Rendering - Retrospectives and Case Study Analysis
+### [Inside Unreal | YouTube](https://www.youtube.com/playlist?list=PLZlv_N0_O1gbggHiwNP2JBXGeD2h12tbB)
+1. - [ ] ...
 
 ## 文章资料
 1. - 官方文档 Unreal Engine 4 Documentation | Unreal Engine
@@ -180,22 +216,25 @@
 5. - [ ] 浅析UE4-BehaviorTree的特性 | Lights999 | 知乎
 6. - 剖析虚幻渲染体系 | 0向往0 | https://www.cnblogs.com/timlly/p/13512787.html | `PBR概览博客作者又更新惹！！！`
    - [ ] 剖析虚幻渲染体系（01）- 综述和基础
-7. - Orfeas 博客 | [Orfeas |](https://www.orfeasel.com/) | `UE4 C++`
+7. - Orfeas 博客 | [Orfeas](https://www.orfeasel.com/) | `UE4 C++`
    - [ ] *Placeholder*
-8. - 浅墨的游戏编程 | 毛星云 | 知乎
-   - [ ] *Placeholder*
+8. 
 9.  
+
+## 好东西！
+* Unreal Marketplace `AdvancedLocomotionSystem`
 
 > # Others
 
 
 > # To Be Continued...
 
-## 想变强喵w
-* Shader
-* RenderDoc
-* Houdini
-* 
+---
+
+* 想变强喵w
+  * Shader
+  * RenderDoc
+  * Houdini
 
 ---
 
