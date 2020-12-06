@@ -34,6 +34,9 @@
   * [UI](#ui)
   * [特效 VFX](#特效-vfx)
     * [VFX - Niagara](#vfx---niagara)
+  * [Houdini](#houdini)
+    * [1. SOP（Surface Operator）](#1-sopsurface-operator)
+    * [2. VEX](#2-vex)
 * [技术分享](#技术分享)
   * [Unreal Fest Online 2020 | bilibili](#unreal-fest-online-2020--bilibili)
   * [Unreal Open Day 2020 | bilibili](#unreal-open-day-2020--bilibili)
@@ -160,6 +163,14 @@
    * [ ] *Placeholder*
 2. 
 
+### Houdini
+#### 1. SOP（Surface Operator）
+* [ ] [咖喱味的 Houdini 入门](https://www.bilibili.com/video/av77323910) | 官方入门 | bilibili | `原官方地址 https://www.sidefx.com/tutorials/`
+* [ ] [Houdini Workflows with Unreal Engine Houdini到虚幻的工作流](https://www.bilibili.com/video/BV11p4y1U7TW) | Unreal 英文直播 官方汉化 | bilibili
+#### 2. VEX
+* [ ] [通过案例学VEX-零基础](https://www.bilibili.com/video/BV1Zp411d7Hw) | 捷佳 | bilibili | `需要 Houdini 基础`
+* [ ] [Houdini VEX中文百科](https://www.bilibili.com/video/BV12W411x7df) | 捷佳 | bilibili | `vex/编程基础`
+
 ## 技术分享
 ### [Unreal Fest Online 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealFestOnline)
 1. - [ ] Optimizing and Building UI for AAA Games 用虚幻示意图形（UMG）UI设计器优化并构建3A级UI(官方字幕) | Carey Hickling
@@ -193,7 +204,7 @@
 
 ## 文章资料
 1. - 官方文档 Unreal Engine 4 Documentation | Unreal Engine
-   - [ ] *Placeholder*
+   - [ ] Slate
 2. - Inside UE4 专栏 | 大钊 | 知乎
    * [x] 开篇
    * [ ] 基本概念
