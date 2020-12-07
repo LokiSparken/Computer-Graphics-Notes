@@ -47,6 +47,38 @@
 
 ## 第二篇 初级篇
 ### 第五章 开始 Unity Shader 学习之旅
+```c
+// 将函数关联到指定着色器
+#pragma vertex vert
+
+// ReturnType FunctionName(Type input : 语义 semantics) semantics
+float4 vert(float4 v : POSITION) SV_POSITION {
+    return mul (UNITY_MATRIX_MVP, v);
+}
+```
+![](images/10.jpg)
+![](images/11.jpg)
+* ShaderLab 属性类型与 CG 变量类型匹配表
+![](images/12.png)
+* 顶点着色器输入语义
+![](images/13.png)
+* 顶点着色器输出/片元着色器输入语义
+![](images/14.png)
+* 片元着色器输出语义
+![](images/15.png)
+* UnityCG.cginc 常用结构体/函数
+![](images/16.png)
+![](images/17.png)
+* 三种 Debug 方法
+  * 把值映射到 [0, 1] 输出颜色
+  * [VS Graphics Debugger](https://docs.unity3d.com/Manual/SL-DebuggingD3D11ShadersWithVS.html)
+  * Unity Frame Debugger
+    * Window - Frame Debugger
+    * 查看一帧的渲染事件
+    * 更多抓帧工具：Intel GPA、RenderDoc、NVIDIA NSight、AMD GPU PerfStudio
+* 补充资料
+  * 流程控制语句对 GPU 性能的影响：GPU Gems 2 Chapter: GPU 流程控制
+  * Shader Model 对着色器特性能力的规定：HLSL doc
 ### 第六章 Unity 中的基础光照
 ### 第七章 基础纹理
 ### 第八章 透明效果
