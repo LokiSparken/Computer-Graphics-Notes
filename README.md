@@ -1,126 +1,143 @@
 > # Computer-Graphics-notes
 > **`All notes about my daydream for game developing & my Atlantis.`**
 
-列出一些学习资源，存放笔记的目录结构和学习资源列表分类不尽相同。
+说明  
+* 列出一些学习资源，存放笔记的目录结构和学习资源列表分类不尽相同。
 
-格式说明
+格式  
 * 课程/书籍/资源名称 | 作者/来源 | 资源类型/发布平台 | `备注`
 
 目录
 <!-- TOC -->
 
-* [C++ 是不可能会用的](#c-是不可能会用的)
-* [工程是不可能会写的](#工程是不可能会写的)
-* [其它](#其它)
-* [Basic](#basic)
-* [Rendering](#rendering)
-* [API](#api)
-  * [DirectX 12](#directx-12)
-* [Engine](#engine)
-* [GPU](#gpu)
-* [Simulating](#simulating)
-* [文章资料](#文章资料)
-* [好东西！](#好东西)
-* [入门教程](#入门教程)
-* [基本主题](#基本主题)
-  * [NPC AI](#npc-ai)
-  * [动画 Animation](#动画-animation)
-  * [地形 Landscape](#地形-landscape)
-  * [光照 Lighting](#光照-lighting)
-  * [材质 Material](#材质-material)
-  * [建模 Modeling](#建模-modeling)
-    * [Modeling - Maya](#modeling---maya)
-    * [Modeling - ZBrush](#modeling---zbrush)
-  * [UI](#ui)
-  * [特效 VFX](#特效-vfx)
-    * [VFX - Niagara](#vfx---niagara)
-  * [Houdini](#houdini)
-    * [1. SOP（Surface Operator）](#1-sopsurface-operator)
-    * [2. VEX](#2-vex)
-* [技术分享](#技术分享)
-  * [Unreal Fest Online 2020 | bilibili](#unreal-fest-online-2020--bilibili)
-  * [Unreal Open Day 2020 | bilibili](#unreal-open-day-2020--bilibili)
-  * [Fest Europe 2019 | bilibili](#fest-europe-2019--bilibili)
-  * [Unreal Engine GDC 2019 | bilibili](#unreal-engine-gdc-2019--bilibili)
-  * [Inside Unreal | YouTube](#inside-unreal--youtube)
-* [文章资料](#文章资料-1)
-* [好东西！](#好东西-1)
+* [Computer Graphcis & Game Engine](#computer-graphcis--game-engine)
+  * [Basic 基础入门](#basic-基础入门)
+  * [Rendering 渲染](#rendering-渲染)
+  * [API & Engine](#api--engine)
+    * [API - DirectX](#api---directx)
+    * [API - OpenGL](#api---opengl)
+    * [API - Vulkan](#api---vulkan)
+    * [Engines](#engines)
+  * [GPU](#gpu)
+  * [文章资料](#文章资料)
+  * [好东西！](#好东西)
+* [Unreal Engine](#unreal-engine)
+  * [入门教程](#入门教程)
+  * [基本主题](#基本主题)
+    * [NPC AI](#npc-ai)
+    * [动画 Animation](#动画-animation)
+    * [地形 Landscape](#地形-landscape)
+    * [光照 Lighting](#光照-lighting)
+    * [材质 Material](#材质-material)
+    * [建模 Modeling](#建模-modeling)
+    * [UI](#ui)
+    * [特效 VFX](#特效-vfx)
+      * [VFX - Niagara](#vfx---niagara)
+    * [Houdini](#houdini)
+      * [1. SOP（Surface Operator）](#1-sopsurface-operator)
+      * [2. VEX](#2-vex)
+  * [技术分享](#技术分享)
+    * [Unreal Fest Online 2020 | bilibili](#unreal-fest-online-2020--bilibili)
+    * [Unreal Open Day 2020 | bilibili](#unreal-open-day-2020--bilibili)
+    * [Fest Europe 2019 | bilibili](#fest-europe-2019--bilibili)
+    * [Unreal Engine GDC 2019 | bilibili](#unreal-engine-gdc-2019--bilibili)
+    * [Inside Unreal | YouTube](#inside-unreal--youtube)
+  * [文章资料](#文章资料-1)
+  * [好东西！](#好东西-1)
+* [Computer Science](#computer-science)
+  * [C++ 是不可能会用的](#c-是不可能会用的)
+  * [工程是不可能会写的](#工程是不可能会写的)
+  * [其它](#其它)
 
 <!-- /TOC -->
 
-> # 计算机基础
-> 空空如也，莫得基础 :)
-## C++ 是不可能会用的
-- [ ] C++ Primer
-- [ ] Effective C++
-- [ ] More effective C++
-- [ ] Inside the C++ Object Model
-- [ ] CMake
+---
 
-## 工程是不可能会写的
-- [ ] 设计模式
 
-## 其它
-- [ ] 计算机网络（自顶向下方法）
-- [ ] 操作系统概念
-- [ ] 深入理解计算机系统结构
-- [ ] 编译原理
-- [ ] 
+# Computer Graphcis & Game Engine
 
-> # Welcome to the world of CG & Engine!
-## Basic
-* [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
-* Computer Graphics (CSE167x) | Ravi Ramamoorthi | edX | `爬了数学部分`
-## Rendering
-1. - Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
+> <font color=#6495ED size=6>Welcome to CG & Engine! (>ᴗ<*)ฅ</font>  
+> <font color=#6495ED>——有生之年。</font>
+
+## Basic 基础入门
+- [ ] 1. [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
+- [ ] 2. Computer Graphics (CSE167x) | Ravi Ramamoorthi | edX | `爬了数学部分`
+- [ ] 3. GAMES101 | 闫令琪 | GAMES | bilibili | `★★★★★，入门第二课，男神超可爱！`
+   - [x] Lectures & Notes
+   - [ ] Homeworks
+- [ ] 4. Fundamentals of Computer Graphics, 4th Edition | Book | `虎书`
+
+## Rendering 渲染
+- [ ] 1. Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
    - [x] Ray Tracing in one weekend
    - [x] Ray Tracing the next week
    - [ ] Ray Tracing the rest of your life | `蒙特卡洛+重要性采样做优化`
-2. - GAMES101 | 闫令琪 | GAMES | bilibili | `★★★★★，入门第二课，男神超可爱！`
-   - [x] Lectures & Notes
-   - [ ] Homeworks
-3. - [ ] Fundamentals of Computer Graphics, 4th Edition | Book | `虎书`
-4. - [ ] Real-Time Rendering, 4th Edition | `RTR`
-5. - [ ] Physically Based Rendering: From Theory to Implementation, 3th Edition | `PBRT`
-6. - [ ] Advanced Global Illumination | Philip Dutre, Kavita Bala, Philippe Bekaert | Book | `全局光照`
-7. - [ ] Veach Thesis | Eric Veach | Book | `光线传播一条龙`
-8. 
+- [ ] 2. Real-Time Rendering, 4th Edition | Book | `RTR`
+- [ ] 3. Physically Based Rendering: From Theory to Implementation, 3th Edition | Book | `PBRT`
+- [ ] 4. Advanced Global Illumination | Philip Dutre, Kavita Bala, Philippe Bekaert | Book | `全局光照`
+- [ ] 5. Veach Thesis | Eric Veach | Paper | `光线传播一条龙`
 
-## API
-### DirectX 12
-- DirectX 12 3D 游戏开发实践 | `龙书`
-  - [ ] *Placeholder*
-
-## Engine
-- Game Engine Series | The Cherno | YouTube | `更新至93p`
-- 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
+## API & Engine
+### API - DirectX
+- [ ] DirectX 12 3D 游戏开发实践 | `龙书`
+### API - OpenGL
+  - [ ] [LearnOpenGL](https://learnopengl-cn.github.io/) | `OpenGL入门`
+### API - Vulkan
+  - [ ] [GameTechDev/IntroductionToVulkan](https://github.com/GameTechDev/IntroductionToVulkan) | `入门示例`
+  - [ ] [vulkan-tutorial](https://vulkan-tutorial.com/) | `入门`
+  - [ ] Vulkan Cookbook | Pawel Lapinski | Book | `据说不适合初学者（`
+  - [ ] [awesome-vulkan](http://www.vinjn.com/awesome-vulkan/) | Vinjn张静 | `资料汇总`
+### Engines
+- [ ] Game Engine Series | The Cherno | YouTube | `更新至93p`
+- [ ] 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
 - [ ] 游戏引擎架构
 - [ ] Unity Shader 入门精要
 
 ## GPU
-
-## Simulating
+- GPU Gems & Pro & Zen
+  - [ ] GPU Gems 1
+  - [ ] GPU Gems 2
+  - [ ] GPU Gems 3
+  - [ ] GPU Pro 1
+  - [ ] GPU Pro 2
+  - [ ] GPU Pro 3
+  - [ ] GPU Pro 4
+  - [ ] GPU Pro 5
+  - [ ] GPU Pro 6
+  - [ ] GPU Pro 7
+  - [ ] GPU Zen
 
 ## 文章资料
-1. - [ ] 由浅入深学习PBR的原理和实现 | 0向往0 | https://www.cnblogs.com/timlly/p/10631718.html | `PBR概览`
-2. - [ ] Filament 文档 | https://jerkwin.github.io/filamentcn/ | `PBR资料`
-3. - Behind the Pixels | 文刀秋二 | 知乎
+1. [Ke-Sen Huang's Home Page](https://kesen.realtimerendering.com/) | Kesen Huang | `CG论文集锦`
+2. 由浅入深学习PBR的原理和实现 | 0向往0 | https://www.cnblogs.com/timlly/p/10631718.html | `PBR概览`
+3. Filament 文档 | https://jerkwin.github.io/filamentcn/ | `PBR资料`
+4. Behind the Pixels | 文刀秋二 | 知乎
    - [ ] 基于物理着色（一）
    - [ ] 基于物理着色（二）- Microfacet材质和多层材质
    - [ ] 基于物理着色（三）- Disney和UE4的实现
    - [ ] 基于物理着色（四）- 次表面散射
-4. - 浅墨的游戏编程 | 毛星云 | 知乎
-   - [ ] *Placeholder*
+5. 浅墨的游戏编程 | 毛星云 | 知乎
 
 ## 好东西！
-* [IMGUI](github.com/ocornut/imgui)
+* [stb](https://github.com/nothings/stb) | `图片读写库`
+* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) | `模型导入`
+* [IMGUI](github.com/ocornut/imgui) | `超香GUI`
+* [The-Forge](https://github.com/ConfettiFX/The-Forge) | `轻量开源引擎？`
 
-> # Unreal 虚幻引擎
+---
+
+# Unreal Engine
+
+> <font color=#6495ED size=6>虚幻引擎</font>  
+> <font color=#6495ED>——这辈子都不可能会用的</font>
+
 ## 入门教程
-1. - [x] 三维弹球（蓝图） | 后天星期六 | 泰课在线
-2. - [x] 用C++带你走进虚幻4 | 后天星期六 | 泰课在线
-3. - [ ] 坦克大战（C++） | 后天星期六 | 泰课在线 | 看了 TomLooman 所以小男神剩下的部分应该要咕了
-4. - [x] TomLooman | Create Multiplayer Games with C++ | Udemy | `★★★★★`
+1. 后天星期六 | 泰课在线 | `看了 TomLooman 所以小男神剩下的部分应该要咕了`
+   - [x] 三维弹球（蓝图）
+   - [x] 用C++带你走进虚幻4
+   - [ ] 坦克大战（C++）
+2. TomLooman | Udemy | `★★★★★`
+   - [x] Create Multiplayer Games with C++ | 
 
 ## 基本主题
 ### NPC AI
@@ -135,10 +152,11 @@
 6. - [ ] first hour in sequencer
 
 ### 地形 Landscape
-1. - [ ] UE4零基础入门到独立游戏开发【Landscape地貌篇】 | CG学习笔记 | bilibili
+1. - [ ] [UE4零基础入门到独立游戏开发【Landscape地貌篇】](https://www.bilibili.com/video/BV1mD4y1D7D6) | CG学习笔记 | bilibili
+2. - [ ] [WorldMachine基础知识与节点释义](https://www.bilibili.com/video/BV1t7411z7HR) | CG学习笔记 | bilibili
 
 ### 光照 Lighting
-1. - [ ] UE4零基础入门到独立游戏开发【灯光篇】 | CG学习笔记 | bilibili
+1. - [ ] [UE4零基础入门到独立游戏开发【灯光篇】](https://www.bilibili.com/video/BV1Gt4y1i7Ht) | CG学习笔记 | bilibili
 
 ### 材质 Material
 1. - [x] 虚幻引擎编辑器基础——材质 | UE4 Online Learning
@@ -146,26 +164,22 @@
 3. - [ ] 创建燃烧的木材材质 | UE4 Online Learning
 4. - [ ] 创建PBR材质 | UE4 Online Learning
 5. - [ ] 材质大师课程 | UE4 Online Learning
-6. - [ ] UE4零基础入门到独立游戏开发【材质基础算法】 | CG学习笔记 | bilibili
+6. - [ ] [UE4零基础入门到独立游戏开发【材质基础算法】](https://www.bilibili.com/video/BV1B7411P7cC) | CG学习笔记 | bilibili
 
 ### 建模 Modeling
-#### Modeling - Maya
-1. - [ ] UE4零基础独立游戏开发系列教程【maya专辑模型篇】 | CG学习笔记 | bilibili | `开头 2min 笑得我腹肌八块 2333`
-#### Modeling - ZBrush
-1. - [ ] UE4零基础独立游戏开发系列教程【ZBrush入门篇】 | CG学习笔记 | bilibili
+1. - [ ] [UE4零基础独立游戏开发系列教程【maya专辑模型篇】](https://www.bilibili.com/video/BV1i74118719) | CG学习笔记 | bilibili | `开头 2min 笑得我腹肌八块 2333`
+2. - [ ] [UE4零基础独立游戏开发系列教程【ZBrush入门篇】](https://www.bilibili.com/video/BV19741187S8) | CG学习笔记 | bilibili
 
 ### UI
 1. - [ ] Make UI With C++: How to use Slate in Unreal Engine | Reuben Ward | YouTube
 
 ### 特效 VFX
 #### VFX - Niagara
-1. - Unreal Engine Niagara Tutorials | CGHOW | YouTube
-   * [ ] *Placeholder*
-2. 
+1. Unreal Engine Niagara Tutorials | CGHOW | YouTube
 
 ### Houdini
 #### 1. SOP（Surface Operator）
-* [ ] [咖喱味的 Houdini 入门](https://www.bilibili.com/video/av77323910) | 官方入门 | bilibili | `原官方地址 https://www.sidefx.com/tutorials/`
+* [ ] [Houdini 入门](https://www.bilibili.com/video/av77323910) | 官方入门 | bilibili | `原官方地址 https://www.sidefx.com/tutorials/`
 * [ ] [Houdini Workflows with Unreal Engine Houdini到虚幻的工作流](https://www.bilibili.com/video/BV11p4y1U7TW) | Unreal 英文直播 官方汉化 | bilibili
 #### 2. VEX
 * [ ] [通过案例学VEX-零基础](https://www.bilibili.com/video/BV1Zp411d7Hw) | 捷佳 | bilibili | `需要 Houdini 基础`
@@ -173,21 +187,44 @@
 
 ## 技术分享
 ### [Unreal Fest Online 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealFestOnline)
-1. - [ ] Optimizing and Building UI for AAA Games 用虚幻示意图形（UMG）UI设计器优化并构建3A级UI(官方字幕) | Carey Hickling
+1. - [ ] [Optimizing and Building UI for AAA Games 用虚幻示意图形（UMG）UI设计器优化并构建3A级UI(官方字幕)](https://www.bilibili.com/video/BV1EK4y1j7VB) | Carey Hickling
 ### [Unreal Open Day 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealOpenDay2020)
 1. - [ ] 2020虚幻引擎4移动平台上的更新 | Epic Games - Mobile Team Leader & Mobile Rendering Programmer
-2. - [ ] 虚幻引擎移动端ComputeShader的应用 | 刘炜
-3. - [ ] 深入GAS架构设计 | 大钊
-4. - [ ] Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程 | Directive Games TA & Houdini Lead TD
-5. - [ ] 虚幻引擎4开放世界ARPG《幻塔》技术分享 | 幻塔 丁许朋
+2. - [ ] [虚幻引擎移动端ComputeShader的应用](https://www.bilibili.com/video/BV1ey4y1q7s4) | 刘炜
+3. - [ ] [深入GAS架构设计](https://www.bilibili.com/video/BV1zD4y1X77M) | 大钊
+4. - [ ] [Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal](https://www.bilibili.com/video/BV1wv411b7Ew) | Directive Games TA & Houdini Lead TD 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程
+5. - [ ] [虚幻引擎4开放世界ARPG《幻塔》技术分享](https://www.bilibili.com/video/BV1Ka4y1W7NE) | 幻塔 丁许朋
+6. - [ ] [虚幻引擎4全平台热更新方案](https://www.bilibili.com/video/BV1ey4y1q7s4) | 查利鹏
 ### [Fest Europe 2019 | bilibili](https://space.bilibili.com/138827797/video?tid=0&page=1&keyword=FestEurope2019&order=pubdate)
-1. - [ ] Using the Gameplay Ability System 使用游戏玩法技能系统
-2. - [ ] Gameplay Abilities Meet Behavior Trees 游戏技能系统搭配行为树
-3. - [ ] Digital Material with the Substance Tools UE4里的Substance流程
-4. - [x] UE4 Pixel Streaming UE4像素流技术
-5. - [ ] 100 Unreal Engine 4 Tips & Tricks 100个UE4的小技巧
-6. - [ ] Engine Tools for Performance on Open World Games 开放大世界引擎性能优化工具
-7. - [ ] 充分利用动画蓝图优势-《堡垒之夜》中的动态动作
+1. - [ ] [Using the Gameplay Ability System](https://www.bilibili.com/video/BV1gJ411J7AM) 使用游戏玩法技能系统
+2. - [ ] [Gameplay Abilities Meet Behavior Trees](https://www.bilibili.com/video/BV12E41147eb) 游戏技能系统搭配行为树
+3. - [ ] [Digital Material with the Substance Tools](https://www.bilibili.com/video/BV1dE41147gn) UE4里的Substance流程
+4. - [x] [UE4 Pixel Streaming](https://www.bilibili.com/video/BV1gJ411J7Jv) UE4像素流技术
+5. - [ ] [100 Unreal Engine 4 Tips & Tricks](https://www.bilibili.com/video/BV1EJ411J7ac) 100个UE4的小技巧
+6. - [ ] [Engine Tools for Performance on Open World Games](https://www.bilibili.com/video/BV1D4411B7Tn) 开放大世界引擎性能优化工具
+7. - [ ] [充分利用动画蓝图优势-《堡垒之夜》中的动态动作](https://www.bilibili.com/video/BV1gJ411J7hJ)
+8. - [ ] [使用插件在多个UE4项目间共享代码(官方汉化)](https://www.bilibili.com/video/BV1gJ411J7s7)
+9. - [ ] [UE4网格渲染管线重构(官方汉化)](https://www.bilibili.com/video/BV1gJ411J7j1)
+10. - [ ] [AMD-集成有限元物理系统到UE4中(官方汉化)](https://www.bilibili.com/video/BV1EJ411J7WP)
+11. - [ ] [游戏中的光线追踪运用实践(中文字幕)](https://www.bilibili.com/video/BV1D4411B7NM)
+12. - [ ] [常见危险性能瓶颈和定位点(中文字幕)](https://www.bilibili.com/video/BV1D4411B7hJ)
+13. - [ ] [使用Python简化资产工作流程(官方汉化)](https://www.bilibili.com/video/BV1gJ411J7Fh)
+14. - [ ] [A Postmortem on Implementing AutoPlay in UE4](https://www.bilibili.com/video/BV17J411y7En) 自动游戏功能的实现(官方汉化)
+15. - [ ] [Niagara介绍 | Introduction to Niagara(官方汉化)](https://www.bilibili.com/video/BV1UE411478B)
+16. - [ ] [《盗贼之海》聚合Tick技术优化大规模场景(中文字幕)](https://www.bilibili.com/video/BV1D4411B7nX)
+17. - [ ] [复制图：优化RTS游戏带宽(中文字幕)](https://www.bilibili.com/video/BV1D4411B7YX)
+18. - [ ] [可见日志：调试所有玩法需求(中文字幕)](https://www.bilibili.com/video/BV1D4411B7x4)
+19. - [ ] [怀旧与新奇的融合-《歧路旅人》开发技巧分享(官方汉化)](https://www.bilibili.com/video/BV1AE411V7rC)
+20. - [ ] [虚幻引擎新增动画特性 | New Animation Features in Unreal Engine (官方汉化)](https://www.bilibili.com/video/BV1UE41147jS)
+21. - [ ] [分层材质系统塑造环境 | Layered Materials for Environment(官方汉化)](https://www.bilibili.com/video/BV1UE41147BB)
+22. - [ ] [颜色管理 | Colour Management–A Bird's Eye View for Artists(官方汉化)](https://www.bilibili.com/video/BV1RE41147BT)
+23. - [ ] [数据驱动音效设计 | Data-Driven Sound Design(官方汉化)](https://www.bilibili.com/video/BV1dE41147XB)
+24. - [ ] [异步载入界面和过渡关卡 | Async Loading Screens and Transition Levels(官方汉化)](https://www.bilibili.com/video/BV1XE41147dQ)
+25. - [ ] [《堡垒之夜》工作流程分享(官方汉化)](https://www.bilibili.com/video/BV13J411J7Uf)
+26. - [ ] [拥抱虚幻引擎的方法(官方汉化)](https://www.bilibili.com/video/BV1gJ411J76e)
+27. - [ ] [蓝图深入探讨 | Blueprints In-depth (官方汉化)](https://www.bilibili.com/video/BV1sJ41167np)
+28. - [ ] [《盗贼之海》的自动化测试框架(官方汉化)](https://www.bilibili.com/video/BV1EJ411J7Yz)
+29. - [ ] [SplashDamage-UE4开发工作流程规范(官方汉化)](https://www.bilibili.com/video/BV1sJ411677R)
 ### [Unreal Engine GDC 2019 | bilibili](www.bilibili.com/video/av61595751)
 1. - [ ] A Hands-on Look at Using Ray Tracing in Games with UE 4.22
 2. - [ ] Building Effects with Niagara and Blueprint
@@ -204,9 +241,9 @@
 
 ## 文章资料
 1. - 官方文档 Unreal Engine 4 Documentation | Unreal Engine
-   - [ ] Slate
+   <!-- - [ ] Slate -->
 2. - Inside UE4 专栏 | 大钊 | 知乎
-   * [x] 开篇
+   <!-- * [x] 开篇
    * [ ] 基本概念
    * [ ] GamePlay架构
      * [ ] Actor & Component
@@ -220,37 +257,64 @@
      * [ ] GameInstance
      * [ ] 总结
      * [ ] Subsystems
-   * [ ] UObject
+   * [ ] UObject -->
 3. - TomLooman 博客 | tomlooman.com
-   - [ ] *Placeholder*
 4. - [ ] UE4行为树详解 | ksun | 知乎
 5. - [ ] 浅析UE4-BehaviorTree的特性 | Lights999 | 知乎
-6. - 剖析虚幻渲染体系 | 0向往0 | https://www.cnblogs.com/timlly/p/13512787.html | `PBR概览博客作者又更新惹！！！`
-   - [ ] 剖析虚幻渲染体系（01）- 综述和基础
-7. - Orfeas 博客 | [Orfeas](https://www.orfeasel.com/) | `UE4 C++`
-   - [ ] *Placeholder*
-8. 
-9.  
+6. - [剖析虚幻渲染体系](https://www.cnblogs.com/timlly/p/13512787.html) | 0向往0 | `PBR概览博客作者又更新惹！！！`
+   <!-- - [ ] 剖析虚幻渲染体系（01）- 综述和基础 -->
+7. - [Orfeas 博客](https://www.orfeasel.com/) | `UE4 C++`
+8. - [Asher 博客](http://asher.gg/) | `可爱TA在线炫技`
 
 ## 好东西！
-* Unreal Marketplace `AdvancedLocomotionSystem`
-
-> # Others
-
-
-> # To Be Continued...
+* Unreal Marketplace `AdvancedLocomotionSystem` | `动画系统高级使用示例`
 
 ---
 
+# Computer Science
+
+> <font color=#6495ED size=6>计算机基础</font>  
+> <font color=#6495ED>——空空如也，莫得基础 :)</font>
+
+## C++ 是不可能会用的
+- C++ Primer
+- Effective 系列
+  - [ ] Effective C++
+  - [ ] More effective C++
+  - [ ] Inside the C++ Object Model
+- CMake
+
+## 工程是不可能会写的
+- 设计模式
+
+## 其它
+- 深入理解计算机系统结构
+- 操作系统
+  - [ ] 操作系统概念
+  - [ ] 现代操作系统
+- 计算机网络
+  - [ ] 计算机网络（自顶向下方法）
+  - [ ] 现代计算机网络
+- 编译原理
+
+> # To Be Continued...
+
+<!-- 
+---
+
 * 想变强喵w
-  * Shader
-  * RenderDoc
-  * Houdini
+ * Shader
+ * RenderDoc
+ * Houdini
 
 ---
 
 * 考虑整理的笔记？
-  * CSE 167 Math
-  * RT I & II
-  * GAMES101
-  * ...
+ * CSE 167 Math
+ * RT I & II
+ * GAMES101
+ * ...
+
+-->
+
+<style> h1 { border-bottom: none } </style>
