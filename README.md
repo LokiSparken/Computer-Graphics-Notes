@@ -45,7 +45,7 @@
   * [文章资料](#文章资料-1)
   * [好东西！](#好东西-1)
 * [Computer Science](#computer-science)
-  * [C++ 是不可能会用的](#c-是不可能会用的)
+  * [C++是不可能会用的](#c是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
   * [其它](#其它)
 
@@ -61,8 +61,8 @@
 
 ## Basic 基础入门
 - [ ] 1. [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
-- [ ] 2. Computer Graphics (CSE167x) | Ravi Ramamoorthi | edX | `爬了数学部分`
-- [ ] 3. GAMES101 | 闫令琪 | GAMES | bilibili | `★★★★★，入门第二课，男神超可爱！`
+- [ ] 2. [Computer Graphics (CSE167x)](https://www.edx.org/course/computer-graphics-2) | Ravi Ramamoorthi | edX | `爬了数学部分`
+- [ ] 3. [GAMES101](https://www.bilibili.com/video/BV1X7411F744) | 闫令琪 | GAMES | bilibili | `★★★★★，入门第二课，男神超可爱！`
    - [x] Lectures & Notes
    - [ ] Homeworks
 - [ ] 4. Fundamentals of Computer Graphics, 4th Edition | Book | `虎书`
@@ -88,10 +88,10 @@
   - [ ] Vulkan Cookbook | Pawel Lapinski | Book | `据说不适合初学者（`
   - [ ] [awesome-vulkan](http://www.vinjn.com/awesome-vulkan/) | Vinjn张静 | `资料汇总`
 ### Engines
-- [ ] Game Engine Series | The Cherno | YouTube | `更新至93p`
+- [ ] [Game Engine Series](https://www.youtube.com/playlist?list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT) | The Cherno | YouTube | `更新至93p`
 - [ ] 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
-- [ ] 游戏引擎架构
-- [ ] Unity Shader 入门精要
+- [ ] 游戏引擎架构 | 叶劲峰 译
+- [ ] Unity Shader 入门精要 | 冯乐乐
 
 ## GPU
 - GPU Gems & Pro & Zen
@@ -109,8 +109,8 @@
 
 ## 文章资料
 1. [Ke-Sen Huang's Home Page](https://kesen.realtimerendering.com/) | Kesen Huang | `CG论文集锦`
-2. 由浅入深学习PBR的原理和实现 | 0向往0 | https://www.cnblogs.com/timlly/p/10631718.html | `PBR概览`
-3. Filament 文档 | https://jerkwin.github.io/filamentcn/ | `PBR资料`
+2. [由浅入深学习PBR的原理和实现](https://www.cnblogs.com/timlly/p/10631718.html) | 0向往0 | `PBR概览`
+3. [Filament 文档](https://jerkwin.github.io/filamentcn/) | `PBR资料`
 4. Behind the Pixels | 文刀秋二 | 知乎
    - [ ] 基于物理着色（一）
    - [ ] 基于物理着色（二）- Microfacet材质和多层材质
@@ -137,7 +137,7 @@
    - [x] 用C++带你走进虚幻4
    - [ ] 坦克大战（C++）
 2. TomLooman | Udemy | `★★★★★`
-   - [x] Create Multiplayer Games with C++ | 
+   - [x] Create Multiplayer Games with C++
 
 ## 基本主题
 ### NPC AI
@@ -192,8 +192,8 @@
 1. - [ ] 2020虚幻引擎4移动平台上的更新 | Epic Games - Mobile Team Leader & Mobile Rendering Programmer
 2. - [ ] [虚幻引擎移动端ComputeShader的应用](https://www.bilibili.com/video/BV1ey4y1q7s4) | 刘炜
 3. - [ ] [深入GAS架构设计](https://www.bilibili.com/video/BV1zD4y1X77M) | 大钊
-4. - [ ] [Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal](https://www.bilibili.com/video/BV1wv411b7Ew) | Directive Games TA & Houdini Lead TD 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程
-5. - [ ] [虚幻引擎4开放世界ARPG《幻塔》技术分享](https://www.bilibili.com/video/BV1Ka4y1W7NE) | 幻塔 丁许朋
+4. - [ ] [Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程](https://www.bilibili.com/video/BV1wv411b7Ew) | Directive Games TA & Houdini Lead TD 
+5. - [x] [虚幻引擎4开放世界ARPG《幻塔》技术分享](https://www.bilibili.com/video/BV1Ka4y1W7NE) | 幻塔 丁许朋 | `开放大世界的地形优化，移动平台限制（DrawCall、顶点数），超大视距（UE中的裁剪优化、动态遮挡查询、植被DC优化、阴影方案）`
 6. - [ ] [虚幻引擎4全平台热更新方案](https://www.bilibili.com/video/BV1ey4y1q7s4) | 查利鹏
 ### [Fest Europe 2019 | bilibili](https://space.bilibili.com/138827797/video?tid=0&page=1&keyword=FestEurope2019&order=pubdate)
 1. - [ ] [Using the Gameplay Ability System](https://www.bilibili.com/video/BV1gJ411J7AM) 使用游戏玩法技能系统
@@ -240,7 +240,7 @@
 1. - [ ] ...
 
 ## 文章资料
-1. - 官方文档 Unreal Engine 4 Documentation | Unreal Engine
+1. - Unreal Engine 4 Documentation | Unreal Engine | `官方文档`
    <!-- - [ ] Slate -->
 2. - Inside UE4 专栏 | 大钊 | 知乎
    <!-- * [x] 开篇
@@ -276,7 +276,7 @@
 > <font color=#6495ED size=6>计算机基础</font>  
 > <font color=#6495ED>——空空如也，莫得基础 :)</font>
 
-## C++ 是不可能会用的
+## C++是不可能会用的
 - C++ Primer
 - Effective 系列
   - [ ] Effective C++

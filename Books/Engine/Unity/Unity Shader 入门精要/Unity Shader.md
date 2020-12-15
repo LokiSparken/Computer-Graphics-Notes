@@ -80,7 +80,24 @@ float4 vert(float4 v : POSITION) SV_POSITION {
   * 流程控制语句对 GPU 性能的影响：GPU Gems 2 Chapter: GPU 流程控制
   * Shader Model 对着色器特性能力的规定：HLSL doc
 ### 第六章 Unity 中的基础光照
+![](images/18.jpg)
+![](images/19.jpg)
+![](images/20.jpg)
+* 环境光 Unity 2019：Window -> Rendering -> Lighting settings -> Ambient Color
+* skybox Unity 2019：Window -> Rendering -> Light settings -> Skybox Material
+* 漫反射实现：逐顶点兰伯特 vs. 逐像素兰伯特 vs. 逐像素半兰伯特
+![](ShaderSource/Chap6/Results/chap_6_4.png)
+  * 逐顶点兰伯特：明暗交界处锯齿感严重
+  * 逐像素兰伯特：无光照部分全黑，无明暗变化，太硬
+  * 逐像素半兰伯特：……好亮……
+* 高光反射实现：逐顶点Phong vs. 逐像素Phong vs. 逐像素Blinn-Phong （Specular = (10, 148, 241, 255)，Gloss = 8）
+![](ShaderSource/Chap6/Results/chap_6_5.png)
+* Unity 光照模型计算常用内置函数
+![](images/21.png)
+  * 注意：不保证是单位向量，手动归一化
 ### 第七章 基础纹理
+
+
 ### 第八章 透明效果
 
 ## 第三篇 中级篇
