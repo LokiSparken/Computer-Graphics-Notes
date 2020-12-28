@@ -189,7 +189,7 @@
 ### [Unreal Fest Online 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealFestOnline)
 1. - [ ] [Optimizing and Building UI for AAA Games 用虚幻示意图形（UMG）UI设计器优化并构建3A级UI(官方字幕)](https://www.bilibili.com/video/BV1EK4y1j7VB) | Carey Hickling
 ### [Unreal Open Day 2020 | bilibili](https://space.bilibili.com/138827797/video?keyword=UnrealOpenDay2020)
-1. - [ ] 2020虚幻引擎4移动平台上的更新 | Epic Games - Mobile Team Leader & Mobile Rendering Programmer
+1. - [x] [2020虚幻引擎4移动平台上的更新](https://www.bilibili.com/video/BV11a4y1H7jC) | Epic Games - Mobile Team Leader & Mobile Rendering Programmer
 2. - [ ] [虚幻引擎移动端ComputeShader的应用](https://www.bilibili.com/video/BV1ey4y1q7s4) | 刘炜
 3. - [ ] [深入GAS架构设计](https://www.bilibili.com/video/BV1zD4y1X77M) | 大钊
 4. - [ ] [Procedural Worlds in a Persistent Universe - Workflow from Houdini to Unreal 恒续游戏中的程序化世界生成-从Houdini到虚幻引擎的流程](https://www.bilibili.com/video/BV1wv411b7Ew) | Directive Games TA & Houdini Lead TD 
