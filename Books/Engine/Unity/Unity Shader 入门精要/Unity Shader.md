@@ -108,6 +108,118 @@ float4 vert(float4 v : POSITION) SV_POSITION {
     * 因为切线空间下存储的法线是相对于标准顶点法线的？
 
 ### 第八章 透明效果
+<!-- ![] -->
+* 半透明物体渲染顺序导致的不同混合效果（Reference：[半透明物体混合顺序问题](http://rainyeve.com/wordpress/?p=723)）
+    ![](images/25.png)
+    ![](images/26.png)
+* 物体的循环重叠情况
+    ![](images/27.png)
+* 渲染队列
+  * `SubShader 标签 Queue`
+  * Unity：用整数索引来表示每个渲染队列，且索引号越小表示越早被渲染。
+  * Unity 定义的渲染队列
+    ![](images/28.png)
+#### 透明测试与透明混合
+* Unity 透明度测试
+    ```cpp
+    Properties
+    {
+		_Color("Main Tint", Color) = (1,1,1,1)
+		_MainTex("Main Tex", 2D) = "white" {}
+		_Cutoff("Alpha Cutoff", Range(0, 1)) = 0.5	// 透明度阈值
+    }
+    SubShader
+    {
+        Tags 
+		{
+			"Queue" = "AlphaTest"					// 指定渲染队列
+			"IgnoreProjector" = "True"				// 不受 Projector 影响
+			"RenderType" = "TransparentCutout"		// 将当前 Shader 分类到使用透明度测试的组 TransparentCutout
+		}
+        
+		Pass 
+		{
+			Tags { "LightMode" = "ForwardBase" }
+
+			CGPROGRAM
+
+			// 颜色四通道_Color，纹理_MainTex，纹理缩放_MainTex_ST，透明度
+			fixed _Cutoff;
+
+			// struct a2v, v2f, v2f vert(a2v v); 求法线/顶点位置的世界空间坐标，纹理坐标做缩放平移后传给片段着色器
+
+			fixed4 frag(v2f i) : SV_Target
+			{
+				// 归一化法线和光源（世界空间）、纹理采样
+
+				// 透明度测试
+				// Alpha test
+				clip(texColor.a - _Cutoff);
+				// Equal to 
+			//  if ((texColor.a - _Cutoff) < 0.0) 
+			//	{
+			//      discard;	// CG提供的指令，在FragmentShader中表示立即放弃当前处理的片元
+			//  }
+
+                // 光照计算并返回结果
+			}
+            ENDCG
+		}
+
+        Fallback "Transparent/Cutout/VertexLit"
+        // 保证代替 Shader，且正确向其它物体投射阴影
+    }
+    ```
+* Unity 透明混合
+  * `ZWrite Off` 关闭深度写入，也可直接写在 SubShader 下，指定该 SubShader 下所有 Pass 都关闭深度写入
+      ```cpp
+      SubShader
+      {
+          Tags { "Queue" = "Transparent" }
+          Pass 
+          {
+              ZWrite Off
+          }
+      }
+      ```
+  * `混合命令 Blend`：设置混合因子，同时打开混合模式。打开混合模式，片元的透明通道才有意义。
+      ![](images/29.png)
+    * 本节使用 Blend `SrcAlpha` `OneMinusSrcAlpha`：以 $DstColor_{new} = SrcAlpha \times SrcColor + (1-SrcAlpha)\times DstColor_{old}$ 进行混合，SrcColor为当前片元着色器产生的颜色，DstColor为Color Buffer中颜色
+  * 透明混合与混合测试的不同
+    * ① 控制透明度的量（测试设阈值 Cutoff -> 混合控制透明度 AlphaScale）
+    * ② SubShader标签（渲染队列Queue: AlphaTest -> Transparent、分类 RenderType: TransparentCutout -> Transparent）
+    * ③ `在 Pass 中进行混合状态设置`（ZWrite Off、Blend）
+    * ④ 片元着色器中的使用方法（透明测试以阈值为界discard，透明混合打开并修改返回值的透明通道）
+    * ⑤ Fallback（Transparent/Cutout/VertexLit -> Transparent/VertexLit）
+* 透明测试结果 Alpha Cutoff = 0.2、0.6、0.8、0.9
+    ![](ShaderSource/Chap8/Results/chap_8_3_1.png)
+    ![](ShaderSource/Chap8/Results/chap_8_3_2.png)
+    ![](ShaderSource/Chap8/Results/chap_8_3_3.png)
+    ![](ShaderSource/Chap8/Results/chap_8_3_4.png)
+* 透明混合结果 Alpha Scale = 0.2、0.6、0.8
+    ![](ShaderSource/Chap8/Results/chap_8_4_1.png)
+    ![](ShaderSource/Chap8/Results/chap_8_4_2.png)
+    ![](ShaderSource/Chap8/Results/chap_8_4_3.png)
+#### 开启深度写入的半透明效果
+<!-- ![] -->
+* 结果
+    ![](ShaderSource/Chap8/Results/chap_8_5.png)
+    * 左透明混合：顺序完美地凌乱了呢（...
+    * 右开启深度写入：**`模型内部没有半透明效果`**
+#### ShaderLab 混合命令
+![](images/30.png)
+![](images/31.png)
+![](images/32.png)
+![](images/33.png)
+![](images/34.png)
+#### 双面渲染的透明效果
+* 透明测试 $\times$ 关闭背面剔除的透明测试 $\times$ 透明混合 $\times$ 关闭背面剔除的透明混合 （Cube 凸几何体）
+    ![](ShaderSource/Chap8/Results/chap_8_7_2.png)
+    * 【？】问题：才半透明就没影子了嗷
+* 透明混合 $\times$ 关闭背面剔除的透明混合
+    ![](ShaderSource/Chap8/Results/chap_8_7_3.png)
+    * 【？】问题：显然，在模型自身非凸时，内部渲染顺序又 GG 了
+      * 据说可以用[OIT顺序无关透明渲染](https://zhuanlan.zhihu.com/p/92841297)、[次序无关的半透明渲染实现](https://zhuanlan.zhihu.com/p/92337395)解决
 
 ## 第三篇 中级篇
 ### 第九章 更复杂的光照
