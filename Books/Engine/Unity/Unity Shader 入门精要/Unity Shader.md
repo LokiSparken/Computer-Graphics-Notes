@@ -223,6 +223,53 @@ float4 vert(float4 v : POSITION) SV_POSITION {
 
 ## 第三篇 中级篇
 ### 第九章 更复杂的光照
+#### **`渲染路径`**
+* 渲染路径 Rendering Path：前向渲染路径 Forward Rendering Path、延迟渲染路径 Deferred Rendering Path
+  * Project Settings / Camera Component Settings
+  * 在 Pass 中以 Tag `LightMode` 标签设置，确定该 `Pass 的计算内容`，Unity 将对相应所需变量值传递给 Shader。
+  * LightMode 标签支持的渲染路径设置选项
+    ![](images/35.png)
+* 前向渲染路径
+  * 任务：渲染图元，计算 Color Buffer、Depth Buffer（Z-Buffer）
+  * 处理光照的方式：逐顶点、逐像素、球谐函数（Spherical Harmonics）。决策优先级：光源的重要性。
+  * Unity 前向渲染的两种 Pass
+    * `Base Pass`：一个 Base Pass 只执行一次，通常可计算环境光、自发光、可访问光照纹理 Light Map、平行光（开启光源阴影功能时，默认支持阴影）
+    * `Additional Pass`：`对每个影响当前物体的逐像素光源都执行一次`，开启混合模式，Additional Pass 的结果与上一次的光照结果在帧缓存中进行叠加，得到多个光照的渲染效果。【← 多 Pass 的性能消耗、不同光源对同物体的光照计算中的重复冗余问题】
+  * 前向渲染可以使用的内置光照变量、光照函数
+    ![](images/36.png)
+    ![](images/37.png)
+* 延迟渲染路径
+  * 任务：在第一个 Pass 用深度缓冲技术预处理片元可见性，将相关片元信息存储到 G-Buffer（Geometry），如表面法线、视角方向、漫反射系数、平滑度、自发光和深度等，每个物体执行一次该 Pass。第二个 Pass 做光照计算。
+  * 优点：与场景中光源数目无关，不依赖场景复杂度。与屏幕空间大小相关。
+  * 问题：
+    * 不支持真正的抗锯齿 AA
+    * 不能处理半透明物体
+    * 显卡必须支持MRT（Multiple Render Targets）、Shader Mode 3.0及以上、深度渲染纹理以及双面的模板缓冲（stencil）。
+  * 延迟渲染可以使用的内置变量、函数
+    ![](images/37.png)
+#### **`光源类型`**
+* 光源属性：位置、（到某点的）方向、颜色、强度、（到某点的）衰减
+  * 平行光：阳光，只有 Rotation 有效（到场景中各点方向），无位置，不衰减
+  * 点光源 Point Light：球形范围，衰减可由函数定义
+  * 聚光灯 Spot Light：锥形区域，衰减可由函数定义，需要判断点是否在锥体范围内
+* Unity 对光源衰减的处理：使用一张衰减纹理作为查找表（Lookup Table，LUT）
+* 用帧调试器 Frame Debugger 查看场景绘制过程
+* Unity：光源强度、颜色、距离物体的远近会影响光源的重要性优先级
+#### **`光照衰减`**
+* 衰减纹理：需要预处理，纹理大小影响衰减精度，不直观，存储到 LUT 后无法用其他数学公式计算衰减。但性能 up。
+  * 对角线上纹理颜色值表明在光源空间中不同位置的点的衰减值。(0, 0)点表明了与光源位置重合的点的衰减值，而(1, 1)点表明了在光源空间中所关心的距离最远的点的衰减。
+  * 采样：光源空间中顶点距离的平方。
+#### **`Unity 阴影`**
+* 阴影映射纹理 Shadow Map
+  * 原理：把摄像机的位置放在与光源重合的位置上，得到该重合光源的阴影区域就是摄像机不可见的位置。
+  * Shadow Map 记录信息：从光源位置出发、能看到的场景中距离它最近的表面位置（深度信息）。
+  * 流程：渲染某物体时，从当前渲染物体的（所设或 Fallback 指定的） Unity Shader 中寻找 `LightMode Tag` 为 `ShadowCaster` 的 Pass，不存在时`无法向其它物体投射阴影`（但可以接收其它物体的阴影）。（Unity）放置摄像机到光源位置、调用该 Pass，得到`顶点在光源空间下的位置`，输出深度信息到 Shadow Map。
+* 屏幕空间的阴影映射技术（Screenspace Shadow Map）：在 ShadowCaster Pass 中得到光源的 Shadow Map 的同时，产生`摄像机的深度纹理`。综合得到`屏幕空间的 Shadow Map`，此时某一点 $Z_{depth} > Z_{shadow}$ 则说明该点可见，但处于该光源的阴影区域。则使用时直接在 Shader 中用屏幕空间的表面坐标做采样。
+* 注意光源阴影映射纹理计算时是否由于背面剔除没有计算`背对光源的面的信息`。
+* 透明物体向其它物体投射阴影
+  * 透明度测试：在 ShadowCaster Pass 中进行透明度测试。
+  * 半透明物体：用不透明的阴影顶一顶（
+
 ### 第十章 高级纹理
 ### 第十一章 让画面动起来
 
