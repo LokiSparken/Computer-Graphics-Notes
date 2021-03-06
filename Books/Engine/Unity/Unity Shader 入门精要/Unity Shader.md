@@ -388,7 +388,11 @@ float4 vert(float4 v : POSITION) SV_POSITION {
   * 根据阈值提取较亮区域到渲染纹理
   * 对较亮区域做高斯模糊，模拟光线扩散效果
   * 叠加到原图
-* 【？】Render Target 和 Alpha 通道
+#### **运动模糊**
+* 运动模糊模拟方法
+  * 混合连续帧：累积缓存或保存前次渲染结果，把当前结果叠上去
+  * 速度缓存：存储各个像素的运动速度
+* 【？】Render Target 的 Alpha 通道
 #### 扩展资料
 * [Unity Doc](https://docs.unity3d.com/Manual/comp-Effects.html)
 * [GPU Gems](https://developer.nvidia.com/gpugems/GPUGems)
@@ -402,14 +406,112 @@ float4 vert(float4 v : POSITION) SV_POSITION {
   * 降采样优化
   * 迭代次数
 * Bloom
+* 运动模糊
 
 ### 第十三章 使用深度和法线纹理
+#### **`获取深度和法线纹理`**
+* 深度纹理
+  * 存储在一张渲染纹理，其值来自于顶点变换 MVP 结束后得到的归一化设备坐标（NDC）的顶点 $Z$ 值。
+  * `非线性`：由于投影变换中，透视投影矩阵是非线性的，因此所得深度值也是非线性的。
+  * 经过`映射`：NDC 中 $Z$ 分量范围 $[-1, 1]$，因此存储到纹理中时经过映射 $d = 0.5 \cdot Z_{NDC} + 0.5$
+  * Unity 机制
+    * 直接获取：延迟渲染 G-Buffer 中
+    * 单独渲染：`着色器替换 Shader Replacement` 技术（选择 SubShader 的`渲染类型 RenderType` 为 Opaque 的不透明物体，判断满足 Render Queue <= 2500 的，使用其 ShadowCaster Pass 渲染到深度和法线纹理。不包含 ShadowCaster Pass 则不出现在深度纹理中。【？】默认没有 ShadowCaster 不向其它物体投射阴影就在远处所以不计入深度纹理吗？可是关掉阴影功能的话不也没有……？）
+  * 精度：24bit or 16bit
+* 法线纹理
+  * Unity 机制
+    * 延迟渲染直接获得
+    * 前向渲染：单独的 Pass 重新渲染一遍场景
+* 深度+法线纹理
+  * 分辨率：与屏幕分辨率相同
+  * 精度：32bit（八位四通道）
+    * RG 通道：观察空间下的法线
+    * BA 通道：深度
+* 获取方式 - 深度纹理 Step
+  * 在`脚本`中设置摄像机的 `depthTextureMode`
+    ```c#
+    // 获取深度纹理
+    camera.depthTextureMode = DepthTextureMode.Depth;
+    // 获取深度+法线纹理
+    camera.depthTextureMode = DepthTextureMode.DepthNormals;
+    ```
+  * `采样`得到`非线性深度值`（一般直接 `tex2D`）
+  * **`变换深度值到线性空间`**（逆推顶点变换过程）
+    $$ Z_{view} = \frac{1}{\frac{Near-Far}{Near\cdot Far}d+\frac{1}{Near}} $$
+    $$ Z_{view} \in [Near, Far] $$
+    $$ \Downarrow \times \frac{1}{Far} $$
+    $$ Z_{[0, 1]} = \frac{1}{\frac{Near-Far}{Near}d+\frac{Far}{Near}} $$
+* Tips：Frame Debugger 看深度纹理时，由于投影变换需要覆盖从近平面到远平面所有深度区域，当远平面离摄像机很远时，近处物体过小，容易看不见。可能导致画面全黑全白（封闭/开放场景）
+#### **`运动模糊`**
+* 速度缓冲的生成方法
+  * 把场景中所有物体的速度渲染到纹理：需要修改场景中所有物体的 Shader 代码
+  * 《GPU Gems3》Chapter 27 方法：可在一个屏幕后处理步骤中完成整个效果模拟，但需要在片元着色器中进行两次矩阵乘法操作，影响性能
+    * ① 利用深度纹理在片元着色器中`为每个像素计算世界空间下的位置`：用当前帧的 $M_{vp}^{-1}$ 对 NDC 下的顶点坐标进行变换，即重置到刚从模型空间转入世界空间的坐标状态。
+    * ② `计算前一帧 NDC 坐标`：用前一帧的 $M_{vp}^{-1}$ 对顶点世界坐标做变换。
+    * ③ 求前后两帧当前点`屏幕空间坐标差`（NDC 坐标差）
+    * ④ 速度 $v = \frac{curPos.xy - prePos.xy}{2.0}$
+    * ⑤ 用 $v$ 对邻域像素采样，均值模糊
+    * 【？】为什么可以用当前帧世界坐标还原前一帧的 NDC ？因为时差小所以忽略两帧间的世界坐标差？而 $M_{p}$ 的非线性变换会放大差值？那为什么不转到摄像机空间，直接用 $M_{p}$？（sorosoro GPU Gems 系列启动！（x
+    * 适用范围：场景静止、摄像机快速运动
+#### **全局雾效**
+* **`根据深度纹理重建像素的世界空间坐标（摄像机投影类型为透视投影时）`**
+  * $Coord_{pixel} = Coord_{camera} + offset$  
+    $offset = d \cdot ray$  
+    其中 $d$ 为由深度纹理得到的线性深度值，$ray$ 为摄像机到屏幕上像素点射线（包含方向和距离）
+  * 原理如图所示：
+    
+    ![](images/42.jpg)
+
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 要求的像素点在世界空间下相对于摄像机的偏移即向量 $\overrightarrow{AP}$ ，根据相似三角形性质易得：
+    $$ \frac{AP}{AC} = \frac{AD}{AB} $$
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 其中：  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ① $AB$ 为视点到远平面距离，即 $[0, 1]$ 深度范围下的 $d_{far} = 1$  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ② $AD$ 为深度纹理采样所得，即 $[0, 1]$ 范围下的线性深度值 $d$  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ③ $\overrightarrow{AC}$ 即视点到屏幕像素射线 $ray$  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 并且，$\overrightarrow{AP}$、$\overrightarrow{AC}$ 方向相同，可得：
+    $$ \overrightarrow{AP} = \frac{AD}{AB} \cdot \overrightarrow{AC} $$
+    $$ \Downarrow $$
+    $$ \overrightarrow{AP} = d \cdot ray = offset $$
+  * $ray$ 的求法：屏幕后处理使用特定材质渲染一张填充整个屏幕的四边形面片，该面片的四个顶点对应近平面四个角。而流水线会根据顶点着色器的输出在顶点之间做插值，因此要得到视点到屏幕像素的射线，只需让流水线对“摄像机到近平面顶点的射线”做插值
+    * ① 求摄像机在近平面的投影（即近平面中心），指向近平面上沿、右沿的向量
+        $$ halfHeight = Near \times tan\frac{FOV}{2} $$
+        $$ toTop = camera.up \times halfHeight $$
+        $$ toRight = camera.right \times halfHeight \cdot aspect $$
+    * ② 对向量做偏移，即可得摄像机到近平面四个顶点的射线（距离向量），如往左上角：
+        $$ TL = camera.forward \cdot Near + toTop - toRight $$
+    * `注`：实现时在脚本中计算了摄像机到近平面四个顶点的射线，`由脚本传递给 Shader`，而`Vertex Shader`对顶点做完处理后，需要`将所有顶点的属性输出给流水线做插值`，此处各顶点的射线作为顶点的一个属性，要在 Vertex Shader 中对应获取，并通过 Vertex Shader 的返回值结构体输出给流水线。因此在获取时，通过判断四顶点的 $x$、$y$ 值看哪条射线是属于这个顶点的属性。
+  * 摄像机投影类型为正交投影的情况：[Reconstructing positions from the depth buffer pt. 2: Perspective and orthographic general case](https://www.derschmale.com/2014/03/19/reconstructing-positions-from-the-depth-buffer-pt-2-perspective-and-orthographic-general-case/)
+* **`雾效计算`**
+  * 雾效系数 $f$：混合原始颜色和雾颜色的混合系数
+    $$ float3 afterFog = f * fogColor + (1-f) * origColor; $$
+    * Unity 雾效实现：给定距离 $z$，计算公式分别有线性 Linear、指数 Exponential、指数的平方 Exponential Squared 三种（13.3.2 雾的计算）
+    * 本节：计算基于高度的雾效。给定点在世界空间下的高度 $y$，雾效系数 $f = \frac{H_{end} - y}{H_{end} - H_{start}}, H_{start}、H_{end}$ 分别为受雾影响的起始高度和终止高度
+#### 再谈**边缘检测**
+* 12.3 Color Buffer 做边缘检测的问题：受纹理和光照影响 $\Rightarrow$ 在深度和法线纹理上进行边缘检测
+* 使用 `Roberts 算子`
+    
+    ![](images/43.png)
+* 对选中物体描边：只单独渲染需要描边的物体，做边缘检测，不符合条件的非边缘处 clip() 剔除，剩余的描边
+#### 扩展资料
+* 在 Unity 中创建任意缓存纹理：着色器替换 Shader Replacement 功能
+* [SIGGRAPH 2011 - Unity](https://blogs.unity3d.com/2011/09/08/special-effects-with-depth-talk-at-siggraph/)：特定物体描边、角色护盾、相交线的高光模拟等
+<!-- TODO -->
+#### 实现细节
+* 运动模糊
+* 全局雾效
+* 边缘检测
+
 ### 第十四章 非真实感渲染
+
+<!-- TODO -->
+#### 实现细节
+* 卡通风格
+* 素描风格
+
 ### 第十五章 使用噪声
 ### 第十六章 Unity 中的渲染优化技术
 
 ## 第五篇 扩展篇
 ### 第十七章 Unity 的表面着色器探秘
 ### 第十八章 基于物理的渲染
-
 
