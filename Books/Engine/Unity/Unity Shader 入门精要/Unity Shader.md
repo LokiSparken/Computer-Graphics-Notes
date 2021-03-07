@@ -479,7 +479,7 @@ float4 vert(float4 v : POSITION) SV_POSITION {
         $$ toRight = camera.right \times halfHeight \cdot aspect $$
     * ② 对向量做偏移，即可得摄像机到近平面四个顶点的射线（距离向量），如往左上角：
         $$ TL = camera.forward \cdot Near + toTop - toRight $$
-    * `注`：实现时在脚本中计算了摄像机到近平面四个顶点的射线，`由脚本传递给 Shader`，而`Vertex Shader`对顶点做完处理后，需要`将所有顶点的属性输出给流水线做插值`，此处各顶点的射线作为顶点的一个属性，要在 Vertex Shader 中对应获取，并通过 Vertex Shader 的返回值结构体输出给流水线。因此在获取时，通过判断四顶点的 $x$、$y$ 值看哪条射线是属于这个顶点的属性。
+    * `注`：实现时在脚本中计算了摄像机到近平面四个顶点的射线，`由脚本传递给 Shader`，而 `Vertex Shader` 对顶点做完处理后，需要`将所有顶点的属性输出给流水线做插值`，此处各顶点的射线作为顶点的一个属性，要在 Vertex Shader 中对应获取，并通过 Vertex Shader 的返回值结构体输出给流水线。因此在获取时，通过判断四顶点的 $x$、$y$ 值看哪条射线是属于这个顶点的属性。
   * 摄像机投影类型为正交投影的情况：[Reconstructing positions from the depth buffer pt. 2: Perspective and orthographic general case](https://www.derschmale.com/2014/03/19/reconstructing-positions-from-the-depth-buffer-pt-2-perspective-and-orthographic-general-case/)
 * **`雾效计算`**
   * 雾效系数 $f$：混合原始颜色和雾颜色的混合系数
@@ -502,6 +502,59 @@ float4 vert(float4 v : POSITION) SV_POSITION {
 * 边缘检测
 
 ### 第十四章 非真实感渲染
+#### 卡通风格
+* 卡通风格特点
+  * 黑色描边
+  * 明暗变化鲜明（高光通常是模型上分界明显的纯色区域）
+* 轮廓线渲染方法（《RTR 3th》）
+  * 基于观察角度和表面法线
+  * 过程式几何：双 Pass，背面 + 正面。适用于多数表面平滑模型，不适合立方体等平整模型。
+  * 基于图像处理
+  * 基于轮廓边检测：  
+    **`轮廓边判断`** —— 检查和这条边相邻的两个三角面片是否满足 
+    $$(\overrightarrow{n_0}\cdot \overrightarrow{v} > 0) \neq (\overrightarrow{n_1}\cdot \overrightarrow{v} > 0)$$
+    其中，$\overrightarrow{n_0}、\overrightarrow{n_1}$ 分别为该边的两个关联三角面片的法向，$\overrightarrow{v}$ 为视角到该边上任意顶点的方向。  
+    `几何意义`：判断当前边的两个关联三角面片是否一个朝正面、一个朝背面。  
+    `缺点`：帧间会出现跳跃性
+  * 混合法
+* 过程式几何 `Pass 1`  
+    ① 用轮廓线颜色渲染整个背面面片  
+    ② 在`视角空间下`（让描边可以在观察空间达到最好效果）把模型顶点沿法线方向向外扩一点，使背部轮廓线可见（把模型描一圈）  
+    ```c#
+    viewPos = viewPos + viewNormal * _Outline;
+    ```
+    <!-- TODO 1: result 1 -->
+    ③ `防止内凹模型的背面面片遮挡正面面片`：令顶点法线 $z = constant$ 为一定值，重新归一化法线再做顶点扩张。此时扩展的背面更扁平化，降低了遮挡正面面片的可能性。【？】
+    ```c#
+    viewNormal.z = -0.5;
+    viewNormal = normalize(viewNormal);
+    viewPos = viewPos + viewNormal * _Outline;
+    ```
+    <!-- TODO 2: result 2 -->
+* 卡通高光
+  * `高光反射系数`：计算 normal 和 halfDir 的点乘结果后，spec 小于阈值 threshold 为 0，否则 1
+  * 高光区域边缘抗锯齿  
+    $[0, 1]$ 间插值 $\Rightarrow$ spec - threshold 在 $[-w, w]$ 间插值  
+    $w$ 可设为很小的定值，或邻域像素之间的近似导数值
+#### 素描风格
+* 特点：留白
+* SIGGRAPH 2001 - Microsoft - Praun E, et al. Real-time hatching
+  * 用提前生成的素描纹理（色调艺术映射 Tonal Art Map）实现实时的素描风格渲染
+  * 含多级渐远纹理 mipmaps
+#### 扩展资料
+* 卡通
+  * 一种风格化卡通高光的实现：Anjyo K, Hiramitsu K. Stylized highlights for cartoon rendering and animation[J]. Computer Graphics and Applications, IEEE, 2003, 23(4): 54-61.
+  * [github - candycat1992 - NPR_Lab](https://github.com/candycat1992/NPR_Lab)
+  * 《Team Fortress 2》效果实现：Mitchell J, Francke M, Eng D. Illustrative rendering in Team Fortress 2[C]. Proceedings of the 5th international symposium on Non-photorealistic animation and rendering. ACM, 2007: 71-76.
+* 素描
+  * SIGGRAPH 2001 - Microsoft：Praun E, Hoppe H, Webb M, et al. Real-time hatching[C]. Proceedings of the 28th annual conference on Computer graphics and interactive techniques. ACM, 2001: 581.
+  * 
+* NPR 会议 NPAR ：Non-Photorealistic Animation and Rendering
+* 《The Algorithms and Principles of Non-photorealistic Graphics》
+* Unity 商城
+  * Toon Shader Free
+  * Toon Styles Shader Pack
+  * Hand-Drawn Shader Pack
 
 <!-- TODO -->
 #### 实现细节
