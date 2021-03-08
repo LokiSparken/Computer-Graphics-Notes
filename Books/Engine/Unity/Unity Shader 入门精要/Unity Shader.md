@@ -562,6 +562,27 @@ float4 vert(float4 v : POSITION) SV_POSITION {
 * 素描风格
 
 ### 第十五章 使用噪声
+#### 消融效果
+* 消融 dissolve
+  * 物体烧毁效果。
+  * 通常从不同区域开始，向看似随机的方向扩张，最后整个物体消失。
+* 原理：噪声纹理 + 透明度测试。
+* Tips
+  * 透明度测试的投射阴影 ShadowCaster 需要自定义
+  * 注意模型背面也要渲染，烧一半会露内部
+#### 水波效果
+* 噪声纹理作高度图，修改水面法线方向。
+* 流动效果：用和时间相关的变量对噪声纹理采样。
+* Cubemap 模拟反射。
+* GrabPass + 切线空间法线方向偏移像素屏幕坐标做采样 模拟折射。
+#### 再谈全局雾效
+* （讲道理感觉这个非均匀雾效看着画面有点脏=。=）
+* 雾效计算添加噪声的影响。
+#### 扩展资料
+* Procedure Texture
+  * [Perlin Noise](http://adrianb.io/2014/08/09/perlinnoise.html)
+  * Worley Noise：Worley S. A cellular texture basis function[C]//Proceedings of the 23rd annual conference on Computer graphics and interactive techniques. ACM, 1996: 291-294
+
 ### 第十六章 Unity 中的渲染优化技术
 
 ## 第五篇 扩展篇
