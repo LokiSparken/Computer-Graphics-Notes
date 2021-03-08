@@ -6,8 +6,8 @@
   * .NET 桌面开发
   * 使用 C++ 的桌面开发
   * 通用 Windows 平台开发
-    * USB 设备连接性
-    * C++ (v142) 通用 Windows 平台工具
+    * `USB 设备连接性`
+    * **`C++ (v142) 通用 Windows 平台工具`**（【！】不配会导致 UE 项目打包失败）
     * Windows 10 SDK (10.0.18362.0)
     * MSVC v142 - vs 2019 C++ x64/x86 生成工具
 * [Unreal](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/HowTo/PackageApp/index.html)
@@ -29,10 +29,20 @@
 5. [打包项目](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/HowTo/PackageApp/index.html)
 6. [安装到 HoloLens 2 Emulator](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartEmulator/index.html)
 
-## [流式传输](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartStreaming/index.html)（无需打包，Device Only？）
-### **`1. HoloLens 配置`**
-### **`2. `**
+## [流式传输](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartStreaming/index.html)（Device Only）
 
+
+## 打包与部署 Tips
+* VS 2019 **`通用 Windows 平台开发 - C++ (v142) 通用 Windows 平台工具`**：不安装会导致打包失败
+* `打包不支持 HL 1`：does not have an appropriate application package for x86 architecture. https://forums.hololens.com/discussion/694/packaging-and-sideload 
+* HL 1 demo - Galaxy Explorer：https://docs.microsoft.com/en-us/windows/mixed-reality/develop/unity/galaxy-explorer
+* HL 2 & UE4 `Supported Features`：https://docs.microsoft.com/en-us/windows/mixed-reality/develop/unreal/unreal-development-overview?tabs=ue426%2Cmrtk%2Casa
+* 定位问题
+  * 没有 GPS：
+    * [HoloLens 1 没有 GPS 传感器](https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/gps-on-the-microsoft-hololens-r4497/)
+    * [HL 2 也没有](https://www.microsoft.com/en-us/hololens/hardware?SilentAuth=1&wa=wsignin1.0)
+  * [空间定位点](https://docs.microsoft.com/zh-cn/windows/mixed-reality/develop/unreal/unreal-spatial-anchors?tabs=426)
+  * [空间映射](https://docs.microsoft.com/zh-cn/windows/mixed-reality/develop/unreal/unreal-spatial-mapping)：“`利用空间映射，你可以将对象放置在现实世界的物理表面上。`”
 
 ## References
 1. 基本配置：https://blog.csdn.net/dik_dong/article/details/107688395
