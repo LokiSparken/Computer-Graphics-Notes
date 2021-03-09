@@ -584,6 +584,73 @@ float4 vert(float4 v : POSITION) SV_POSITION {
   * Worley Noise：Worley S. A cellular texture basis function[C]//Proceedings of the 23rd annual conference on Computer graphics and interactive techniques. ACM, 1996: 291-294
 
 ### 第十六章 Unity 中的渲染优化技术
+#### 移动平台特点
+* [`Tile-based Deferred Rendering`](https://zhuanlan.zhihu.com/p/26279464)：累积一帧内的所有渲染命令，最后统一渲染到 Frame Buffer。渲染时，由 GPU 内部的高速渲染器 Tile 把 Frame Buffer 划分成 Tile （如 $32 \times 32$ 像素大小），以 Tile 为单位渲染。
+  * `Tile 的数量一般不足以平铺一个完整的 Frame Buffer`，因此一帧一个 Tile 会多次执行渲染操作。
+  * `Hidden Surface Removal`：由于划分 Frame Buffer 时各 fragment 深度值已知，因此对于不透明物体，可以`剔除`显然`不可见的 fragment`。当然，透明物体的渲染会破坏该特性。
+  * 【？】clear trick
+* 低精度的深度检测：`Early-Z` 或相似技术
+#### **`性能瓶颈的主要原因`**
+* CPU
+  * Draw Call 太多：DC 通知 GPU 前，CPU需要准备顶点数据、`设置渲染状态`等
+  * 复杂脚本及物理模拟
+* GPU
+  * 顶点太多、逐顶点计算太多
+  * 片元太多（分辨率大或片元的重复计算 overdraw 太多）、逐片元计算太多
+* 带宽
+  * 纹理尺寸很大且未压缩
+  * 帧缓存分辨率过高
+#### **`优化一：减少 Draw Call 数目`**
+* 渲染一个对象：CPU 检查哪些光源影响了该物体，绑定 Shader 并设置其参数，Draw Call 调接口发渲染命令给 GPU。
+* 合批：同材质物体。
+* `动态批处理`：同材质并满足一些条件时，引擎自动完成。
+  * 经过批处理的物体仍然可以移动，`每帧重新合并`。
+* `静态批处理`：适用于任意大小模型，只在运行开始时把模型合并到新的网格结构，运行时物体不可再移动。
+  * 合并后的几何结构需要占用很大内存来存储
+  * 不同材质的物体，仍然需要多次 Draw Call，但静态批处理可以`减少 Draw Call 之间的状态切换`
+* `共享材质`
+  * 材质间只有纹理不同：合并纹理到图集 Atlas
+  * 材质间属性参数不同：参数放到顶点数据里
+* Tips
+  * 静态合批优先
+  * 动态的顶点数据尽量少
+  * 动画等不能全部静态的，可以考虑是否有不动的部分
+  * 合批会把模型变换到世界空间后合并，`注意 Shader 中是否有使用了局部空间坐标的地方`，会出错
+  * 与渲染顺序冲突时，优先保证渲染顺序
+#### **`优化二：减少需要处理的顶点数目`**
+* 建模软件和引擎中顶点数可能不一致问题：从 GPU 角度看会拆点
+  * 分离纹理坐标 UV Splits：建模时`一个顶点有多个纹理坐标`，如立方体六个面之间的共点，其在不同面上纹理坐标不同，就需要拆点
+  * 产生平滑的边界 Smoothing Splits：`一个顶点对应多个法线或切线`，决策 Hard Edge or Smooth Edge（边缘是否明显）。“`移除不必要的 Hard Edge 以及纹理衔接，避免边界平滑和纹理分离。`”
+* `LOD Level of Detail`：给一个对象准备精度不同的模型，给不同级别的 LOD
+* `遮挡剔除 Occlusion Culling`
+#### **`优化三：减少需要处理的片元数目（减少 Overdraw）`**
+* 控制渲染顺序：排序，容易被挡住的对象后渲
+* 注意 GUI ，因为它通常是半透明的
+* 移动平台上透明度测试的 discard/clip 会导致一些硬件优化策略失效：如 TBDR 在 Tile 调用 Fragment Shader 前做过判断，但透明度测试在 Fragment Shader 中重判，会改变结果（此时透明度混合性能可能比透明度测试好）
+* 减少实时光照和阴影
+  * 提前烘焙光照纹理 Lightmap
+  * 用透明纹理模拟光源（God Ray）
+  * 把复杂光照计算存储到查找纹理 LookUp Texture（LUT），用光源、视角、法线方向等参数对 LUT 采样
+#### **`节省带宽`**
+* 纹理的长宽比最好是`正方形`，且值为 `2 的整数幂`。有利于各种优化策略。
+* 多级渐远纹理技术 Mipmap
+* 纹理压缩
+* 分辨率缩放
+#### **`减少计算复杂度`**
+* 给 Shader 分 LOD
+* 代码优化
+  * 尽量在对象、顶点级做计算，而不是 Fragment Shader 中
+  * 尽量用低精度浮点，且避免精度转换
+  * Vertex Shader -> Fragment Shader 之间`尽量减少插值变量`，如两个纹理坐标 uv 压在同一个 float4 变量内，提升插值寄存器的利用率。具体表现注意平台特性。
+  * 尽量不用全屏的屏幕后处理效果，或把多种特效合并到一个 Shader
+#### 扩展资料
+* [Unity Doc - 移动平台优化实践指南](https://docs.unity3d.com/Manual/MobileOptimizationPracticalGuide.html)
+* [Unity Doc - 优化图像性能](https://docs.unity3d.com/Manual/OptimizingGraphicsPerformance.html)
+* [SIGGRAPH 2011 - Unity 移动平台上的 Shader 优化](https://blogs.unity3d.com/2011/08/18/fast-mobile-shaders-talk-at-siggraph/)：主流移动 GPU 架构特点，相应 Shader 优化细节
+* Unite 2013 - Unity：性能瓶颈原因分类，常见优化技术
+* GDC 2014 - Unity：Unity 内置分析器分析移动平台游戏性能
+* SIGGRAPH 2015 - Moving Mobile Graphics 课程：移动平台 PBR 优化技术
+* Unite 2011 《ShadowGun》中使用的渲染和优化技术
 
 ## 第五篇 扩展篇
 ### 第十七章 Unity 的表面着色器探秘
