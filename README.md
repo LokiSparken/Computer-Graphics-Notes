@@ -48,6 +48,8 @@
   * [C++是不可能会用的](#c是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
   * [其它](#其它)
+* [TODO Flag](#todo-flag)
+  * [Sparkler](#sparkler)
 
 <!-- /TOC -->
 
@@ -123,6 +125,8 @@
 * [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) | `模型导入`
 * [IMGUI](github.com/ocornut/imgui) | `超香GUI`
 * [The-Forge](https://github.com/ConfettiFX/The-Forge) | `轻量开源引擎？`
+* [Shadertoy](http://shadertoy.com/) | `Shader is magick!`
+* [POV-Ray](http://www.povray.org/)
 
 ---
 
@@ -296,6 +300,23 @@
   - [ ] 计算机网络（自顶向下方法）
   - [ ] 现代计算机网络
 - 编译原理
+
+---
+
+# TODO Flag
+
+> <font color=#6495ED size=6>永不下落的旗帜</font>  
+> <font color=#6495ED>——实现当然是不存在的。</font>
+
+## Sparkler
+* IMGUI
+* Renderer QAQ
+  * Soft Rasterizer & Ray Tracer？
+  * DX12？
+  * Rendering algorithm comparator？？？
+* Debugger
+  * Rendering Statistics：Resolution、Render Time、FPS、Batches、Saved by batching、Tris & Verts……
+  * Frame Debugger：Pixel Tracer、Events List、DC with results……
 
 > # To Be Continued...
 
