@@ -1,12 +1,48 @@
 > # <i class="fa fa-star"></i> LearnOpenGl
 > * URL: learnopengl.com & learnopengl-cn.github.io
-> * Notes about the tutorial.
-> * Learn about OpenGL 3.3.
+> * Notes & Tips
 
-# <i class="fa fa-star"></i> Introduction
+<!-- TOC -->
 
-# <i class="fa fa-star"></i> Getting started
-## OpenGL
+* [1. Introduction](#1-introduction)
+* [Part Ⅰ - Getting started](#part-ⅰ---getting-started)
+  * [2. OpenGL](#2-opengl)
+    * [扩展](#扩展)
+    * [状态机（State Machine）](#状态机state-machine)
+    * [对象](#对象)
+  * [3. Creating a window](#3-creating-a-window)
+    * [Intro: GLFW](#intro-glfw)
+    * [Intro: GLAD](#intro-glad)
+    * [Settings: Windows10 VS2019 GLFW GLAD 完全配置踩坑结果](#settings-windows10-vs2019-glfw-glad-完全配置踩坑结果)
+      * [下载](#下载)
+      * [配置目录结构 `folder - oglsettings`](#配置目录结构-folder---oglsettings)
+      * [项目配置](#项目配置)
+  * [4. Hello Window](#4-hello-window)
+  * [窗口创建](#窗口创建)
+    * [**GLAD和GLFW头文件**](#glad和glfw头文件)
+    * [**main函数：实例化GLFW窗口**](#main函数实例化glfw窗口)
+  * [5. Hello Triangle](#5-hello-triangle)
+  * [6. Shaders](#6-shaders)
+  * [7. Textures](#7-textures)
+  * [8. Transformations](#8-transformations)
+  * [9. Coordinate Systems](#9-coordinate-systems)
+  * [10. Camera](#10-camera)
+  * [11. Review](#11-review)
+* [Part Ⅱ - Lighting](#part-ⅱ---lighting)
+* [Part Ⅲ - Model Loading](#part-ⅲ---model-loading)
+* [Part Ⅳ - Advanced OpenGL](#part-ⅳ---advanced-opengl)
+* [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
+* [Part Ⅵ - PBR](#part-ⅵ---pbr)
+* [Part Ⅶ - In Practice](#part-ⅶ---in-practice)
+* [Part Ⅷ - 2D Game](#part-ⅷ---2d-game)
+* [To Be Continued...](#to-be-continued)
+
+<!-- /TOC -->
+
+# 1. Introduction
+
+# Part Ⅰ - Getting started
+## 2. OpenGL
 * OpenGL本身是一个规范（specification）。
   * 规定了每个函数的行为和输出，内部具体实现由OpenGL库的开发者自行决定。
   * 实际OpenGL库开发者多为显卡厂商。
@@ -14,23 +50,23 @@
   * 早期的立即渲染模式（Immediate mode，也即固定渲染模式），效率和灵活性低，OpenGL3.2起废弃
   * 核心模式（Core-profile），高灵活性和效率，但需要理解OpenGL运作细节和图形编程
 
-## 扩展
+### 扩展
 * 显卡公司提出的新特性、渲染上的大优化等，通常以扩展的方式在驱动中实现。
 * 不必等待OpenGL新规范面世即可使用，只要简单检查显卡是否支持此扩展。
 * 通常，一个扩展受众很广时，将成为未来OpenGL规范的一部分。
 * 扩展使用的代码例子：
-```cpp
-if (GL_ARB_extension_name)
-{
-    // 使用硬件支持的全新现代特性
-}
-else
-{
-    // 不支持此扩展的显卡：用原来的方式完成
-}
-```
+    ```cpp
+    if (GL_ARB_extension_name)
+    {
+        // 使用硬件支持的全新现代特性
+    }
+    else
+    {
+        // 不支持此扩展的显卡：用原来的方式完成
+    }
+    ```
 
-## 状态机（State Machine）
+### 状态机（State Machine）
 * OpenGL是一个状态机
   * 以变量来描述OpenGL当前应该如何运行。
   * OpenGL的状态通常称为OpenGL上下文（context）。
@@ -40,7 +76,7 @@ else
   * 状态设置函数（State-changing Function）：改变上下文。
   * 状态使用函数（State-using Function）：根据当前OpenGL的状态执行一些操作。
 
-## 对象
+### 对象
 * OpenGL内核：C语言编写的库。
   * 支持多种语言的派生。
   * 但C的一些语言结构不容易被翻译到其它高级语言，因此引入了一些抽象层如“对象”。
@@ -51,8 +87,8 @@ else
   * 其有自己的基本类型，改为语言自带类型可能不造成影响，但用OpenGL自身基本类型更安全。
   * 可以保证在各平台中每一种类型的大小统一。（当然也可以使用其它定宽类型(Fixed-width Type)来实现。）
 
-# <i class="fa fa-star"></i> Creating a window
-## GLFW
+## 3. Creating a window
+### Intro: GLFW
 * 一个专门针对OpenGL的C语言库。
   * 提供一些渲染物体所需的最低限度接口。
   * 允许用户创建OpenGL上下文，定义窗口参数以及处理用户的输入。
@@ -71,7 +107,7 @@ else
   * 链接：项目属性-VC++ 目录-把include和.lib路径加到include（包含）和lib（库）目录。【可通过`<GLFW/...>`引用头文件和库文件夹。】
   * 在Linker链接器-Input输入-Additional dependencies附加依赖项添加glfw3.lib。（使GLFW在编译时能被链接器链接）
   * Windows下：最后将opengl32.lib加入连接器设置。（Windows下包含在Microsoft SDK中，安装VS时默认安装）
-## GLAD
+### Intro: GLAD
 * 完成“运行时查询本机显卡相应OpenGL驱动版本的函数地址，并保存在函数指针中供使用”的任务。
     ```cpp
     /* Windows 上手动完成的例子 */
@@ -111,35 +147,35 @@ else
         return 0;
     }
     ````
-## Windows10 VS2019 GLFW GLAD完全配置踩坑结果
-### 下载
+### Settings: Windows10 VS2019 GLFW GLAD 完全配置踩坑结果
+#### 下载
 * GLFW：https://www.glfw.org/download.html
-  * 选x64版本，之后在VS的项目属性->配置管理器里把平台改成x64！
+  * 选 x64 版本，之后在 VS 的项目属性->配置管理器里把平台改成x64！
 * GLAD：https://glad.dav1d.de/
-  * API gl Version 3.3（对应LearnOpenGL在线教程所用OGL版本）
+  * API gl Version 3.3（对应 LearnOpenGL 在线教程所用OGL版本）
   * Profile Core
   * √ Gnerate a loader
   * 生成后下载.zip
-### 配置目录结构oglsettings
-* include
-  * glad、KHR (所下载的glad->include中内容)
-  * GLFW (所下载的glfw->include中内容)
-* lib (所下载的glfw->lib-vc对应vs版本中内容，本次配置用的vs2019)
+#### 配置目录结构 `folder - oglsettings`
+* `include`
+  * glad、KHR (所下载的 glad->include 中内容)
+  * GLFW (所下载的 glfw->include 中内容)
+* `lib` (所下载的 glfw->lib-vc 对应vs版本中内容，本次配置用的vs2019)
   * glfw3.dll
   * glfw3.lib
   * glfw3dll.lib
-* src
-  * glad.c (所下载的glad->src中内容)
-### 项目配置
-1. 把oglsettings放到项目根目录下
+* `src`
+  * glad.c (所下载的 glad->src 中内容)
+#### 项目配置
+1. 把 `oglsettings` 放到项目根目录下
 2. 项目属性中更改：
-   * VC++目录：包含目录、库目录，分别添加oglsettings中include和lib路径
-   * Linker链接器->输入：附加依赖项，添加opengl32.lib、glfw3.lib
-3. 项目源文件中引入glad.c
+   * VC++ 目录：包含目录、库目录，分别添加 oglsettings 中 include 和 lib 路径
+   * Linker 链接器->输入：附加依赖项，添加 opengl32.lib、glfw3.lib
+3. 项目源文件中引入 glad.c
 > `Error: 模块计算机类型“x64”与目标计算机类型“x86”冲突`  
 > 解决方案：检查`项目属性->链接器->高级：目标计算机`应为x64，改完清理一下重新生成方案。
 
-# <i class="fa fa-star"></i> Hello Window
+## 4. Hello Window
 ## 窗口创建
 ### **GLAD和GLFW头文件**
 ```cpp
@@ -155,6 +191,30 @@ else
   * 选项和值的说明文档：https://www.glfw.org/docs/latest/window.html#window_hints
 * 
 * GLAD
+
+## 5. Hello Triangle
+## 6. Shaders
+## 7. Textures
+## 8. Transformations
+## 9. Coordinate Systems
+## 10. Camera
+## 11. Review
+
+# Part Ⅱ - Lighting
+
+# Part Ⅲ - Model Loading
+
+# Part Ⅳ - Advanced OpenGL
+
+# Part Ⅴ - Advanced Lighting
+
+# Part Ⅵ - PBR
+
+# Part Ⅶ - In Practice
+
+# Part Ⅷ - 2D Game
+
+# To Be Continued...
 
 <!-- 使用FontAwesome -->
 <head> 
