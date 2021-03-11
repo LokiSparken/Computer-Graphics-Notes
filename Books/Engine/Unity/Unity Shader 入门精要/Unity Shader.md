@@ -654,5 +654,42 @@ float4 vert(float4 v : POSITION) SV_POSITION {
 
 ## 第五篇 扩展篇
 ### 第十七章 Unity 的表面着色器探秘
+* 表面着色器 Surface Shader：抽象出“表面”的概念，包含反射率、光滑度、透明度等表面属性值
+  * CG 代码直接写在 SubShader 模块
+  * 编译指令 `#pragma surface surfaceFunction lightModel [optionalparams]`：指定使用的`表面函数`和`光照函数`，设置参数
+  * 顶点修改函数、颜色修改函数
+* Surface Shader $\Rightarrow$ Vertex/Fragment Shader： 17.4
+
 ### 第十八章 基于物理的渲染
+* SIGGRAPH 2013 - Naty Hoffman - Background: `Physics and Math of Shading`
+* `Disney BRDF`
+    $$ \begin{aligned}
+        f_{diff}(\overrightarrow{l}, \overrightarrow{v}) &= \frac{baseColor}{\pi}(1 + (F_{D90} - 1 )(1- \overrightarrow{n}\cdot\overrightarrow{l})^5(1+(F_{D90}-1)(1-\overrightarrow{n}\cdot\overrightarrow{v})^5)) \\
+        F_{D90} &= 0.5 + 2roughness(\overrightarrow{h}\cdot\overrightarrow{l})^2
+    \end{aligned}$$
+* `Torrance-Sparrow Microfacet Model`
+* `GGX 模型`
+* 反射探针 `Reflection Probes`：采样场景环境，物体取邻近探针的反射纹理，或在多个探针的纹理间插值
+  * 放在具有明显反射现象的物体旁边，或墙角等容易发生遮挡的物体周围。
+  * 可模拟互相反射，控制反射次数
+* Enlighten `预计算实时全局光照 Precomputed Realtime GI`：物体和光源位置固定，则物体对光线的弹射路径、（各向同性）漫反射光照固定，与摄像机无关，因此可以预处理
+  * 预计算：在由所有静态物体组成的场景上，进行简化的光线追踪
+  * 动态物体：光照探针
+  * 高光反射：与摄像机位置相关，用反射探针
+* 伽马校正 Tips
+  * 应将输入和纹理的采样值等转换到线性空间下，最后输出前进行伽马校正。
+  * 在伽马空间（非线性空间）下会偏暗，失真，对混合造成影响。
+* 高动态范围 High Dynamic Range
+  * 动态范围：最高和最低亮度值之间的比值。
+  * 计算和记录亮度时使用 HDR 保留亮部区域细节，最后通过`色调映射 Tone Mapping` 转换到显示设备使用的 LDR，最大限度保留亮度区域的颜色值
+  * Trade Off：用浮点缓冲存储高精度图像，需要大显存，渲染速度下降，部分硬件不支持 HDR，`使用 HDR 不能用硬件的 AA` 【？】why
+
+#### 扩展资料
+* Unity PBS Demo
+  * Viking Village
+  * Shader Calibration Scene
+  * Corridor Lighting Example
+  * The Blacksmith （Shaders in Market）
+* SIGGRAPH 2015 - Unity - The Blacksmith
+* SIGGRAPH 2012 ~ 2015 
 
