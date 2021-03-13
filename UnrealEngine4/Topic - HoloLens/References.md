@@ -21,15 +21,29 @@
     * Project Settings - Platforms - HoloLens - `Build for HoloLens Emulation/Device`
 
 ## 项目开发
-1. 创建 UE 项目
-2. 设置 UE AR 会话
+### [Demo Project](https://docs.microsoft.com/en-us/windows/mixed-reality/develop/unreal/tutorials/unreal-uxt-ch1)
+1. 创建 UE 项目，设置场景
+2. 设置 UE AR 会话：`ARSessionConfig`
+   * 放在 `Content` 根目录下。
    * AR Session 保存一些世界设置，对齐/遮挡设置等。
-3. 启动/停止 AR 会话 - 关卡蓝图
-4. 创建玩家对象
-5. [打包项目](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/HowTo/PackageApp/index.html)
-6. [安装到 HoloLens 2 Emulator](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartEmulator/index.html)
+3. 启动/停止 AR 会话 - 关卡蓝图 `Level Blueprint`
+   * 保证 AR 会话随关卡启动/停止
+4. Blueprint Class - `DefaultPawn`
+   * add `Camera` -> RootComponent
+5. `Game Mode`
+6. ue4 VR Preview Play `Problem：Black Screen`
+   * 不连 HL 1  的时候 VR Preview 也能看见东西的 :) （有理由怀疑又是 HL1 的锅啊！！！
+   * 【Attention】
+     * MRTK-Unreal only for HL2
+     * UX Tools only for HL2
+     * 【？？？】connect 后只能看见 skybox：SDK？
+7. [打包项目](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/HowTo/PackageApp/index.html)
+   * 仅对 HL2 
+8. [安装部署到 HoloLens 2 Emulator](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartEmulator/index.html)
 
-## [流式传输](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartStreaming/index.html)（Device Only）
+### [UX Tools](https://github.com/microsoft/MixedReality-UXTools-Unreal)（`HoloLens 2 Only`）
+
+### [流式传输](https://docs.unrealengine.com/en-US/SharingAndReleasing/XRDevelopment/AR/HoloLens/QuickStartStreaming/index.html)（Device Only）
 
 
 ## 打包与部署 Tips

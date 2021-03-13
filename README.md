@@ -119,6 +119,14 @@
    - [ ] 基于物理着色（三）- Disney和UE4的实现
    - [ ] 基于物理着色（四）- 次表面散射
 5. 浅墨的游戏编程 | 毛星云 | 知乎
+6. SIGGRAPH Courses
+   - [ ] [Physically Based Shading in Theory and Practice](https://www.youtube.com/watch?v=zs0oYjwjNEo)
+7. 会议
+   * SIGGRAPH
+   * SIGGRAPH Asia
+   * Eurographics
+   * Symposium on Interactive 3D Graphics and Games
+8. ShaderX 系列
 
 ## 好东西！
 * [stb](https://github.com/nothings/stb) | `图片读写库`
@@ -126,6 +134,8 @@
 * [IMGUI](github.com/ocornut/imgui) | `超香GUI`
 * [The-Forge](https://github.com/ConfettiFX/The-Forge) | `轻量开源引擎？`
 * [Shadertoy](http://shadertoy.com/) | `Shader is magick!`
+* [GLSL Sandbox Gallery](http://glslsandbox.com/)
+    * [嗷嗷嗷嗷嗷！！！](http://glslsandbox.com/e#71861.0)
 * [POV-Ray](http://www.povray.org/)
 
 ---
