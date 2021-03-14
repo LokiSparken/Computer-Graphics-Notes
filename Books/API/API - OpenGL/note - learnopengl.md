@@ -25,7 +25,9 @@
     * [**`三、Normalized Device Coordinates（NDC）`**](#三normalized-device-coordinatesndc)
     * [**四、Implement Details**](#四implement-details)
     * [五、附：API](#五附api)
-    * [六、Tips & Q & A](#六tips--q--a)
+    * [六、TODO&Tips & Q&A](#六todotips--qa)
+      * [TODO&Tips](#todotips)
+      * [Q&A](#qa)
   * [6. Shaders](#6-shaders)
   * [7. Textures](#7-textures)
   * [8. Transformations](#8-transformations)
@@ -246,18 +248,26 @@ Other stages：Tessellation stage、Transform feedback loop
     ![](images/1.png)
     * `注意`：顶点缓冲对象 VBO 可以有多个，当前用于链接到顶点着色器输入数据的为`调用 glVertexAttribPointer() 时绑定到 GL_ARRAY_BUFFER` 的那个 VBO
   * 启用顶点属性
-* Step 7 - 属性链接代码优化
-  * **`顶点数组对象 VAO - Vertex Array Object`**：
-  * VAO 存储内容
-    
+  * 把链接配置存入 **`顶点数组对象 VAO - Vertex Array Object`**，存储内容：
+
     ![](images/2.png)
     * 顶点属性启用/禁用的调用
     * 通过 glVertexAttribPointer() 设置的顶点属性链接配置及其对应 VBO（**`多组`**）
+* 索引缓冲对象 Element/Index Buffer Object（EBO/IBO）
+  * 为了复用顶点数据，避免重复定义，用 IBO 指定绘制时使用的顶点数据索引
+  * 使用类似 VBO ，缓冲类型 GL_ELEMENT_ARRAY_BUFFER
+  * `绑定 VAO 时绑定着的 EBO 也会被记录到该 VAO 中`，**`记录后解绑 EBO 会从 VAO 的内容中同时解绑`**
+
+    ![](images/3.png)
+* **`Debug`**
+  * 通过 `glGetError()` 获取错误标记，返回 0 无错误
+  * 调用时会清除所有错误标记
 
 ### 五、附：API
-<center>API | <center>Describe
+
+<center>API</center> | <center>Describe</center>
 :--|:-------
-glGenBuffers() | 通过唯一 ID 生成 VBO
+glGenBuffers() | 通过唯一 ID 生成缓冲对象
 glBindBuffer() | 绑定 VBO 到某缓冲类型（让对象可用该类型缓冲），一个对象可绑定多种缓冲类型
 glBufferData() | 把用户定义的数据复制到目标缓冲类型
  | 
@@ -280,6 +290,8 @@ glEnableVertexAttribArray() | 根据属性索引启用顶点属性
 glGenVertexArrays() |通过唯一 ID 生成 VAO
 glBindVertexArray() | 绑定 VAO
 glDrawArrays() | 使用当前激活的着色器程序及 VAO 绘制图元
+glDrawElements() | 同上，并使用当前绑定到 GL_ELEMENT_ARRAY_BUFFER 的 EBO 绘制图元
+glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
 
 * glBufferData() 指定的显卡数据管理方式
   
@@ -315,10 +327,28 @@ glDrawArrays() | 使用当前激活的着色器程序及 VAO 绘制图元
   * **`步长 Stride`**：不同顶点数据间隔
   * **`当前顶点属性在顶点数据中的偏移 Offset`**
 
-### 六、Tips & Q & A
-* 对象 ID 根据对象类型分别计数（本例 VAO、VBO 都是 1）
+### 六、TODO&Tips & Q&A
+#### TODO&Tips
+* 对象 ID 根据对象类型分别计数
+* shader source code
+  * `#version` 不加 `\n` 会去世
+  * 末尾不加 `\0` 可能内存乱的时候会去世？
+  * 语法 C 里 C 气的，`;` 后不加 `\n` 应该没事？
+* [ ] note - Pipeline 示意图
+* [x] 渐变三角形
+  * glVertexAttribPointer(..., `offset 单位 Byte`)
+* Exercises
+  * [x] 用 glDrawArrays 画两个相邻三角形
+  * [x] 用不同的 VAO 和 VBO 创建两个相同的三角形
+  * [x] 用两个 shader program 链接不同的 fragment shader 输出不同色的三角形
+
+#### Q&A
 * 【？】顶点属性默认禁用，是便于同一套顶点结构适应不同的需求么
 * 【？】代码结构管理
+  * shader source code
+  * vertex data?
+  * shader compile & link?
+  * VAO/VBO/EBO config?
 
 ## 6. Shaders
 ## 7. Textures
