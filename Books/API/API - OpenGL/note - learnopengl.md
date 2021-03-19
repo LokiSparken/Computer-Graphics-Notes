@@ -24,12 +24,20 @@
     * [**`二、OpenGL Graphics Pipeline`**](#二opengl-graphics-pipeline)
     * [**`三、Normalized Device Coordinates（NDC）`**](#三normalized-device-coordinatesndc)
     * [**四、Implement Details**](#四implement-details)
-    * [五、附：API](#五附api)
-    * [六、TODO&Tips & Q&A](#六todotips--qa)
+    * [附：API](#附api)
+    * [TODO&Tips & Q&A](#todotips--qa)
       * [TODO&Tips](#todotips)
       * [Q&A](#qa)
   * [6. Shaders](#6-shaders)
+    * [一、Vectors](#一vectors)
+    * [二、Ins and outs](#二ins-and-outs)
+    * [**三、Uniform**](#三uniform)
+    * [**`四、Shader Class`**](#四shader-class)
+    * [Tips](#tips)
+    * [附：API](#附api-1)
   * [7. Textures](#7-textures)
+    * [附：API](#附api-2)
+    * [Tips](#tips-1)
   * [8. Transformations](#8-transformations)
   * [9. Coordinate Systems](#9-coordinate-systems)
   * [10. Camera](#10-camera)
@@ -41,6 +49,7 @@
 * [Part Ⅵ - PBR](#part-ⅵ---pbr)
 * [Part Ⅶ - In Practice](#part-ⅶ---in-practice)
 * [Part Ⅷ - 2D Game](#part-ⅷ---2d-game)
+* [OpenGL API Document](#opengl-api-document)
 * [To Be Continued...](#to-be-continued)
 
 <!-- /TOC -->
@@ -263,7 +272,7 @@ Other stages：Tessellation stage、Transform feedback loop
   * 通过 `glGetError()` 获取错误标记，返回 0 无错误
   * 调用时会清除所有错误标记
 
-### 五、附：API
+### 附：API
 
 <center>API</center> | <center>Describe</center>
 :--|:-------
@@ -327,14 +336,10 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
   * **`步长 Stride`**：不同顶点数据间隔
   * **`当前顶点属性在顶点数据中的偏移 Offset`**
 
-### 六、TODO&Tips & Q&A
+### TODO&Tips & Q&A
 #### TODO&Tips
 * 对象 ID 根据对象类型分别计数
 * **`不！要！在循环里爆炸开空间建对象测显存承受力啊啊啊啊啊！！！orzzz`**
-* shader source code
-  * `#version` 不加 `\n` 会去世
-  * 末尾不加 `\0` 可能内存乱的时候会去世？
-  * 语法 C 里 C 气的，`;` 后不加 `\n` 应该没事？
 * [ ] note - Pipeline 示意图
 * [x] 渐变三角形
   * glVertexAttribPointer(..., `offset 单位 Byte`)
@@ -352,7 +357,89 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
   * VAO/VBO/EBO config?
 
 ## 6. Shaders
+### 一、Vectors
+* Swizzling
+    ```cpp
+    vec2 someVec;
+    vec4 otherVec = someVec.xyxx;
+    vec4 anotherVec = otherVec.wyxz;
+    ```
+### 二、Ins and outs
+* 顶点属性在 CPU 中的存储位置
+  * `layout (location = x)`
+  * 默认分配，通过 `glGetAttribLocation()` 访问
+* 链接 Shader Program Object 时会将同类型同名的前置着色器输出与后续着色器输入进行匹配
+
+### **三、Uniform**
+* Uniform 是全局变量
+  * 在每个 Shader Program Object 中唯一
+  * 可以在相应 Shader Program 中任意阶段任意着色器内访问
+* Tips
+  * 通过 glUniform4f() `set` 值不会立刻更新，仅当 `reset` 或 `updated` 后更新值
+  * **`未被使用的 uniform 会在编译后的版本里被编译器优化掉`**
+  * 获取 Uniform 位置不需要激活相应的 Shader Program，但 `set` Uniform 的值作用在`当前使用的` Shader Program
+
+### **`四、Shader Class`**
+* 读取、创建、编译、链接
+
+### Tips
+* Exercises
+  * [ ] 用 vertex shader 倒置三角形
+  * [ ] 用 uniform 设水平偏移
+  * [ ] 用颜色输出 fragment position，思考：为什么左下顶点是黑的？
+
+### 附：API
+
+<center>API</center> | <center>Describe</center>
+:--|:-------
+glfwGetTime() | 获取运行时间
+glGetUniformLocation() | 从 Shader Program 中获取 Uniform 变量位置
+glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
+
 ## 7. Textures
+* Texture coordinates
+  * $(0, 0)$：Lower left corner
+* 纹理 $(s, t, (,r))$ 平铺方式（wrapping mode）按轴配置
+* 纹理缩放
+  * 放大问题：大物体，小贴图
+  * 缩小问题：远处的小物体，贴图很大
+  * OpenGL 的处理
+    * GL_NEAREST 取纹素中心离像素点最近的
+    * GL_LINEAR 双线性插值
+    * GL_NEAREST/LINEAR_MIPMAP_NEAREST/LINEAR 取最近/插值的 mipmap 层级在层中用近邻/插值方式取纹素
+  * 注意：Mipmaps 只用于缩小问题，即 GL_TEXTURE_MIN_FILTER，否则会报 ERROR：GL_INVALID_ENUM
+* 纹理的创建和加载：`读取图片并存入数组`，stb image 库
+  * `stbi_set_flip_vertically_on_load()`
+* Fragment Shader
+  * 接收纹理坐标的类型：uniform samplerXD（uniform：在 shader 外通过 glBindTexture() 绑定纹理到该量）
+  * 采样：`texture(texture, texCoord);`
+  * 混合：`mix(a, b, x);` = $x * b + (1-x) * a$
+* 纹理单元 `Texture Unit`：纹理的位置，一个单元放一张纹理
+  * 默认激活 GL_TEXTURE0
+  * OpenGL 至少保证 16 个纹理单元（0 - 15）
+  * **纹理单元 `GL_TEXTURE8` 可以通过 `GL_TEXTURE0 + 8` 访问**
+
+### 附：API
+
+<center>API</center> | <center>Describe</center>
+:--|:-------
+glTexParameteri() | 设置纹理平铺/缩放方式
+glTexParameterfv() | 设置纹理平铺方式（BORDER COLOR）
+glGenTextures() | 创建纹理，返回 ID
+glBindTexture() | 绑定当前使用的纹理
+glTexImage2D() | `生成纹理`
+glGenerateMipmap() | 对当前绑定纹理创建 mipmap 集
+glActiveTexture() | 激活纹理单元
+glBindTexture() | 绑定纹理`到当前激活的纹理单元`
+glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
+
+### Tips
+* Exercises
+  * [ ] 尝试不同的纹理平铺方式
+  * [ ] 尝试 GL_NEAREST
+  * [ ] 用上下键改变两张纹理混合度
+* 顶点数据加内容记得更新读内存的步长
+
 ## 8. Transformations
 ## 9. Coordinate Systems
 ## 10. Camera
@@ -371,6 +458,10 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
 # Part Ⅶ - In Practice
 
 # Part Ⅷ - 2D Game
+
+# OpenGL API Document
+* [OpenGL 2.1 Reference Pages](https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/)
+* [OpenGL 4.5 Reference Pages](https://www.khronos.org/registry/OpenGL-Refpages/gl4/)
 
 # To Be Continued...
 
