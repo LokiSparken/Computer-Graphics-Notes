@@ -339,6 +339,7 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
 ### TODO&Tips & Q&A
 #### TODO&Tips
 * 对象 ID 根据对象类型分别计数
+* **`不！要！在循环里爆炸开空间建对象测显存承受力啊啊啊啊啊！！！orzzz`**
 * [ ] note - Pipeline 示意图
 * [x] 渐变三角形
   * glVertexAttribPointer(..., `offset 单位 Byte`)
