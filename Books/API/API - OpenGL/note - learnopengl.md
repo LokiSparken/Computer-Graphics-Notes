@@ -398,7 +398,7 @@ glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
 ## 7. Textures
 * Texture coordinates
   * $(0, 0)$：Lower left corner
-* 纹理 $(s, t, (,r))$ 平铺方式（wrapping mode）按轴配置
+* 纹理 $(s, t, (,r))$ 平铺方式（wrapping mode）按轴配置：GL_REPEAT、GL_MIRRORED_REPEAT、GL_CLAMP_TO_EDGE、GL_CLAMP_TO_BORDER
 * 纹理缩放
   * 放大问题：大物体，小贴图
   * 缩小问题：远处的小物体，贴图很大
@@ -414,9 +414,14 @@ glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
   * 采样：`texture(texture, texCoord);`
   * 混合：`mix(a, b, x);` = $x * b + (1-x) * a$
 * 纹理单元 `Texture Unit`：纹理的位置，一个单元放一张纹理
-  * 默认激活 GL_TEXTURE0
+  * 默认激活 GL_TEXTURE0（据说有的设备需要手动激活，我家阿苏斯不用嗷）
   * OpenGL 至少保证 16 个纹理单元（0 - 15）
   * **纹理单元 `GL_TEXTURE8` 可以通过 `GL_TEXTURE0 + 8` 访问**
+  * **`给纹理单元指定位置（0-15）`的两种方式**
+    ```cpp
+    glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0);
+    shader.setInt("texture2", 1);
+    ```
 
 ### 附：API
 
@@ -425,19 +430,37 @@ glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
 glTexParameteri() | 设置纹理平铺/缩放方式
 glTexParameterfv() | 设置纹理平铺方式（BORDER COLOR）
 glGenTextures() | 创建纹理，返回 ID
-glBindTexture() | 绑定当前使用的纹理
-glTexImage2D() | `生成纹理`
-glGenerateMipmap() | 对当前绑定纹理创建 mipmap 集
 glActiveTexture() | 激活纹理单元
 glBindTexture() | 绑定纹理`到当前激活的纹理单元`
+glTexImage2D() | `生成纹理`
+glGenerateMipmap() | 对当前绑定纹理创建 mipmap 集
 glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
 
 ### Tips
 * Exercises
-  * [ ] 尝试不同的纹理平铺方式
+  * [x] 通过 Fragment Shader flip 笑脸
+  * [x] 尝试不同的纹理平铺方式
   * [ ] 尝试 GL_NEAREST
   * [ ] 用上下键改变两张纹理混合度
-* 顶点数据加内容记得更新读内存的步长
+* 顶点数据加内容记得更新读内存的`步长`和在顶点属性中的`偏移`
+  * 所以这参数列表实际上应该就是：根据 `stride` （Param. 5）找到一个顶点属性组的基址，加上偏移 `offset` （Param. 6）找到当前要提取的属性数据位置，按照类型 `type` （Param. 3）及个数 `size` （Param. 2）提取相应量的数据，附给出的顶点属性序号 `index`（Param. 1）
+* `glTexImage2D()` 根据载入数组的数据生成纹理，注意最后的 `type` 对应存放的数组 `data 的类型`，中间的 `internalFormat` 指保存纹素的几项值（RGBA 1/2/3/4）
+* **`EBO data int！！！`**
+* 关于纹理单元
+  * 在 Fragment Shader 中以 `uniform samplerXD` 类型接收
+  * 在 shader 外以 int 传入单元位置序号（0-15）
+* `stbi_image_free()` 调的是 C 里的 free(*p)
+* [x] 【？】add texture unit bug: GL_TEXTURE1 的纹理显示不出
+  * [IMGUI issue - save and restore sampler in GL 3 examples](https://github.com/ocornut/imgui/pull/1145)：然而这个问题修复过了
+  * [sampler example](http://orangepalantir.org/topicspace/show/84)
+  * 阿！西！吧！！！和 shader 交互前记得先激活啊啊啊啊啊啊啊！！！
+  * ？？？然而为什么在 0 单元里的可以采样到啊……默认值吗 orz
+* [x] 【？】为啥另外丢一张 .png 就生成纹理失败
+  * 貌似是图片太大，读进去爆栈了……
+  * [glTexImage2D doc](https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glTexImage2D.xml)：`GL_INVALID_OPERATION: ... exceed the data store size` 然而直接崩了怎么 getError 啊……
+  * 新截一张 94K 也阔以，盲猜 >100K 去世
+* [ ] 【？】头像被斜切了
+  * 貌似被 shear 了
 
 ## 8. Transformations
 ## 9. Coordinate Systems
