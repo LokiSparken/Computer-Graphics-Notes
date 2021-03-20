@@ -69,6 +69,9 @@
    - [x] Lectures & Notes
    - [ ] Homeworks
 - [ ] 4. Fundamentals of Computer Graphics, 4th Edition | Book | `虎书`
+- [ ] 5. [GAMES202](https://www.bilibili.com/video/BV1YK4y1T7yY) | 闫令琪 | GAMES | bilibili | `Real-Time High Quality Rendering`
+  - [ ] Lectures & Notes
+  - [ ] Homeworks
 
 ## Rendering 渲染
 - [ ] 1. Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
