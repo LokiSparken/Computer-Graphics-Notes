@@ -36,9 +36,17 @@
     * [Tips](#tips)
     * [附：API](#附api-1)
   * [7. Textures](#7-textures)
+    * [一、平铺与缩放](#一平铺与缩放)
+    * [二、实现](#二实现)
     * [附：API](#附api-2)
     * [Tips](#tips-1)
   * [8. Transformations](#8-transformations)
+    * [一、数学基础](#一数学基础)
+      * [**旋转 Rotation**](#旋转-rotation)
+    * [二、Maths Lib：GLM](#二maths-libglm)
+    * [三、实现](#三实现)
+    * [四、扩展资料](#四扩展资料)
+    * [Tips](#tips-2)
   * [9. Coordinate Systems](#9-coordinate-systems)
   * [10. Camera](#10-camera)
   * [11. Review](#11-review)
@@ -397,6 +405,7 @@ glGetUniformLocation() | 从 Shader Program 中获取 Uniform 变量位置
 glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
 
 ## 7. Textures
+### 一、平铺与缩放
 * Texture coordinates
   * $(0, 0)$：Lower left corner
 * 纹理 $(s, t, (,r))$ 平铺方式（wrapping mode）按轴配置：GL_REPEAT、GL_MIRRORED_REPEAT、GL_CLAMP_TO_EDGE、GL_CLAMP_TO_BORDER
@@ -408,6 +417,7 @@ glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
     * GL_LINEAR 双线性插值
     * GL_NEAREST/LINEAR_MIPMAP_NEAREST/LINEAR 取最近/插值的 mipmap 层级在层中用近邻/插值方式取纹素
   * 注意：Mipmaps 只用于缩小问题，即 GL_TEXTURE_MIN_FILTER，否则会报 ERROR：GL_INVALID_ENUM
+### 二、实现
 * 纹理的创建和加载：`读取图片并存入数组`，stb image 库
   * `stbi_set_flip_vertically_on_load()`
 * Fragment Shader
@@ -470,8 +480,36 @@ glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
   * 手动反错切假装问题不存在！OVER！
 
 ## 8. Transformations
+### 一、数学基础
+* 基本数学复习：[GAMES101](https://github.com/LokiSparken/Computer-Graphics-Notes/blob/master/GAMES/Lectures/GAMES101%20-%20note.md)、[CSE167](https://github.com/LokiSparken/Computer-Graphics-Notes/blob/master/note%20-%20edX%20-%20CSE167.md)
+* 齐次：点 $1$ 向量 $0$
+#### **旋转 Rotation**
+* 万向锁 Gimbal Lock
+  * 绕三坐标轴转
+  * 直接绕任意轴旋转（罗德里格斯旋转公式）
+    
+    ![](images/4.png)
+      * 但也没有完全解决万向锁问题
+* 四元数 Quaternions
+### 二、Maths Lib：[GLM](http://glm.g-truc.net/0.9.8/api/index.html)
+### 三、实现
+* 从单位矩阵开始
+    ```cpp
+    glm::mat4 trans = glm::mat4(1.0f);
+    ```
+* 得到变换矩阵后通过 `uniform mat4 transform;` 传入 vertex shader
+* 向 vertex shader 传递矩阵：`glUniform*()`
+  * OpenGL、GLM 矩阵排列方式：列优先
+  * 参数传递时，由于 GLM 与 OpenGL 的矩阵存储方式不是完全一致，所以传入指针
+* 注意构造变换矩阵的顺序与对物体的变换是相反的
+  * 矩阵 $M_1 \times M_2 \times P$，构造时左乘，几何意义先乘 $M2$  
+### 四、扩展资料
+* [Grant Sanderson（3B1B） - Essence of linear algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab)：变换与线性代数
 
-
+### Tips
+* Exercises
+  * [x] 改变旋转和平移的顺序，解释现象
+  * [x] 在左上角画另一个物体，随时间改变 scale
 
 ## 9. Coordinate Systems
 ## 10. Camera
