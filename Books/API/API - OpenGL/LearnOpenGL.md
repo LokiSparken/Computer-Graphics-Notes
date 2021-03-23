@@ -24,10 +24,10 @@
     * [**`二、OpenGL Graphics Pipeline`**](#二opengl-graphics-pipeline)
     * [**`三、Normalized Device Coordinates（NDC）`**](#三normalized-device-coordinatesndc)
     * [**四、Implement Details**](#四implement-details)
-    * [附：API](#附api)
     * [TODO&Tips & Q&A](#todotips--qa)
       * [TODO&Tips](#todotips)
       * [Q&A](#qa)
+    * [附：API](#附api)
   * [6. Shaders](#6-shaders)
     * [一、Vectors](#一vectors)
     * [二、Ins and outs](#二ins-and-outs)
@@ -38,8 +38,8 @@
   * [7. Textures](#7-textures)
     * [一、平铺与缩放](#一平铺与缩放)
     * [二、实现](#二实现)
-    * [附：API](#附api-2)
     * [Tips](#tips-1)
+    * [附：API](#附api-2)
   * [8. Transformations](#8-transformations)
     * [一、数学基础](#一数学基础)
       * [**旋转 Rotation**](#旋转-rotation)
@@ -47,7 +47,12 @@
     * [三、实现](#三实现)
     * [四、扩展资料](#四扩展资料)
     * [Tips](#tips-2)
+    * [附：API](#附api-3)
   * [9. Coordinate Systems](#9-coordinate-systems)
+    * [一、OpenGL 中的坐标变换](#一opengl-中的坐标变换)
+    * [二、Z-Buffer](#二z-buffer)
+    * [Tips](#tips-3)
+    * [附：API](#附api-4)
   * [10. Camera](#10-camera)
   * [11. Review](#11-review)
 * [Part Ⅱ - Lighting](#part-ⅱ---lighting)
@@ -280,6 +285,26 @@ Other stages：Tessellation stage、Transform feedback loop
   * 通过 `glGetError()` 获取错误标记，返回 0 无错误
   * 调用时会清除所有错误标记
 
+### TODO&Tips & Q&A
+#### TODO&Tips
+* 对象 ID 根据对象类型分别计数
+* **`不！要！在循环里爆炸开空间建对象测显存承受力啊啊啊啊啊！！！orzzz`**
+* [ ] note - Pipeline 示意图
+* [x] 渐变三角形
+  * glVertexAttribPointer(..., `offset 单位 Byte`)
+* Exercises
+  * [x] 用 glDrawArrays 画两个相邻三角形
+  * [x] 用不同的 VAO 和 VBO 创建两个相同的三角形
+  * [x] 用两个 shader program 链接不同的 fragment shader 输出不同色的三角形
+
+#### Q&A
+* 【？】顶点属性默认禁用，是便于同一套顶点结构适应不同的需求么
+* 【？】代码结构管理
+  * shader source code
+  * vertex data?
+  * shader compile & link?
+  * VAO/VBO/EBO config?
+
 ### 附：API
 
 <center>API</center> | <center>Describe</center>
@@ -344,25 +369,6 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
   * **`步长 Stride`**：不同顶点数据间隔
   * **`当前顶点属性在顶点数据中的偏移 Offset`**
 
-### TODO&Tips & Q&A
-#### TODO&Tips
-* 对象 ID 根据对象类型分别计数
-* **`不！要！在循环里爆炸开空间建对象测显存承受力啊啊啊啊啊！！！orzzz`**
-* [ ] note - Pipeline 示意图
-* [x] 渐变三角形
-  * glVertexAttribPointer(..., `offset 单位 Byte`)
-* Exercises
-  * [x] 用 glDrawArrays 画两个相邻三角形
-  * [x] 用不同的 VAO 和 VBO 创建两个相同的三角形
-  * [x] 用两个 shader program 链接不同的 fragment shader 输出不同色的三角形
-
-#### Q&A
-* 【？】顶点属性默认禁用，是便于同一套顶点结构适应不同的需求么
-* 【？】代码结构管理
-  * shader source code
-  * vertex data?
-  * shader compile & link?
-  * VAO/VBO/EBO config?
 
 ## 6. Shaders
 ### 一、Vectors
@@ -434,19 +440,6 @@ glUniform4f() | `set` Uniform（重载后缀 4f 决定参数类型）
     shader.setInt("texture2", 1);
     ```
 
-### 附：API
-
-<center>API</center> | <center>Describe</center>
-:--|:-------
-glTexParameteri() | 设置纹理平铺/缩放方式
-glTexParameterfv() | 设置纹理平铺方式（BORDER COLOR）
-glGenTextures() | 创建纹理，返回 ID
-glActiveTexture() | 激活纹理单元
-glBindTexture() | 绑定纹理`到当前激活的纹理单元`
-glTexImage2D() | `生成纹理`
-glGenerateMipmap() | 对当前绑定纹理创建 mipmap 集
-glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
-
 ### Tips
 * Exercises
   * [x] 通过 Fragment Shader flip 笑脸
@@ -478,6 +471,19 @@ glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
 * [x] 【？】头像被斜切了
   * 貌似被 shear 了
   * 手动反错切假装问题不存在！OVER！
+
+### 附：API
+
+<center>API</center> | <center>Describe</center>
+:--|:-------
+glTexParameteri() | 设置纹理平铺/缩放方式
+glTexParameterfv() | 设置纹理平铺方式（BORDER COLOR）
+glGenTextures() | 创建纹理，返回 ID
+glActiveTexture() | 激活纹理单元
+glBindTexture() | 绑定纹理`到当前激活的纹理单元`
+glTexImage2D() | `生成纹理`
+glGenerateMipmap() | 对当前绑定纹理创建 mipmap 集
+glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
 
 ## 8. Transformations
 ### 一、数学基础
@@ -511,7 +517,58 @@ glUniform1i() | 给纹理采样器分配所采样的纹理单元（位置值）
   * [x] 改变旋转和平移的顺序，解释现象
   * [x] 在左上角画另一个物体，随时间改变 scale
 
+### 附：API
+
+API（glm::） | Describe
+:--|:-------
+translate() | 平移
+scale() | 缩放
+rotate() | 旋转
+
 ## 9. Coordinate Systems
+### 一、OpenGL 中的坐标变换
+
+![](images/5.png)
+
+* 图元的部分在 NDC 之外的，会分解成一个或多个三角形来适应裁剪范围
+* `OpenGL 流程`
+  * Vertex Shader 的输出应为 clip space 坐标（$\in [-w, w]$ 且 $w$ 表示物体离视点远近程度）
+  * 进入流水线后会自行将四维的裁剪空间坐标通过齐次除法转为三维 NDC（$\div w$），并作裁剪
+  * 之后用 glViewPort() 给出的参数，（视口变换：）将 NDC 映射到屏幕坐标。
+<!-- * vertex shader output $\in [-1.0, 1.0]$ -->
+* 确定透视投影矩阵时，如果 Near 距离设置较大，OpenGL 会 `clip 掉很靠近摄像机的一段范围`。如 (Near = 10.0f, clip 掉 [0.0f, 10.0f])。现象：游戏中很靠近某物体时会看不见它。
+* 正交投影应用：2D 渲染或美工应用需要
+* OpenGL `右手系，原点左下角`，`NDC 左手系`
+### 二、Z-Buffer
+* 启用 GL_DEPTH_TEST 后 OpenGL 自行完成深度测试
+* 记得每帧用 glClear() 清空 DEPTH_BUFFER_BIT
+
+### Tips
+* Try
+  * [ ] 康康不做透视投影是什么亚子？（说起来为什么这里透视投影完不用正交投影一下？）
+  * [ ] 不清空 depth buffer？
+* Exercises
+  * [ ] 测不同 FOV 和 宽高比 aspect-ratio 构造出的透视投影矩阵对结果的影响
+  * [ ] 在不同方向上平移视角变换矩阵，看结果
+  * [ ] 只让第一个盒子和三的倍数的盒子转
+
+### 附：API
+* OpenGL
+    
+    API | Describe
+    :--|:-------
+    glEnable() | 启用
+    glDisable() | 禁用
+    glClear() | 清空缓存
+* GLM
+    
+    API（glm::） | Describe
+    :--|:-------
+    model() | 构造模型变换矩阵
+    view() | 构造视角变换矩阵
+    perspective() | 构造透视投影变换矩阵
+    ortho() | 构造正交投影变换矩阵
+
 ## 10. Camera
 ## 11. Review
 
