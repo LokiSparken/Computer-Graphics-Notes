@@ -11,6 +11,7 @@
 目录
 <!-- TOC -->
 
+* [Personal Road to Games & CG](#personal-road-to-games--cg)
 * [Computer Graphcis & Game Engine](#computer-graphcis--game-engine)
   * [Basic 基础入门](#basic-基础入门)
   * [Rendering 渲染](#rendering-渲染)
@@ -56,10 +57,28 @@
 
 ---
 
+# Personal Road to Games & CG
+> <font color=#6495ED size=6>DONE List Encourage！</font> 
+> <font color=#6495ED size=6>——假装有变强。</font>
+
+增量式笔记，已学过的部分后续不再赘述。
+* CG - CSE167 Maths
+* CG - Peter Shirley Ray Tracing 三部曲
+  * Ray tracing in one weekend
+  * Ray tracing in the next week
+* CG - GAMES101
+* Engine - 后天星期六 & TomLooman（UE 入……入不了门）
+* CG - Unity Shader 入门精要（主 shader）
+* ing
+  * CG - LearnOpenGL
+  * CG - 《上古时代的图形学》
+  * CG - dear soft renderer（正在新建文件夹）
+  * CG - GAMES202
+  * CG - D3D12 龙书
 
 # Computer Graphcis & Game Engine
 
-> <font color=#6495ED size=6>Welcome to CG & Engine! (>ᴗ<*)ฅ</font>  
+> <font color=#6495ED size=6>Welcome to CG & Engine！(>ᴗ<*)ฅ</font>  
 > <font color=#6495ED>——有生之年。</font>
 
 ## Basic 基础入门
@@ -330,7 +349,7 @@
   * Rendering algorithm comparator？？？
 * Debugger
   * Rendering Statistics：Resolution、Render Time、FPS、Batches、Saved by batching、Tris & Verts……
-  * Frame Debugger：Pixel Tracer、Events List、DC with results……
+  * Frame Debugger：Pixel Tracer（a pixel picker and show some intermediate rendering data about this pixel?）、Events List、DC with results……
 
 > # To Be Continued...
 
@@ -352,4 +371,4 @@
 
 -->
 
-<style> h1 { border-bottom: none } </style>
+<!-- <style> h1 { border-bottom: none } </style> -->
