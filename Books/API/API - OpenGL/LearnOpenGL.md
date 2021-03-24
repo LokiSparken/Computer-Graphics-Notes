@@ -530,6 +530,7 @@ rotate() | 旋转
 
 ![](images/5.png)
 
+* [透视变换矩阵推导新清晰图示资料 - OpenGL Projection Matrix - by songho](http://www.songho.ca/opengl/gl_projectionmatrix.html)
 * 图元的部分在 NDC 之外的，会分解成一个或多个三角形来适应裁剪范围
 * `OpenGL 流程`
   * Vertex Shader 的输出应为 clip space 坐标（$\in [-w, w]$ 且 $w$ 表示物体离视点远近程度）
