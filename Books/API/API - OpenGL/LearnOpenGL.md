@@ -54,6 +54,12 @@
     * [Tips](#tips-3)
     * [附：API](#附api-4)
   * [10. Camera](#10-camera)
+    * [一、构造相机坐标系](#一构造相机坐标系)
+    * [二、归一化硬件配置差异](#二归一化硬件配置差异)
+    * [三、欧拉角](#三欧拉角)
+    * [四、GLFW 输入事件](#四glfw-输入事件)
+    * [Tips](#tips-4)
+    * [附：API](#附api-5)
   * [11. Review](#11-review)
 * [Part Ⅱ - Lighting](#part-ⅱ---lighting)
 * [Part Ⅲ - Model Loading](#part-ⅲ---model-loading)
@@ -580,6 +586,51 @@ rotate() | 旋转
     ortho() | 构造正交投影变换矩阵
 
 ## 10. Camera
+### 一、构造相机坐标系
+* 构造：position + 经典 (reverse) direction、up 构造 $(u, v, w)$（Gram-Schmidt process）
+* 几何意义：为了把相机位置和视角归一化到世界空间下的原点和世界坐标系，根据相对运动，对所有物体做逆操作
+### 二、归一化硬件配置差异
+* 即使将移动速度设为常量，程序运行时 CPU 的处理速度不同，函数会以不同的频率被调用。
+* 取`渲染两帧的时间差`，与移动速度相乘
+    $$ speed = v \times (currentFrameTime - lastFrameTime) $$
+    * 当渲染速度慢时，相应提升相机移动速度作平衡。
+### 三、欧拉角
+* 俯仰角 Pitch、偏航角 Yaw、滚转角 Roll
+
+    ![](images/6.png)
+* 用 pitch、yaw 表示一个三维方向
+  * 侧视看 pitch $\alpha$
+
+    ![](images/7.png)
+  * 俯视看 yaw $\theta$
+
+    ![](images/8.png)
+### 四、GLFW 输入事件
+* 事件注册
+  * 配置输入模式
+  * 定义事件
+  * 注册
+    
+### Tips
+* Exercises
+  * [ ] 改造出一个 FPS 类型的 camera
+  * [ ] 手写 LookAt() 实现构造视角变换矩阵
+
+### 附：API
+* GLM
+    
+    API（glm::）| Describe
+    :-------- | :-------
+    lookAt() | 构造视角变换矩阵
+
+* GLFW
+
+    API（glm::）| Describe
+    :-------- | :-------
+    glfwSetInputMode() | 设定输入模式
+    glfwSetCursorPosCallback() | 注册事件到 GLFW 窗口
+
+
 ## 11. Review
 
 # Part Ⅱ - Lighting
