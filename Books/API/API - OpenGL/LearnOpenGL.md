@@ -62,6 +62,14 @@
     * [附：API](#附api-5)
   * [11. Review](#11-review)
 * [Part Ⅱ - Lighting](#part-ⅱ---lighting)
+  * [12. Color](#12-color)
+    * [一、光照着色器](#一光照着色器)
+  * [13. Basic Lighting](#13-basic-lighting)
+  * [14. Materials](#14-materials)
+  * [15. Lighting Maps](#15-lighting-maps)
+  * [16. Light Casters](#16-light-casters)
+  * [17. Multiple lights](#17-multiple-lights)
+  * [18. Review](#18-review)
 * [Part Ⅲ - Model Loading](#part-ⅲ---model-loading)
 * [Part Ⅳ - Advanced OpenGL](#part-ⅳ---advanced-opengl)
 * [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
@@ -612,6 +620,9 @@ rotate() | 旋转
   * 注册
     
 ### Tips
+* Camera Class
+  * 前后左右移动竟在旋转：center 没更新 orz，无事了
+  * 【？】说起来事件注册加 callback 这套内部机制是啥来着……看着像是硬件实现？
 * Exercises
   * [ ] 改造出一个 FPS 类型的 camera
   * [ ] 手写 LookAt() 实现构造视角变换矩阵
@@ -632,8 +643,25 @@ rotate() | 旋转
 
 
 ## 11. Review
+* 原来只是感叹一下，没有 Tips 啊 2333
 
 # Part Ⅱ - Lighting
+## 12. Color
+### 一、光照着色器
+* 为了不让光源位置、颜色、强度受模型影响，单独开一套 V/F Shader 给光源
+* 用一个物体可视化光源的位置
+
+## 13. Basic Lighting
+
+## 14. Materials
+
+## 15. Lighting Maps
+
+## 16. Light Casters
+
+## 17. Multiple lights
+
+## 18. Review
 
 # Part Ⅲ - Model Loading
 
