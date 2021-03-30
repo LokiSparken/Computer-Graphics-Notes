@@ -22,10 +22,13 @@
     * [Percentage Closer Filtering（PCF）](#percentage-closer-filteringpcf)
     * [Percentage Closer Filtering（PCSS）](#percentage-closer-filteringpcss)
 * [Lecture 4](#lecture-4)
-  * [Basic filtering techniques](#basic-filtering-techniques)
-  * [Variance shadow maps（VSM）](#variance-shadow-mapsvsm)
+  * [More on PCF and PCSS](#more-on-pcf-and-pcss)
+    * [卷积表达式](#卷积表达式)
+    * [优化](#优化)
+  * [Variance (soft) shadow mapping（V(S)SM）](#variance-soft-shadow-mappingvssm)
+    * [VSSM 基本思想（基于 PCSS 的改进）](#vssm-基本思想基于-pcss-的改进)
   * [MIPMAP and Summed-Area Variance Shadow Maps](#mipmap-and-summed-area-variance-shadow-maps)
-  * [Moment shadow maps（MSM）](#moment-shadow-mapsmsm)
+  * [Moment shadow mapping（MSM）](#moment-shadow-mappingmsm)
   * [好多 CSM](#好多-csm)
 
 <!-- /TOC -->
@@ -188,13 +191,64 @@
   * 喜闻乐见游戏安利阶段（第一人称开放世界）：Dying Light、辐射、上古卷轴
 
 # Lecture 4
-## Basic filtering techniques
+## More on PCF and PCSS
+### 卷积表达式
+![](note%20-%20image/GAMES202/10.png)
+* PCF 的卷积表达式
 
-## Variance shadow maps（VSM）
+    $$ [w * f](p) = \sum_{q\in \mathcal{N}(p)} w(p,q)f(q) $$
+    * 在 $p$ 的邻域中取各 $q$ 的权重值
+* PCSS
+
+    $$ V(x) = \sum_{q\in \mathcal{N}(p)} w(p, q) \cdot  \chi^+ [D_{sm}(q) - D_{scene}(x)]$$
+    * 其中，$\chi$ （$k\grave{a}i$）为一个符号函数，自变量大于 $0$ 时值为 $1$，反之为 $0$。
+* 因此
+  * 如果对 shadow map 作模糊，实际上的结果是 $\chi^+{[w * D_{SM}](q) - D_{scene}(x)}$ ，最后结果还是二值的。
+  * 而对最后已有锯齿的图像空间结果作模糊则是 
+  $$ \sum_{y\in\mathcal{N}(x)} w(x, y)V(y)$$
+### 优化
+* 问题
+  * 一：考虑邻域，量大（blocker search & percentage closer filtering）
+  * 二：越软的阴影 filter region 越大，量大
+  * Solution：随机采样，Trade Off：Noise
+    * 工业界常见做法：稀疏采样，最后在图像空间上做降噪
+    * 边缘 `flicker` 问题：每帧随机采样，采样的点不同，导致 Noise 每帧也长得不一样，连续帧看起来会抖。
+    * `boiling artifact` 问题：噪声无法被低通滤波去除所致
+
+## Variance (soft) shadow mapping（V(S)SM）
+### VSSM 基本思想（基于 PCSS 的改进）
+* 考虑 PCF 阶段的 key point - shading point 周围能遮挡它的纹素`比例`
+  * （盲猜范围查询！……不，是第 k 大……范围第 k 大……范围均值和方差……假装盲猜成功（
+  * 用`正态分布`作 `approximate`：需要`均值 mean`（期望）、`方差 variance`（决定中心位置、中心范围大小（宽度））
+* 范围均值求法
+  * Hardware MIPMAP：插值误差、只能正方形
+  * **`Summed Area Tables`**（SAT）：二维任意矩形
+* 范围方差求法 - 经典概率论公式
+    $$ Var(X) = E(X^2) - E^2(X) $$
+    * $E^2(X)$ 范围均值假设已求得
+    * $E(X^2)$ 只需再记一张平方深度图（实现的时候可以直接写在 texture 的另一个通道）（妙啊！！！）
+* 比例如何求 - CDF
+    
+    ![](note%20-%20image/GAMES202/11.png)
+  * 即求 `PDF 图像面积`
+  * `Gaussian PDF` 积分 -> **`Error Function（误差函数）`**
+    * 详见补充材料
+    * 有数值解（C++ erf()），没有解析解
+    * 闫老师：数值解也比打表强嘛！（草w
+* 然而求解还是很麻烦 - `切比雪夫不等式 Chebychev's inequality`
+    $$ P(x>t) \leqslant \frac{\sigma^2}{\sigma^2 + (t-\mu)^2} $$
+  * $\mu$：均值，$\sigma^2$：方差
+  * 切比雪夫不等式：假装认为是个任意单峰分布，给定查询点 $t$，其右侧面积不超过 $\frac{\sigma^2}{\sigma^2+(t-\mu)^2}$
+    
+    ![](note%20-%20image/GAMES202/12.png)
+  * 条件：$t$ 必须在均值的右侧
+  * （弹幕：看到不等式就两眼放光，又可以 trick 了）
+
+54:24
 
 ## MIPMAP and Summed-Area Variance Shadow Maps
 
-## Moment shadow maps（MSM）
+## Moment shadow mapping（MSM）
 
 ## 好多 CSM
 Cascaded shadow map
