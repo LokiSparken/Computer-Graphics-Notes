@@ -26,10 +26,12 @@
     * [卷积表达式](#卷积表达式)
     * [优化](#优化)
   * [Variance (soft) shadow mapping（V(S)SM）](#variance-soft-shadow-mappingvssm)
-    * [VSSM 基本思想（基于 PCSS 的改进）](#vssm-基本思想基于-pcss-的改进)
+    * [VSSM 基本思想 1 - 基于 PCSS Step 3](#vssm-基本思想-1---基于-pcss-step-3)
+    * [VSSM 基本思想 2 - 基于 PCSS Step 1](#vssm-基本思想-2---基于-pcss-step-1)
+    * [Others](#others)
   * [MIPMAP and Summed-Area Variance Shadow Maps](#mipmap-and-summed-area-variance-shadow-maps)
   * [Moment shadow mapping（MSM）](#moment-shadow-mappingmsm)
-  * [好多 CSM](#好多-csm)
+  * [各种 CSM](#各种-csm)
 
 <!-- /TOC -->
 
@@ -216,7 +218,7 @@
     * `boiling artifact` 问题：噪声无法被低通滤波去除所致
 
 ## Variance (soft) shadow mapping（V(S)SM）
-### VSSM 基本思想（基于 PCSS 的改进）
+### VSSM 基本思想 1 - 基于 PCSS Step 3
 * 考虑 PCF 阶段的 key point - shading point 周围能遮挡它的纹素`比例`
   * （盲猜范围查询！……不，是第 k 大……范围第 k 大……范围均值和方差……假装盲猜成功（
   * 用`正态分布`作 `approximate`：需要`均值 mean`（期望）、`方差 variance`（决定中心位置、中心范围大小（宽度））
@@ -242,17 +244,49 @@
     
     ![](note%20-%20image/GAMES202/12.png)
   * 条件：$t$ 必须在均值的右侧
-  * （弹幕：看到不等式就两眼放光，又可以 trick 了）
-
-54:24
+  * （草w，弹幕：看到不等式就两眼放光，又可以 trick 了）
+* 问题：动态场景每帧更新的开销
+### VSSM 基本思想 2 - 基于 PCSS Step 1
+* 考虑 block search 阶段：需要知道`遮挡部分平均深度`$z_{occ}$（前述已解决了整体平均深度 $z_{Avg}$）
+  * 能遮挡与不能遮挡的两部分分别以当前 shading point 的深度值 $d$ 为界，有：
+    * Blocker 部分：$z < d$ 
+    * Non-blocker 部分：$z > d$
+  * 两部分必然满足
+    $$ \frac{N1}{N}z_{unocc} + \frac{N2}{N}z_{occ} = z_{Avg} $$
+    * $z_{Avg}$ 前述已求。
+    * 其中 Non-blocker 部分所占比例和上述比例问题一样，可以用切比雪夫近似。于是 Blocker 部分比例同时得解！
+    * $z_{unocc}$ 大胆假设：$z_{unocc} = t$（即阴影接收物为平面）（所以`曲面`和`与光源不平行`的情况下，该假设与实际差别太大，会出现问题）
+### Others
+* 为什么现在更常用 PCSS：因为现在图像空间的降噪手段 tql（时间空间结合，效果很好）
+* 正态分布是举栗子，实际上 VSSM 直接切比雪夫
 
 ## MIPMAP and Summed-Area Variance Shadow Maps
+* 来了！矩形范围查询！
+* MIPMAP：大软阴影会有比较明显的 artifacts
+* Summed-Area Table
+  * 果然是你！二维前缀和！
+  * 实现：各行各列求和时可以并行，还可以 compute shader（【？】高级起来了）
 
 ## Moment shadow mapping（MSM）
+* VSSM 的问题
+  * VSSM 思想的局限性：遮挡物比较少，PDF 可以看作几个峰值，用单峰的分布近似误差会特别大
+    * `light leaking`：阴影处因为近似的不合理导致在阴影区域有的地方特别亮
+    * `non-planarity artifact`
 
-## 好多 CSM
-Cascaded shadow map
+    ![](note%20-%20image/GAMES202/13.png)
+  * 切比雪夫不等式本身的问题：$t$ 在均值右侧才比较准确
+* MSM - 改进了 VSSM 中分布描述不准确的问题
+  * `higher order moment` 用更高阶的`矩`描述分布
+  * 四阶矩，如：$x$、$x^2$、$x^3$、$x^4$。 VSSM 中用了二阶，用更高阶的去描述。
+  * `结论`：前 $m$ 阶矩可以表示 $\frac{m}{2}$ 个台阶的函数。通常四阶可以比较准确地描述深度图的 CDF。
 
-Convelutional shadow mapping
+    ![](note%20-%20image/GAMES202/14.png)
+  * `给定四阶矩如何计算 CDF`：详见论文 Peters et al. *Moment Shadow Mapping*
+* 工业界技巧
+  * `packing` & `unpacking`，一个 32bit 的值按位拆开存不同的量。（是不是在哪见过……不过感觉和一张纹理不同通道的复用也差不多？总之勤俭持家就完事了=。=）问题：难以插值
 
-Compressed shadow map
+## 各种 CSM
+* 没了没了大概是不提了吧
+  * Cascaded shadow map
+  * Convelutional shadow mapping
+  * Compressed shadow map
