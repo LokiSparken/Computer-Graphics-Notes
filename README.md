@@ -319,7 +319,9 @@
   - [ ] Effective C++
   - [ ] More effective C++
   - [ ] Inside the C++ Object Model
+- STL 源码剖析
 - CMake
+  - git:cmake-examples
 
 ## 工程是不可能会写的
 - 设计模式
