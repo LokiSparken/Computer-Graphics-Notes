@@ -11,7 +11,7 @@
     * [**`Debug`**](#debug)
   * [四、The Rendering Equation](#四the-rendering-equation)
   * [五、Calculus（In Lecture 3）](#五calculusin-lecture-3)
-* [Lecture 3 - Real-Time Shadow](#lecture-3---real-time-shadow)
+* [Lecture 3 - Real-time Shadow 1](#lecture-3---real-time-shadow-1)
   * [Recap: shadow mapping](#recap-shadow-mapping)
     * [Shadow mapping 做法回顾](#shadow-mapping-做法回顾)
     * [**`Shadow Map 的问题`**](#shadow-map-的问题)
@@ -21,7 +21,7 @@
   * [Percentage closer soft shadows（PCSS）](#percentage-closer-soft-shadowspcss)
     * [Percentage Closer Filtering（PCF）](#percentage-closer-filteringpcf)
     * [Percentage Closer Filtering（PCSS）](#percentage-closer-filteringpcss)
-* [Lecture 4](#lecture-4)
+* [Lecture 4 - Real-time Shadow 2](#lecture-4---real-time-shadow-2)
   * [More on PCF and PCSS](#more-on-pcf-and-pcss)
     * [卷积表达式](#卷积表达式)
     * [优化](#优化)
@@ -32,6 +32,13 @@
   * [MIPMAP and Summed-Area Variance Shadow Maps](#mipmap-and-summed-area-variance-shadow-maps)
   * [Moment shadow mapping（MSM）](#moment-shadow-mappingmsm)
   * [各种 CSM](#各种-csm)
+  * [Distance field soft shadows（in Lecture 5）](#distance-field-soft-shadowsin-lecture-5)
+* [Lecture 5 - Real-time Environment Mapping](#lecture-5---real-time-environment-mapping)
+  * [`Shading` from environment lighting](#shading-from-environment-lighting)
+    * [Image-Based Lighting（IBL）](#image-based-lightingibl)
+    * [Split sum approximation 1 - 光照项 $L_i$](#split-sum-approximation-1---光照项-l_i)
+    * [Split sum approximation 2 - BRDF 项 $f_r$](#split-sum-approximation-2---brdf-项-f_r)
+  * [`Shadow` from environment lighting](#shadow-from-environment-lighting)
 
 <!-- /TOC -->
 
@@ -94,7 +101,7 @@
 ## 五、Calculus（In Lecture 3）
 * 微积分不复习辽，用到再提
 
-# Lecture 3 - Real-Time Shadow
+# Lecture 3 - Real-time Shadow 1
 ## Recap: shadow mapping
 ### Shadow mapping 做法回顾
 * `A 2-Pass, image-space Algorithm（双 Pass，图像空间算法）`
@@ -192,7 +199,7 @@
 * 闲聊时间
   * 喜闻乐见游戏安利阶段（第一人称开放世界）：Dying Light、辐射、上古卷轴
 
-# Lecture 4
+# Lecture 4 - Real-time Shadow 2
 ## More on PCF and PCSS
 ### 卷积表达式
 ![](note%20-%20image/GAMES202/10.png)
@@ -290,3 +297,86 @@
   * Cascaded shadow map
   * Convelutional shadow mapping
   * Compressed shadow map
+
+## Distance field soft shadows（in Lecture 5）
+* 有向距离场 Signed Distance Field（SDF）
+  * 回忆 Distance functions：定义空间中任意一点，`到某物体表面的（最近点的）距离`。若对物体内部/外部取不同的符号，则为有向距离。
+  * “做任意形状的插值”
+* Usage 1 - 已知整个场景的 SDF，用光线和其定义的隐含表面求交：`sphere tracing`
+  * 某点的 SDF 值隐含意义 ①：`以该点为球心，附近最大安全距离`
+  * 因此从光线起点开始，往发射方向不断地走该安全距离（每走一次更新起点），取所有安全球最小半径，直到 hit 物体或走了很远也 hit 不到东西
+* Usage 2 - 生成软阴影
+  * 某点的 SDF 值隐含意义 ②：`穿过该点的光线，偏多大的角度以内是安全的`（光线起点到安全球的切线）
+  * 这个`安全角度越小`，能够看到的东西越少，阴影越黑。（就是如果偏一点点就会被东西遮挡的话那这东西后面肯定就是有阴影的）用该角度值作为 visibility。
+
+    ![](note%20-%20image/GAMES202/15.png)
+
+    即安全角 $\arcsin \frac{SDF(p)}{|OP|}$
+  * `安全角计算` tips：在 shader 中尽量避免复杂计算，所以不要用反三角函数，又因为当 $x$ 较小时有 $\arcsin x \approx x$，取
+
+    $$ \theta = min\{ k \cdot \frac{SDF(p)}{|OP|}, 1.0\} $$
+    * $k$ 变大时会将安全角的影响放大，用来控制软阴影的程度
+  * 不能确定安全角的限制具体出现在哪个方向（二维情况下两根切线，三维情况下一个环）
+* 局限性
+  * 需要预计算
+  * 存储需求很大（三维信息）：可以存在场景管理数据结构里，对于非叶子结点不需要特别精确的信息，所以就只维护叶子结点的 SDF
+  * 运动、形变的物体要重新算 SDF
+  * 接缝处的 artifact
+  * SDF 生成的物体（【？】指阴影吗）表面难以参数化，难贴纹理
+  * 阴影比 PCSS 还假，因为近似更大胆（……确实很大胆？貌似理论上要 $x < 0.1$ 才成立的
+* 安利时间：[github - troika](https://github.com/protectwise/troika) SDF 字符
+
+# Lecture 5 - Real-time Environment Mapping
+## `Shading` from environment lighting
+### Image-Based Lighting（IBL）
+* 认为环境光从无限远处发射，所以在场景中放东西会很飘
+* 存储：cube/spherical map
+* 俗名 Image-Based Lighting（IBL）
+* 给出 IBL，着色（即解渲染方程）
+
+    $$ L_o(p, \omega_o) = \int_{\Omega^+} L_i(p, \omega_i) f_r(p, \omega_i, \omega_o) \ cos\theta_i\ d\omega_i $$
+    * 其中 $V(p, \omega_i)$ 阴影部分暂不考虑
+* 解法
+  * 一：通用法蒙特卡洛，但要大量采样才能收敛，一般来说在 shader 中用了采样就不考虑这个算法能用在实时领域。但！是！由于现在图像降噪很强所以不一定。（？突然想到那篇 Recurrent Denoising Autoencoder 降噪蒙特卡洛结果的……原来如此……怪不得 SIGGRAPH 上那么多跟蒙特卡洛硬刚降噪的……）
+  * 二：努力避免采样……
+### Split sum approximation 1 - 光照项 $L_i$
+* 基本思路
+  * 考虑渲染方程的 $L_i$ 和 BRDF 项，观察
+    * 当 BRDF 是高光时，其出射方向区域范围小，即该入射光对着色结果的贡献小。
+    * 当 BRDF 是漫反射时，往四面八方反射，但不同方向的过渡比较平滑（乘 $cos$）
+  * `经 典 近 似`
+
+    $$ \int_{\Omega} f(x)g(x) dx \approx \frac{\int_{\Omega_G\ f(x)\ dx}}{\int_{\Omega_G} dx} \cdot \int_{\Omega}\ g(x)\ dx $$
+    $$ \Downarrow $$
+    $$ L_o(p, \omega_o) \approx \frac{\int_{\Omega_{f_r}\ L_i(p, \omega_i)\ d\omega_i}}{\int_{\Omega_{f_r} d\omega_i}} \cdot \int_{\Omega^+}\ f_r(p, \omega_i, \omega_o)\ cos\theta_i\ d\omega_i $$
+    * 其中 $\Omega_G$ 指 $g(x)$ 即 BRDF 的 support 范围
+    * BRDF 为高光或漫反射时，分别满足该近似成立的条件其中之一（妙啊！！！！！！！！）
+  * 把光照部分拆出来之后，也就是需要`影响某点的半球范围内光照均值`。也即 IBL 贴图模糊的结果：任意一点，取附近范围的均值并写回该点。
+    * 预处理不同 filter size 的模糊图
+    * 注意是`在球面上做 filter`，取不同的立体角，映射到 IBL 上
+    * 使用的时候可以类似 MIPMAP 的三线性插值
+* 对 IBL 贴图做模糊的正确性解释
+
+    ![](note%20-%20image/GAMES202/16.png)
+  * BRDF glossy 情况下，在 BRDF 的贡献范围内采样取均值，与事先在 IBL 上模糊得均值，效果类似
+  * 漫反射可以用 normal 方向上的均值
+### Split sum approximation 2 - BRDF 项 $f_r$
+* 基本思路
+  * 假设是 Microfacet BRDF，预计算需要至少五维信息，参数空间很大，就算预计算也承受不来
+    * 用于决定 NDC 的一维 roughness $\alpha$
+    * fresnel term：基础反射率 $R_0$（三通道 RGB）、在不同入射角 $\theta_h$ 下的曲线
+  * `实时中能互换的角（近似角？）`：入射角、出射角、入射出射夹角的一半、入射或出射对半程向量 half vector 的夹角
+  * 把基础反射率 $R_0$ 看成一个灰度 $\Rightarrow$ 三维预计算
+  * 继续降维，试图把某个参数拆出去：把菲涅尔项用 Schlick 近似展开
+    $$ R(\theta) = R_0 + (1-R_0)(1-cos\theta)^5 $$
+    $$ \int_{\Omega^+}f_r(p, \omega_i, \omega_o)\ cos\theta_i\ d\omega_i \approx R_0\ \int_{\Omega^+}\frac{f_r}{F}(1-(1-cos\theta_i)^5)\ cos\theta_i\ d\omega_i + \int_{\Omega^+}\frac{f_r}{F}(1-cos\theta_i)^5\ cos\theta_i\ d\omega_i $$
+  * 此时影响该积分值的参数只剩入射角 $\theta$ 和 roughness，打表！上纹理！
+* 对于同一种 BRDF 都是同一张表
+* Chatting time
+  * 因为实时里通常把积分写成求和形式，所以叫 split sum（噗
+  * 该方法用于 UE 的 PBR（ooops！
+* 更好的方法：Linear cosine transform（LTC，应该是 SIGGRAPH 2016 的这篇 [*Real-Time Polygonal-Light Shading with Linearly Transformed Cosines*](https://eheitzresearch.wordpress.com/415-2/)？顺便看到个[博客](https://my.oschina.net/u/4589456/blog/4994517)）
+
+## `Shadow` from environment lighting
+
+
