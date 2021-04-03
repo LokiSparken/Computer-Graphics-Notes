@@ -652,6 +652,19 @@ rotate() | 旋转
 * 用一个物体可视化光源的位置
 
 ## 13. Basic Lighting
+* 高光颜色相比物体颜色，更接近于光源颜色
+* Tips
+  * 求夹角 $cos$ 值时要用单位向量
+  * 计算光源方向时要对光源位置和片元位置统一在同一坐标空间（世界坐标系）
+  * 在 shader 里求转置开销很大，所以最好在 CPU 上做完传给 shader
+  * 做各种计算都要统一坐标系，不过在世界坐标系下比较认知友好。在观察空间的话主要是视点总是在原点，就不用算这个了。
+* 不等比缩放 Non-uniform scale 和[法线空间](http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/)
+* 逐顶点：Gouraund shading，逐像素：Phong shading
+* Exercises
+  * [ ] 移动光源，看着色效果变化
+  * [ ] 试不同的 ambient、diffuse、specular 强度和高光指数
+  * [ ] 在观察空间做 phong shading
+  * [ ] 实现 Gouraund shading
 
 ## 14. Materials
 
