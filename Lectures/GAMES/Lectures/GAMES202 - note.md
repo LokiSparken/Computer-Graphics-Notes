@@ -175,7 +175,7 @@
   * 注意：在阴影图上 blur 是无效的，因为在深度测试时得到的结果还是 $0/1$
 * PCF Solution [Reeves, SIGGRAPH 87]
   * Step 1 - 深度测试时不只采样深度图上对应单像素，而是考虑周围一圈（如 $7\times 7$ 范围）与 shading point 的遮挡关系，得到测试结果 $0/1$
-  * Step 2 - 对这个范围的测试结果取均值
+  * Step 2 - 对这个范围的测试结果取均值（看作是在阴影 $0.0$ 到光源 $1.0$ 之间的一个比例，用它对着色做衰减）
 * 启发：`filter 范围`决定阴影锯齿的软硬度 $\Rightarrow$ 决定阴影的软硬度
 
 ### Percentage Closer Filtering（PCSS）
