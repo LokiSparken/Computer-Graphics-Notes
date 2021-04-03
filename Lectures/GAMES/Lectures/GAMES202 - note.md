@@ -375,7 +375,7 @@
 * Chatting time
   * 因为实时里通常把积分写成求和形式，所以叫 split sum（噗
   * 该方法用于 UE 的 PBR（ooops！
-* 更好的方法：Linear cosine transform（LTC，应该是 SIGGRAPH 2016 的这篇 [*Real-Time Polygonal-Light Shading with Linearly Transformed Cosines*](https://eheitzresearch.wordpress.com/415-2/)？顺便看到个[博客](https://my.oschina.net/u/4589456/blog/4994517)）
+* 更好的方法：Linear cosine transform（LTC，应该是 SIGGRAPH 2016 的这篇 [*Real-Time Polygonal-Light Shading with Linearly Transformed Cosines*](https://eheitzresearch.wordpress.com/415-2/)？）
 
 ## `Shadow` from environment lighting
 
