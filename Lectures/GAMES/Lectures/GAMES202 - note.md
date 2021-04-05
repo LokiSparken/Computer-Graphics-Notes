@@ -34,11 +34,15 @@
   * [各种 CSM](#各种-csm)
   * [Distance field soft shadows（in Lecture 5）](#distance-field-soft-shadowsin-lecture-5)
 * [Lecture 5 - Real-time Environment Mapping](#lecture-5---real-time-environment-mapping)
-  * [`Shading` from environment lighting](#shading-from-environment-lighting)
+  * [`Shading` from Environment Lighting](#shading-from-environment-lighting)
     * [Image-Based Lighting（IBL）](#image-based-lightingibl)
     * [Split sum approximation 1 - 光照项 $L_i$](#split-sum-approximation-1---光照项-l_i)
     * [Split sum approximation 2 - BRDF 项 $f_r$](#split-sum-approximation-2---brdf-项-f_r)
-  * [`Shadow` from environment lighting](#shadow-from-environment-lighting)
+  * [`Shadow` from Environment Lighting（in Lecture 6）](#shadow-from-environment-lightingin-lecture-6)
+* [Lecture 6 - Real-Time Environment Mapping（Precomputed Radiance Transfer）](#lecture-6---real-time-environment-mappingprecomputed-radiance-transfer)
+  * [基本数学知识（GAMES101 回顾）](#基本数学知识games101-回顾)
+  * [Spherical Harmonics](#spherical-harmonics)
+  * [用球谐函数解决环境光的 shading](#用球谐函数解决环境光的-shading)
 
 <!-- /TOC -->
 
@@ -327,7 +331,7 @@
 * 安利时间：[github - troika](https://github.com/protectwise/troika) SDF 字符
 
 # Lecture 5 - Real-time Environment Mapping
-## `Shading` from environment lighting
+## `Shading` from Environment Lighting
 ### Image-Based Lighting（IBL）
 * 认为环境光从无限远处发射，所以在场景中放东西会很飘
 * 存储：cube/spherical map
@@ -377,6 +381,59 @@
   * 该方法用于 UE 的 PBR（ooops！
 * 更好的方法：Linear cosine transform（LTC，应该是 SIGGRAPH 2016 的这篇 [*Real-Time Polygonal-Light Shading with Linearly Transformed Cosines*](https://eheitzresearch.wordpress.com/415-2/)？）
 
-## `Shadow` from environment lighting
+## `Shadow` from Environment Lighting（in Lecture 6）
+* 实际上并做不到 :)
+* 解决思路
+  * 把环境光看成是 a many-light problem：按照多光源的做法，对每个光源都要生成一张 shadow map，是按光源数量呈线性级，显然无法接受。
+  * a sampling problem：采样求解渲染方程，但是 visibility 项在不同方向上差别很大，且环境光的 support 范围针对一个 shading point 是整个半球，积分范围很大，以及 BRDF 项不低平，不满足 visibility 项的拆分条件，难整
+    * 环境光遮蔽 environment occlusion 做出了近似，但条件是 constant environment lighting 
+* 当前工业界主流方法：从环境光中只聚焦主要的光照来源（如野外的太阳）
+* Related research
+  * Imperfect shadow maps（全局光照相关）
+  * Light cuts（离线）：把场景中的反射物作为小光源，归类，并做近似（从 many-light 角度出发）
+  * Real-Time Ray Tracing
+  * Precomputed radiance transfer
 
+# Lecture 6 - Real-Time Environment Mapping（Precomputed Radiance Transfer）
+* Precomputed Radiance Transfer（PRT），可以用于环境光以及全局光照
+
+## 基本数学知识（GAMES101 回顾）
+* 傅里叶级数展开
+* 频域与频谱
+  * 自然照片大部分信号为低频
+  * 时域卷积 = 在原始函数上卷积 = 在频域上做乘积
+* A general understanding
+  * 将`两个函数相乘并积分`的操作认为是卷积操作，具有滤波意义
+  * 乘积的频率由二者中更低的一方决定
+* 基函数：用一系列函数的线性组合描述一个新的函数
+    $$ f(x) = \sum_i c_i \cdot B_i(x) $$
+    * Fourier series
+    * Polynomial series
+
+## Spherical Harmonics
+* Spherical Harmonics
+  * 一系列`二维`、`定义在球面上`的`基函数`
+  * 可以认为是二维极坐标（$\theta$、$\phi$）表示的三维方向
+  * 性质类似一维情况下的傅里叶级数（可以拆分为不同频率的 sin、cos），可以将最低频到最高频描述出来
+* 球谐函数的可视化
+
+    ![](note%20-%20image/GAMES202/17.png)
+    * 在第 $l$ 层定义了 $2l+1$ 个函数
+    * 第 $l$ 层也称为 $l$ 阶
+    * 每阶的函数分别编号为 $m=-l$ 至 $m=l$
+    * 前 $n$ 阶共有 $n^2$ 个函数
+* 为什么不把三维球面展开到二维再用傅里叶级数求解和近似：求完反推回去会裂开（
+  * 而 SH 本来就定义在球面上的任意方向，是连续的，适合用来直接分析球面上函数的性质
+* 每个球谐基函数 $B_i(\omega)$ 用一个`勒让德多项式`（Legendre Polynomial）描述
+* **`投影 Projection`** - 用基函数 $B_i(\omega)$ 表示某函数 $f(\omega)$ 时，求该基函数的系数的过程：两个函数对应位置逐点相乘再作积分
+    $$ c_i = \int_{\Omega} f(\omega)B_i(\omega)\ d\omega $$
+* **`Reconstruction`** - 用基函数及相应系数恢复原函数
+  * 只需要用部分阶数，恢复出特征最突出的部分的原函数即可
+* Q & A
+  * 可以认为环境光 environment map 是一个描述了环境光的二维函数，投影到每个基函数得到一个值
+  * 通常取前 $n$ 阶并将其中的所有基函数都用上
+  * 投影积分的求法：采样/预计算
+  * product integral 的本质就是点乘
+
+## 用球谐函数解决环境光的 shading
 
