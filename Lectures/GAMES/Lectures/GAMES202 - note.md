@@ -42,7 +42,10 @@
 * [Lecture 6 - Real-Time Environment Mapping（Precomputed Radiance Transfer）](#lecture-6---real-time-environment-mappingprecomputed-radiance-transfer)
   * [基本数学知识（GAMES101 回顾）](#基本数学知识games101-回顾)
   * [Spherical Harmonics](#spherical-harmonics)
-  * [用球谐函数解决环境光的 shading](#用球谐函数解决环境光的-shading)
+  * [用球谐函数解决 diffuse 物体的环境光 shading 问题](#用球谐函数解决-diffuse-物体的环境光-shading-问题)
+  * [Precomputed Radiance Transfer（PRT）](#precomputed-radiance-transferprt)
+  * [球谐函数的性质 Properties of Spherical Harmonics](#球谐函数的性质-properties-of-spherical-harmonics)
+* [Lecture 7](#lecture-7)
 
 <!-- /TOC -->
 
@@ -435,5 +438,89 @@
   * 投影积分的求法：采样/预计算
   * product integral 的本质就是点乘
 
-## 用球谐函数解决环境光的 shading
+## 用球谐函数解决 diffuse 物体的环境光 shading 问题
+* Recall Prefiltering：即对环境光贴图做模糊
+* `Consider 1` - 考虑对 diffuse 物体求环境光部分的 shading 式子：
+  * Lighting - 来自 environment mapping，是一个定义在球面上的函数
+  * BRDF - 定义在整个半球上的光滑函数，当物体是 diffuse 时，类似一个低通滤波器，大部分为低频，可以用较少阶（三阶）的 SH 就能描述。（取前几阶球谐基函数作投影，高阶部分的投影系数基本为 $0$，即没有高阶部分对应的高频信息）
+  * 二者做 product integral 操作
+* `Consider 2` - 又已知 product integral 中[`乘积的频率由二者中更低的一方决定`](#基本数学知识games101-回顾)，所以无论环境光频率多高，只要照射到 diffuse 物体上，最终结果基本都是低频的
+* `Consider 3` - 于是考虑用几阶的球谐函数去表示光照：从一阶测起，看效果如何，且可以定量从 `RMS error` 的角度取得数值结果。
+  
+  <!-- * 一阶、二阶、三阶结果如图 -->
+
+    <!-- ![](note%20-%20image/GAMES202/18.png) -->
+    <!-- ![](note%20-%20image/GAMES202/19.png) -->
+    <!-- ![](note%20-%20image/GAMES202/20.png) -->
+    
+  * 最终得出：任意环境光，只要物体是 diffuse，都能用三阶以内表示光照并得到不错的效果
+* `Conclusion`：分析 BRDF 的频率，决定用几阶的函数近似光照
+* Chatting time
+  * 最后得到与法线相关的 $E(n) = n^tMn$
+  * （两行代码拿博士学位并开创了 PRT 时代 orz
+
+## Precomputed Radiance Transfer（PRT）
+* 将渲染方程中的 lighting、visibility、BRDF 都用一张 mapping 表示
+
+    $$ L(o) = \int_\Omega L(i)\ V(i)\ f_r(i, o)\ max(0, \overrightarrow{n}\cdot\overrightarrow{i})\ d_i $$
+  * $L(i)$ - 即 environment map
+
+    ![](note%20-%20image/GAMES202/21.png)
+  * $V(i)$ - 从当前的 shading point 往各方向看，所得的遮挡贴图（【？】突然迷惑 visibility term 是不是只是实时渲染里考虑阴影的时候另外加的？原始 rendering equation 里没有的吧……好像也不是哪个项变化出来的……？lighting、BRDF、cos、$d\omega$ 看着都挺完整啊 orz... [CS348B - Lecture 13 - page 8](http://graphics.stanford.edu/courses/cs348b-10/lectures/renderingequation/renderingequation.pdf) 这疑似有个解释但没看懂怎么来的 orz（阿巴阿巴这课竟然是 PBR 那两位作者开的卧槽好羡慕……
+
+    ![](note%20-%20image/GAMES202/22.png)
+  * $f_r(i,o)$ - 本身是四维量，给定 $o$ 出射/观察方向，剩下的 $i$ 为二维，也能描述成一个球面函数（【？】怎么就四维二维【check】应该是指 $\omega_i$、$\omega_o$ 都是立体角，所以实际上是要用两个弧度量来表示，得到一个具体的三维方向？立体角 Solid Angle 转球形角 Sphere Angle：$d\omega = sin\theta\ d\theta\ d\phi$）
+
+    ![](note%20-%20image/GAMES202/23.png)
+* 简 单 粗 暴：每个 shading point 存表示三个项的 mapping 表示其球面函数，并遍历其中所有像素求乘积（迅 速 去 世
+* 注意此时考虑了 visibility，带 shadow
+* Paper SIGGRAPH 2002 by Sloan - *Precomputed Radiance Transfer for Real-Time Rendering in Dynamic, Low-Frequency Lighting Environments*
+* **`Basic idea of PRT`**
+
+    ![](note%20-%20image/GAMES202/24.png)
+  * 假设：场景中只有光照发生改变。将渲染方程看作 lighting、light transport（除光照外的剩余项） 两部分
+  * Step 1 - `用基函数表示 lighting 项`
+    $$ L(\bold{i}) \approx \sum\ l_i\ B_i(\bold{i}) $$
+  * Step 2 - `预计算 light transport 项`：由于假设了该部分不变，① 可看作当前 shading point 本身的一个属性，所以提前算出来；② 整体也是一个球面函数，也可以用基函数表示
+  * Step 3 - 运行时 diffuse 物体做点乘，glossy 物体作 matrix-vector multiplication
+    * diffuse 情况：
+
+        ![](note%20-%20image/GAMES202/25.png)
+      * ① BRDF 为常数（$k_d$），直接提出积分。
+      * ② $L(i)$ 用基函数及系数表示后代入
+      * ③ 交换求和与积分号（目前除了 differentiable rendering 以外，渲染领域都不考虑什么情况下能交换，摁换就完事了（
+      * ④ 惊奇地发现用来表示 $L(i)$ 的基函数和 light transport 拼起来了！也就是 `light transport 投影到各个基函数上的系数`（可以看作是用基函数代替了 lighting 项，即“用该基函数所描述的环境光照，照亮该物体”[Lecture 6 - 93:14]）
+      * ⑤ 最终求 shading + shadow 的时候只要对 $l_i$、$T_i$ 求点乘即可
+    * glossy 情况：（in Lecture 7）
+  * `Tips`
+    * 基于只有光照改变的假设，所以场景中物体不能动，保证各 shading point 的 visibility term 保持不变
+    * 由于预计算了 lighting term 的 environment mapping，对于换光源的情况可以通过换贴图解决。对于相同光源做旋转，利用球谐函数的旋转不变性处理，可以直接得到旋转后的相应系数。
+* Q&A
+  * Q：旋转光照不会影响 visibility term 吗？  
+    A：不影响。  
+    【？】这旋转是不是指光源自身的 rotation？而不是在世界坐标系下绕什么东西转了一下导致自身的 position 发生变化？【？？？】晕了，指哪种转 orz...
+  * Q：物体变化的情况能处理吗  
+    A：能，有相关研究方向
+  * Q：随时间变化的程序纹理的环境光  
+    A：无法通过这种预计算的方式做
+  * Q：任意点的 visibility map 如何得到？  
+    A：可以认为从 shading point 发射很多光线 trace 得到，预计算的时间充裕（编译时间）
+
+## 球谐函数的性质 Properties of Spherical Harmonics
+* `正交性` orthonormal：将一个基函数投影到其它基函数，系数为 $0$
+    $$ \int_\Omega B_i(\bold{i})\cdot B_j(\bold{i})\ d_i = 1 (i = j) $$
+    $$ \int_\Omega B_i(\bold{i})\cdot B_j(\bold{i})\ d_i = 1 (i \neq j) $$
+* simple projection/reconstruction：任意球面函数投影到基函数即做 product integral
+* **`旋转不变性`** simple rotation：旋转任意一个 SH Basis 函数的结果，都可以由同阶的基函数的线性组合得到
+  * 所以光源旋转情况的处理：  
+    光源旋转  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $\Downarrow$  
+    lighting mapping 定义的球面函数旋转（因为是由光源得到的）  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $\Downarrow$  
+    用来表示该球面函数的基函数旋转（感觉可以类比坐标系的相对旋转=。=）
+  * 于是又可以打表：对某基函数的旋转，相当于`做一次对同阶基函数系数的更改`
+* 更自然的处理：将光线的多次弹射当做一种 light transport 的方式，并预计算 [Lecture 6 - 约 95:00]
+
+# Lecture 7
+
 
