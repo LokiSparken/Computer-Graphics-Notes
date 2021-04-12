@@ -667,10 +667,40 @@ rotate() | 旋转
   * [ ] 实现 Gouraund shading
 
 ## 14. Materials
+* shader 中定义 struct
+* [一些材质的参数](http://devernay.free.fr/cours/opengl/materials.html)
 
 ## 15. Lighting Maps
+* 封装 sampler2D 类型纹理到 Material 材质结构体
+* sampler2D：`不透明类型 Opaque Type`
+  * 该类型只能通过 uniform 定义，否则 GLSL 会抛出异常
+  * 所以封装了该种类型的结构体都只能定义 uniform
+* Exercises
+  * [ ] 尝试彩色的 specular map
+  * [ ] emission map
 
 ## 16. Light Casters
+* 平行光 Directional Light
+  * 假设光源无限远，所有 ray 方向视作平行光线
+* 点光源 Point Light
+  * 点光源衰减模拟公式
+    $$ F_{att} = \frac{1.0}{K_c + K_l * d + K_q * d^2} $$
+    * $d$：到光源的距离
+    * $K_c$ 自定义常量：通常设为 $1$，用于限制分母，避免强度大于 $1$
+    * $K_l$ 自定义线性量：根据距离线性衰减
+    * $K_q$ 自定义平方量：鉴于点光源近处的衰减变化迅速，远处变化缓慢，该量用于在距离值大的时候减缓距离对衰减变化速度的影响
+    * [Param. value reference - Ogre3D wiki](http://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation)
+* 聚光源 Spotlight
+  * 圆锥形光，类似路灯/手电筒
+
+    ![](images/9.png)
+  * 定义：position、direction 圆锥中心线、`cutoff` 扇形切面圆心角的一半
+  * 判别：tracing ray 方向与 spot light direction 夹角 $\theta$ 是否在 $\phi$ 范围内
+  * Tips
+    * 角度值比较涉及反余弦计算，比较复杂，所以用余弦值进行比较
+    * 软化边缘：设内外圆锥，并`在内外余弦值之间根据实际夹角插值`作衰减
+        $$ I = \frac{\theta - \gamma}{\epsilon} $$
+        * $\epsilon$：内外圆锥余弦值差 $\phi - \gamma$
 
 ## 17. Multiple lights
 
