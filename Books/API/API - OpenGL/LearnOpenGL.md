@@ -707,6 +707,11 @@ rotate() | 旋转
 ## 18. Review
 
 # Part Ⅲ - Model Loading
+* [Wavefront 的 .obj 格式](https://en.wikipedia.org/wiki/Wavefront_.obj_file)
+* [Assimp](http://assimp.org/)
+* tips
+  * `offsetof(structName, variableInStruct)` 返回变量距离结构体首地址的字节偏移量 `Byte Offset`
+  * 网格节点间的父子关系：便于保持模型内部位置关系，统一作位移等操作
 
 # Part Ⅳ - Advanced OpenGL
 
