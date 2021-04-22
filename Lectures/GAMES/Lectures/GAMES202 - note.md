@@ -43,9 +43,18 @@
   * [基本数学知识（GAMES101 回顾）](#基本数学知识games101-回顾)
   * [Spherical Harmonics](#spherical-harmonics)
   * [用球谐函数解决 diffuse 物体的环境光 shading 问题](#用球谐函数解决-diffuse-物体的环境光-shading-问题)
-  * [Precomputed Radiance Transfer（PRT）](#precomputed-radiance-transferprt)
+  * [Precomputed Radiance Transfer（PRT） - Idea & Diffuse](#precomputed-radiance-transferprt---idea--diffuse)
   * [球谐函数的性质 Properties of Spherical Harmonics](#球谐函数的性质-properties-of-spherical-harmonics)
-* [Lecture 7](#lecture-7)
+* [Lecture 7 - Real-time Global Illumination (in 3D)](#lecture-7---real-time-global-illumination-in-3d)
+  * [Precomputed Radiance Transfer（PRT） - Glossy](#precomputed-radiance-transferprt---glossy)
+  * [More basis functions](#more-basis-functions)
+  * [More information](#more-information)
+  * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d)
+    * [Reflective Shadow Maps（RSM）](#reflective-shadow-mapsrsm)
+    * [Light Propagation Volumes（LPV）](#light-propagation-volumeslpv)
+* [Lecture 8](#lecture-8)
+  * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d-1)
+    * [Voxel Global Illumination（VXGI）](#voxel-global-illuminationvxgi)
 
 <!-- /TOC -->
 
@@ -459,7 +468,7 @@
   * 最后得到与法线相关的 $E(n) = n^tMn$
   * （两行代码拿博士学位并开创了 PRT 时代 orz
 
-## Precomputed Radiance Transfer（PRT）
+## Precomputed Radiance Transfer（PRT） - Idea & Diffuse
 * 将渲染方程中的 lighting、visibility、BRDF 都用一张 mapping 表示
 
     $$ L(o) = \int_\Omega L(i)\ V(i)\ f_r(i, o)\ max(0, \overrightarrow{n}\cdot\overrightarrow{i})\ d_i $$
@@ -491,6 +500,10 @@
       * ③ 交换求和与积分号（目前除了 differentiable rendering 以外，渲染领域都不考虑什么情况下能交换，摁换就完事了（
       * ④ 惊奇地发现用来表示 $L(i)$ 的基函数和 light transport 拼起来了！也就是 `light transport 投影到各个基函数上的系数`（可以看作是用基函数代替了 lighting 项，即“用该基函数所描述的环境光照，照亮该物体”[Lecture 6 - 93:14]）
       * ⑤ 最终求 shading + shadow 的时候只要对 $l_i$、$T_i$ 求点乘即可
+      * ④ 另一条途径：直接将两部分都用基函数表示，在积分中展开，转化为双重求和问题，每一项为两个系数与积分值的乘积。
+            
+        ![](note%20-%20image/GAMES202/26.png)
+        * 此时由于基函数的正交性质，当且仅当 $p=q$ 积分值为 $1$ 需要计算，其它情况积分值都为 $0$，所以复杂度还是 $O(n)$
     * glossy 情况：（in Lecture 7）
   * `Tips`
     * 基于只有光照改变的假设，所以场景中物体不能动，保证各 shading point 的 visibility term 保持不变
@@ -521,6 +534,69 @@
   * 于是又可以打表：对某基函数的旋转，相当于`做一次对同阶基函数系数的更改`
 * 更自然的处理：将光线的多次弹射当做一种 light transport 的方式，并预计算 [Lecture 6 - 约 95:00]
 
-# Lecture 7
+# Lecture 7 - Real-time Global Illumination (in 3D)
+## Precomputed Radiance Transfer（PRT） - Glossy
+* **`Basic idea of PRT`**
+
+    ![](note%20-%20image/GAMES202/24.png)
+  * 假设：场景中只有光照发生改变。将渲染方程看作 lighting、light transport（除光照外的剩余项） 两部分
+  * Step 1 - `用基函数表示 lighting 项`
+    $$ L(\bold{i}) \approx \sum\ l_i\ B_i(\bold{i}) $$
+  * Step 2 - `预计算 light transport 项`
+  * Step 3 - glossy 物体作 matrix-vector multiplication
+    * diffuse 情况：in Lecture 6
+    * glossy 情况：不同的观察方向 $o$ 会产生不同的 BRDF，也即产生不同的 light transport 项和不同的投影结果（投影结果仍然是关于观察方向 $o$ 的函数，即一向量，而非定值），=> 把该投影结果再投影到基函数，此时得到的系数即为一系数矩阵，行列头分别为其中一层投影
+        
+        ![](note%20-%20image/GAMES202/27.png)
+        * 此时存储需求 up，最终计算从点乘（16）变成向量矩阵乘（vector16 * matrix(16*16)），开销也 up
+        * 直播现场 discuss：当 glossy 频率非常大（接近镜面反射），低阶基函数的近似描述与实际相差很远时，PRT 无法解决，可以直接 ray tracing 了 2333
+* **`Interreflection`**：把多次反射当做 light transport 的一部分，预计算部分间接弹射
+  * 科普：实时中把材质分为 diffuse、glossy、specular 镜面反射三类
+  * 科普：三类材质加 Light、Eye，给光线传播路径分类
+    * LE：L(D|G)*E
+    * LGE：LS*(D|G)*E
+    * 如 caustics 路径为 LSDE
+  * 根据 PRT 思想把 Light 和 light transport 分离，中间传播的 transport 预计算后最终运行时间与 transport 有多复杂无关，所以能计算任意复杂的 trans 路径
+  * 考虑只替换 Light 部分时的理解：“用基函数所描述的环境光照，照亮该物体”，
+* 局限性小结
+  * SH 自身特性：不适合表示太高频的信息
+  * 预计算缺陷：适用于静态场景和材质
+  * 大量预计算数据的存取
+* Follow up works
+  * 不用 SH，用其它的基函数
+  * 把 light transport 进一步拆分成 BRDF、visibility
+  * 试图让静态场景、几何、材质可以略作变化
+  * 应用到更多的高级材质如 translucent、hair...
+  * 试图不做预计算，求解析解 precomputation => analytic computation
+* Q&A
+  * 预计算时选取的观察方向：随机 grid
+  * 目前的 DXR 可以结合在光栅化里做实时 rt
+  * 预计算的结果可以看成材质的一部分内容
+## More basis functions
+* Wavelet（Haar，有多种）
+  * SH 定义在球面上，小波定义在图块上
+  * SH 取部分阶压缩信息，小波的投影大部分接近或为 $0$，取系数较大的部分项，保留高频信息
+    
+    ![](note%20-%20image/GAMES202/28.png)
+    * 递归地对左上低频信息做多次小波变换，高度压缩
+    * 科普：JPEG 格式图片用的压缩方式类似小波变换，为离散余弦变换（DCT）
+  * 比 SH 的优越处：在频率高低方面没有局限性
+  * 2D 表示球面函数有缝 => 不用 spherical map，用 cubemap
+  * 局限性：没有 SH 的旋转不变性，不支持光照快速旋转
+* Zonal Harmonics
+* Spherical Gaussian（SG）
+* Piecewise Constant
+## More information
+* [Ravi PRT survey - `Precomputation-Based Rendering`](https://sites.cs.ucsb.edu/~lingqi/teaching/games202.html)
+
+<!-- Lec7 59:29 -->
+
+## Real-Time Global Illumination（in 3D）
+### Reflective Shadow Maps（RSM）
+
+### Light Propagation Volumes（LPV）
 
 
+# Lecture 8
+## Real-Time Global Illumination（in 3D）
+### Voxel Global Illumination（VXGI）

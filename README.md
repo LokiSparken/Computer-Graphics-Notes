@@ -58,7 +58,7 @@
 ---
 
 # Personal Road to Games & CG
-> <font color=#6495ED size=6>DONE List Encourage！</font> 
+> <font color=#6495ED size=6>DONE List Encourage！</font>  
 > <font color=#6495ED size=6>——假装有变强。</font>
 
 增量式笔记，已学过的部分后续不再赘述。
@@ -71,10 +71,7 @@
 * CG - Unity Shader 入门精要（主 shader）
 * ing
   * CG - LearnOpenGL
-  * CG - 《上古时代的图形学》
-  * CG - dear soft renderer（正在新建文件夹）
   * CG - GAMES202
-  * CG - D3D12 龙书
 
 # Computer Graphcis & Game Engine
 
