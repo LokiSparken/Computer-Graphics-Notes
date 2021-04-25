@@ -50,8 +50,9 @@
   * [More basis functions](#more-basis-functions)
   * [More information](#more-information)
   * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d)
+    * [Chatting time](#chatting-time)
     * [Reflective Shadow Maps（RSM）](#reflective-shadow-mapsrsm)
-    * [Light Propagation Volumes（LPV）](#light-propagation-volumeslpv)
+    * [Light Propagation Volumes（LPV）（in Lecture 8）](#light-propagation-volumeslpvin-lecture-8)
 * [Lecture 8](#lecture-8)
   * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d-1)
     * [Voxel Global Illumination（VXGI）](#voxel-global-illuminationvxgi)
@@ -589,13 +590,63 @@
 ## More information
 * [Ravi PRT survey - `Precomputation-Based Rendering`](https://sites.cs.ucsb.edu/~lingqi/teaching/games202.html)
 
-<!-- Lec7 59:29 -->
-
 ## Real-Time Global Illumination（in 3D）
+### Chatting time
+* GI survey - The state of the art in interactive global illumination
+  * 科普：该 survey 的 teaser image（秀本文操作的绝美结果图）
+
+    ![](note%20-%20image/GAMES202/29.png)
+  * 简单地用 ambient 摁提亮度的 hack 不能解决 GI 问题，因为实际上复杂场景中的各处亮度差别很大。如上图书本下方右侧的一些 caustics。
+* recap: primary/secondary light source
+
 ### Reflective Shadow Maps（RSM）
+* 渲染被次级光源（secondary light source）照亮所需知道的信息
+  * `次级光源` secondary light source：即被 primary light source 照亮的区域，看作一块块 surface patch
+  * `各次级光源对当前 shading point 的贡献`：把各 surface patch 看作面光源 area light —— path tracing, 采样
+* **`Step 1 - 求 secondary light source 及其出射能量`**
+  * 次级光源即 shadow map 中各 texel（surface patch）
+  * 对直接渲染即不考虑 GI 的情况：出射方向即 camera。此处要考虑间接光照，但在实际 shading 之前不确定出射方向 —— 
+  * **`Assumption`**：反射物均为 diffuse（注意接收物不限制，因为只需在此处考虑次级光源的出射方向）
+  * 则各出射方向的出射能量相同
+* **`Step 2 - 求贡献（先考虑单个 texel surface patch 对当前 shading point 的贡献）`**
+  * recap：area light 对 shading point 的贡献需要在计算时采样，但在 shading point 上采样入射方向的有效性低，因为只有能到达光源的采样方向才是有贡献的，可以反向直接在光源上采样。那么当前 shading point 来自单个 texel surface patch 的入射贡献就是 $L_i(q\rightarrow p)$ 
+  * 将对单位立体角的积分换元成对微表面积的积分
 
-### Light Propagation Volumes（LPV）
+    ![](note%20-%20image/GAMES202/30.png)
+  * `近似`：当微表面极小时，在积分范围中任取一点代入求出式中各项值作为积分值的近似
+  * `求解` one diffuse reflective patch 即 $L_i(q\rightarrow p)$
+    $$ \begin{aligned}
+        f_{r_q} &= \frac{\rho}{\pi} \\
+        L_i &= f_{r_q}\cdot Radiance_{o_q}(=\frac{\Phi}{dA})
+    \end{aligned} $$
+    * 其中 radiance 给出的分母上的 $dA$ 与积分式抵消
+    * 实际只需 BRDF 及 incident flux 的信息来求出 reflected flux
+  * `问题`
+    * 次级光源到 shading point 的 visibility 不好算：啊这？就不算了？
+  * `剪枝`
+    * visibility（但，难算）
+    * orientation：部分次级光源从方向上就显然不会对当前 shading point 结果产生贡献
+    * distance：较远的次级光源经衰减后贡献很小，可以只考虑 shading point 附近的次级光源。就近次级光源：又见大胆假设！把 shading point 投影到 shadow map 上，取附近 or 深度相近的认为是附近次级光源
+  * `RSM 对 shadow map 的 record 信息需求`
+    * depth
+    * world coordinate
+    * normal：计算 cos 项
+    * flux
+* 总结
+  * Pros
+    * 容易实现，基于 shadow map
+  * Cons
+    * 传承自 shadow map 的问题，primary light 较多时 shadow map 数 up，RSM 随之增长
+    * 忽略了次级 visibility
+    * 各种假设带来的问题
+    * 采样率和质量的 tradeoff
+* Extra
+  * texel surface patch 类似于离线渲染中的 virtual point light（VPL）方法（Instant Radiosity 即时辐射度）
+  * 关于 RSM 从技术来说基于 shadow map 是图像空间的做法（在第一个 pass 中将场景信息记录到纹理图像），这里归为 3D 是考虑到其不会在记录信息时丢失信息（图像空间做法的常见问题）
 
+### Light Propagation Volumes（LPV）（in Lecture 8）
+* 基于 RSM
+* 
 
 # Lecture 8
 ## Real-Time Global Illumination（in 3D）
