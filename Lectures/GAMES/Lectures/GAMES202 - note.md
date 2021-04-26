@@ -53,9 +53,13 @@
     * [Chatting time](#chatting-time)
     * [Reflective Shadow Maps（RSM）](#reflective-shadow-mapsrsm)
     * [Light Propagation Volumes（LPV）（in Lecture 8）](#light-propagation-volumeslpvin-lecture-8)
-* [Lecture 8](#lecture-8)
+* [Lecture 8 - Real-Time Global Illumination (Screen Space)](#lecture-8---real-time-global-illumination-screen-space)
   * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d-1)
     * [Voxel Global Illumination（VXGI）](#voxel-global-illuminationvxgi)
+  * [Real-Time Global Illumination（Screen Space）](#real-time-global-illuminationscreen-space)
+    * [Screen Space Ambient Occlusion（SSAO）](#screen-space-ambient-occlusionssao)
+    * [Screen Space Directional Occlusion（SSDO）](#screen-space-directional-occlusionssdo)
+    * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
 
 <!-- /TOC -->
 
@@ -646,8 +650,63 @@
 
 ### Light Propagation Volumes（LPV）（in Lecture 8）
 * 基于 RSM
-* 
+* Chatting time
+  * LPV first introduced in CryEngine 3 （Crysis 孤岛危机（显卡危机
+  * by Anton Kaplanyan
+* Key：`Query the radiance from any direction at any shading point`
+* Idea：`Radiance travels in a straight line and does not change`
+  * 沿直线传播
+  * 定值
+  * 注：平方衰减的是 intensity，定义在单位面积上。而 radiance 定义在直线上。
+* Solution：把场景划分为网格 grid
+  * Step 1 - Generation（求次级光源，同 RSM）
+  * Step 2 - Injection（把场景信息，即`各次级光源接收到的直接光照`，注入到 `3D grid`）
+    * 可用三维纹理
+    * 对每个 grid cell，计算其内部所有 virtual light sources 总和
+    * 得到各 grid cell 朝各方向的 radiance distribution
+    * 对该分布用 SH 做压缩（工业界：前两阶）
+    * `得到 indirect radiance 初值`
+  * Step 3 - Propagation 传播
+    * 对每个 grid cell，把 radiance 按照其穿透 face 的方向传播到邻近的 6 cells
+    * 传播后在其它 cell 中仍旧用 SH 表示
+    * 迭代到 volume 稳定（约四五次）
+  * Step 4 - Rendering
+    * 把 shading point 定位到相应的 grid cell
+    * 取其 incident radiance 
+    * 着色计算
+* Problem
+  * Light leaking：grid 粒度不够细密，物体比 grid 粒度小的话，背面背光处在 shading 时可能会由于 grid 过大取到正面处的 incident radiance 导致背面亮度过大
+  * 但 grid 粒度太细就有存储过大和 propagation 过程计算量太大的问题
+* Q&A
+  * propagation 过程中不考虑 visibility
+  * propagation 不直接传播给斜对角 grid，因为会通过邻近的间接一步传过去
+  * grid 粒度问题：自适应 or 分层（cascade/level of detail/multi scale）
+  * 三维纹理：一般至少比 pixel 少一个数量级
 
-# Lecture 8
+# Lecture 8 - Real-Time Global Illumination (Screen Space)
 ## Real-Time Global Illumination（in 3D）
 ### Voxel Global Illumination（VXGI）
+* two-pass
+* Differences with RSM
+  * directly illuminated pixels -> hierarchical voxels：次级光源由像素 surface patch 改成体素，建立层级树形结构
+  * sampling on RSM -> 支持反射物可以是 glossy：从 camera 出发渲染场景，tracing reflected cone 
+* Pass 1 - `Light pass`
+  * 在 voxel 中存储 incident radiance、light direction、normal
+  * 记录照亮该 voxel 的直接光的方向分布、voxel 中的各反射表面的法线分布，求出出射的分布
+  * 整合到高层
+* Pass 2 - `Camera pass`
+  * 渲染 glossy pixel 时
+    * 往反射方向作 cone tracing
+    * 认为该反射 cone 内的体素都对当前 shading point 有贡献
+    * cone 与 voxel 求交过程中用 hierarchy structure 加速
+  * diffuse
+    * 整多个小圆锥
+<!-- 43:42 -->
+## Real-Time Global Illumination（Screen Space）
+### Screen Space Ambient Occlusion（SSAO）
+
+
+### Screen Space Directional Occlusion（SSDO）
+
+### Screen Space Reflection（SSR）
+
