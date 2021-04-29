@@ -49,17 +49,18 @@
   * [Precomputed Radiance Transfer（PRT） - Glossy](#precomputed-radiance-transferprt---glossy)
   * [More basis functions](#more-basis-functions)
   * [More information](#more-information)
-  * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d)
+  * [Real-Time Global Illumination（in 3D/world space）](#real-time-global-illuminationin-3dworld-space)
     * [Chatting time](#chatting-time)
     * [Reflective Shadow Maps（RSM）](#reflective-shadow-mapsrsm)
     * [Light Propagation Volumes（LPV）（in Lecture 8）](#light-propagation-volumeslpvin-lecture-8)
 * [Lecture 8 - Real-Time Global Illumination (Screen Space)](#lecture-8---real-time-global-illumination-screen-space)
-  * [Real-Time Global Illumination（in 3D）](#real-time-global-illuminationin-3d-1)
+  * [Real-Time Global Illumination（in 3D/world space）](#real-time-global-illuminationin-3dworld-space-1)
     * [Voxel Global Illumination（VXGI）](#voxel-global-illuminationvxgi)
   * [Real-Time Global Illumination（Screen Space）](#real-time-global-illuminationscreen-space)
     * [Screen Space Ambient Occlusion（SSAO）](#screen-space-ambient-occlusionssao)
     * [Screen Space Directional Occlusion（SSDO）](#screen-space-directional-occlusionssdo)
     * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
+* [Lecture 9 -](#lecture-9--)
 
 <!-- /TOC -->
 
@@ -594,7 +595,7 @@
 ## More information
 * [Ravi PRT survey - `Precomputation-Based Rendering`](https://sites.cs.ucsb.edu/~lingqi/teaching/games202.html)
 
-## Real-Time Global Illumination（in 3D）
+## Real-Time Global Illumination（in 3D/world space）
 ### Chatting time
 * GI survey - The state of the art in interactive global illumination
   * 科普：该 survey 的 teaser image（秀本文操作的绝美结果图）
@@ -684,7 +685,7 @@
   * 三维纹理：一般至少比 pixel 少一个数量级
 
 # Lecture 8 - Real-Time Global Illumination (Screen Space)
-## Real-Time Global Illumination（in 3D）
+## Real-Time Global Illumination（in 3D/world space）
 ### Voxel Global Illumination（VXGI）
 * two-pass
 * Differences with RSM
@@ -701,12 +702,64 @@
     * cone 与 voxel 求交过程中用 hierarchy structure 加速
   * diffuse
     * 整多个小圆锥
-<!-- 43:42 -->
-## Real-Time Global Illumination（Screen Space）
-### Screen Space Ambient Occlusion（SSAO）
 
+## Real-Time Global Illumination（Screen Space）
+* screen space
+  * using information only from 'the screen' or post processing on existing renderings
+    * information：`the direct light rendering results`
+  * （ATTENTION：RSM image space）
+
+### Screen Space Ambient Occlusion（SSAO）
+* Chatting time
+  * SSAO first introduced by Crytek
+  * 效果：物体之间接触部分的深阴影 contact shadow，加深空间立体感
+  * 科普：三维建模（离线渲染）软件中称 AO 为天光
+* SSAO
+  * an `approximation` of GI
+  * in screen space
+* `Key Idea`
+  * 不计算间接光照，假设 ① `各方向 incident lighting 都相同`（类似 blinn-phong ambient），即 $L_i$ 定值
+  * 但不同 shading point 各方向上 `visibility 不同`
+  * 假设 ② 物体 diffuse，即 $f_r = \frac{\rho}{\pi}$ 为定值
+* Theory（数学原理）
+  * according to the approximation
+
+    ![](note%20-%20image/GAMES202/31.png)
+  * separating the visibility term
+
+    ![](note%20-%20image/GAMES202/32.png)
+    * 插播微积分紧急复习：$d\omega_i$ 换元 $sin\theta d\theta d\phi$
+    * 【？】怎么 cos 也跟出来了，拼一起能换元？【check】确实w，见 projected solid angle。
+    * 拆出的 $k_A$ 项代表任意 shading point 往各方向 visibility 关于 $cos$ 项的加权平均值（【？】但 $cos = \overrightarrow{n}\cdot \overrightarrow{\omega_i}$，就……看起来仿佛疑似又有那么一点物理意义？）
+    * 剩余的 $L_i$、BRDF 由假设 ①、② 易求都是常数，且符合该拆项近似的 accurate 条件（constant 即 smooth）
+  * 【！】不得了，感觉自己大脑突触有所发育（不
+  * `Projected solid angle`：$d_{x_\perp} = cos\theta_i\ d\omega_i$ 将半球表面的表面微元投影到其下的单位圆
+
+    ![](note%20-%20image/GAMES202/33.png)
+    * 科普：$\LaTeX$ 中正规微分符号写法 $\,\mathrm{d}$ - 最小空格加 \mathrm（\$\\,\mathrm{d}\$）（此处敲出正规的 $\LaTeX$ 向严谨致敬！）
+  * 另一角度，从两个假设所得的常量出发直接提到积分之外可得
+
+    ![](note%20-%20image/GAMES202/34.png)
+    * 但此时积分内剩余的部分不是关于 cos 的均值
+* `implement`
+  * in world space: ray tracing，但慢
+    * AO approximation：limited radius，限制 trace 半径
+  * in screen space?（SSAO）
+    * Step 1 - `在 shading point 为中心的球体内随机取点`
+    * Step 2 - `判断随机点是否在物体内部`，大胆假设：假装 camera 看不到就 shading point 也看不到，与深度图信息比较（【？】所以如果只是有物体把什么反射面挡住了的情况那这个反射面的贡献就算不到了吧【check】芜湖确实
+
+        ![](note%20-%20image/GAMES202/35.png)
+    * 考虑整个半球的原因：当年不能保证可以得到法线（弹幕：现在的 SSAO 会考虑半球）
+      * 此时`当不可见点超过半数时才考虑 AO`，即认为该情况下表示所需半球也有不可见点
+      * 没有考虑 cos 项
+* 问题
+  * 会出现不该有的遮挡 false occlusion
+
+    ![](note%20-%20image/GAMES202/36.png)
+  * 现在能得到法线，就在半球上整：HBAO，考虑的遮挡范围也有优化，减轻了一些 false occlusion
 
 ### Screen Space Directional Occlusion（SSDO）
 
 ### Screen Space Reflection（SSR）
 
+# Lecture 9 - 
