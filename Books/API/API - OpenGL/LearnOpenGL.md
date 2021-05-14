@@ -71,6 +71,7 @@
   * [17. Multiple lights](#17-multiple-lights)
   * [18. Review](#18-review)
 * [Part Ⅲ - Model Loading](#part-ⅲ---model-loading)
+  * [Assimp 编译配置](#assimp-编译配置)
 * [Part Ⅳ - Advanced OpenGL](#part-ⅳ---advanced-opengl)
 * [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
 * [Part Ⅵ - PBR](#part-ⅵ---pbr)
@@ -652,19 +653,32 @@ rotate() | 旋转
 * 用一个物体可视化光源的位置
 
 ## 13. Basic Lighting
+* Phong shading
+  * ambient
+    * ambient 强度
+    * ambientColor 环境光颜色
+  * diffuse
+    * diffuse 系数：考虑光线在物体接收表面垂直方向上的能量才有贡献，dot(normal, lightDirection)
+    * lightColor 光源颜色
+  * specular
+    * intensity 强度
+    * shininess 指数系数
+    * specular 系数：考虑观察方向和镜面反射方向的夹角，估计高光区域，dot(viewDirection, reflect(viewDirection, normal))，注意内置函数对参数向量的方向要求
+    * $intensity * dot^{shininess}$
 * 高光颜色相比物体颜色，更接近于光源颜色
 * Tips
   * 求夹角 $cos$ 值时要用单位向量
-  * 计算光源方向时要对光源位置和片元位置统一在同一坐标空间（世界坐标系）
+  * 计算光源方向 LightDirection 时要对光源位置 LightPosition 和片元位置 FragPosition 统一在同一坐标空间（世界坐标系），即只进行了模型变换的状态
+  * `法向量的坐标变换`：对物体进行非等比缩放会影响法向量的方向，用`模型变换矩阵左上的逆矩阵的转置`（mat3(transpose(inverse(ModelMatrix))) * normal）
   * 在 shader 里求转置开销很大，所以最好在 CPU 上做完传给 shader
   * 做各种计算都要统一坐标系，不过在世界坐标系下比较认知友好。在观察空间的话主要是视点总是在原点，就不用算这个了。
 * 不等比缩放 Non-uniform scale 和[法线空间](http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/)
 * 逐顶点：Gouraund shading，逐像素：Phong shading
 * Exercises
-  * [ ] 移动光源，看着色效果变化
-  * [ ] 试不同的 ambient、diffuse、specular 强度和高光指数
+  * [x] 移动光源，看着色效果变化
+  * [x] 试不同的 ambient、diffuse、specular 强度和高光指数
   * [ ] 在观察空间做 phong shading
-  * [ ] 实现 Gouraund shading
+  * [x] 实现 Gouraund shading
 
 ## 14. Materials
 * shader 中定义 struct
@@ -675,8 +689,10 @@ rotate() | 旋转
 * sampler2D：`不透明类型 Opaque Type`
   * 该类型只能通过 uniform 定义，否则 GLSL 会抛出异常
   * 所以封装了该种类型的结构体都只能定义 uniform
+* Tips
+  * 多张纹理使用时记得在 CPU 中为 shader 的 sampler 绑定纹理单元
 * Exercises
-  * [ ] 尝试彩色的 specular map
+  * [x] 尝试彩色的 specular map
   * [ ] emission map
 
 ## 16. Light Casters
@@ -700,9 +716,13 @@ rotate() | 旋转
     * 角度值比较涉及反余弦计算，比较复杂，所以用余弦值进行比较
     * 软化边缘：设内外圆锥，并`在内外余弦值之间根据实际夹角插值`作衰减
         $$ I = \frac{\theta - \gamma}{\epsilon} $$
+        * $\theta$：tracing ray 方向与 spot light direction 夹角
+        * $\gamma$：外圆锥余弦值
         * $\epsilon$：内外圆锥余弦值差 $\phi - \gamma$
 
 ## 17. Multiple lights
+* Tips
+  * **`各式中的向量一定要记得归一化！！！`**
 
 ## 18. Review
 
@@ -712,6 +732,36 @@ rotate() | 旋转
 * tips
   * `offsetof(structName, variableInStruct)` 返回变量距离结构体首地址的字节偏移量 `Byte Offset`
   * 网格节点间的父子关系：便于保持模型内部位置关系，统一作位移等操作
+## Assimp 编译配置
+* 编译
+  * download source
+  * cd assimp/
+  * cmake CMakeLists.txt 生成 assimp.sln
+    * 用 x86（Win32）
+    * cmake-gui 大法好（
+  * 在 assimp.sln 中编译（Debug/Release），得到 assimp-*.dll 丢进 `project/Debug`
+    * 否则在用相关函数时会 `ERROR：找不到 .dll`
+    * 因为静态库 .lib 内只有定义，不用的时候能过编译，但实际调用时需要找到 .dll 内的实现
+  * 配套的 .lib 丢进 `project/libs/assimp`
+  * assimp/include 丢到 `project/include/assimp`
+* 项目配置
+  * Linker - General - `Additional Library Directories`: add `libs/assimp`
+    * otherwise, `cannot open file '*.lib'`
+  * Linker - Input - `Additional Dependencies`: add `*.lib`
+* 使用
+    ```cpp
+    #include <../includes/assimp/Importer.hpp>
+    #include <../includes/assimp/scene.h>
+    #include <../includes/assimp/postprocess.h>
+
+    // #pragma comment (lib, "*.lib")
+
+    void load()
+    {
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(...);
+    }
+    ```
 
 # Part Ⅳ - Advanced OpenGL
 
