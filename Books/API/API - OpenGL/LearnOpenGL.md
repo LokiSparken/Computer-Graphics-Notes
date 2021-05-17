@@ -71,12 +71,45 @@
   * [17. Multiple lights](#17-multiple-lights)
   * [18. Review](#18-review)
 * [Part Ⅲ - Model Loading](#part-ⅲ---model-loading)
-  * [Assimp 编译配置](#assimp-编译配置)
+  * [19. Assimp](#19-assimp)
+    * [**`Assimp 编译配置`**](#assimp-编译配置)
+  * [20. Mesh](#20-mesh)
+  * [21. Model](#21-model)
 * [Part Ⅳ - Advanced OpenGL](#part-ⅳ---advanced-opengl)
+  * [22. Depth Testing](#22-depth-testing)
+    * [深度值精度问题与可视化](#深度值精度问题与可视化)
+  * [23. Stencil testing](#23-stencil-testing)
+  * [24. Blending](#24-blending)
+  * [25. Face culling](#25-face-culling)
+  * [26. Framebuffers](#26-framebuffers)
+  * [27. Cubemaps](#27-cubemaps)
+  * [28. Advanced Data](#28-advanced-data)
+  * [29. Advanced GLSL](#29-advanced-glsl)
+  * [30. Geometry Shader](#30-geometry-shader)
+  * [31. Instancing](#31-instancing)
+  * [32. Anti Aliasing](#32-anti-aliasing)
 * [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
+  * [33. Advanced Lighting](#33-advanced-lighting)
+  * [34. Gamma Correction](#34-gamma-correction)
+  * [35. Shadow Mapping](#35-shadow-mapping)
+  * [36. Point Shadows](#36-point-shadows)
+  * [37. Normal Mapping](#37-normal-mapping)
+  * [38. Parallax Mapping](#38-parallax-mapping)
+  * [39. HDR](#39-hdr)
+  * [40. Bloom](#40-bloom)
+  * [41. Deferred Shading](#41-deferred-shading)
+  * [42. SSAO](#42-ssao)
 * [Part Ⅵ - PBR](#part-ⅵ---pbr)
+  * [43. Theory](#43-theory)
+  * [44. Lighting](#44-lighting)
+  * [45. Diffuse irradiance](#45-diffuse-irradiance)
+  * [46. Specular IBL](#46-specular-ibl)
 * [Part Ⅶ - In Practice](#part-ⅶ---in-practice)
+  * [47. Debugging](#47-debugging)
+  * [48. Text Rendering](#48-text-rendering)
 * [Part Ⅷ - 2D Game](#part-ⅷ---2d-game)
+* [More - OIT](#more---oit)
+* [More - Animation](#more---animation)
 * [OpenGL API Document](#opengl-api-document)
 * [To Be Continued...](#to-be-continued)
 
@@ -727,13 +760,11 @@ rotate() | 旋转
 ## 18. Review
 
 # Part Ⅲ - Model Loading
+## 19. Assimp
 * [Wavefront 的 .obj 格式](https://en.wikipedia.org/wiki/Wavefront_.obj_file)
 * [Assimp](http://assimp.org/)
   * Importer.ReadFile() [后期处理选项](http://assimp.sourceforge.net/lib_html/postprocess_8h.html)：常用 aiProcess_Triangulate 图元三角化，aiProcess_FlipUVs 翻转纹理，aiProcess_GenNormals 法线生成，aiProcess_SplitLargeMeshes 网格细分，aiProcess_OptimizeMeshes 网格简化
-* tips
-  * `offsetof(structName, variableInStruct)` 返回变量距离结构体首地址的字节偏移量 `Byte Offset`
-  * 网格节点间的父子关系：便于保持模型内部位置关系，统一作位移等操作
-## Assimp 编译配置
+### **`Assimp 编译配置`**
 * 编译
   * download source
   * cd assimp/
@@ -763,22 +794,96 @@ rotate() | 旋转
         const aiScene* scene = importer.ReadFile(...);
     }
     ```
+## 20. Mesh
+## 21. Model
+* tips
+  * `offsetof(structName, variableInStruct)` 返回变量距离结构体首地址的字节偏移量 `Byte Offset`
+  * 网格节点间的父子关系：便于保持模型内部位置关系，统一作位移等操作
 
 # Part Ⅳ - Advanced OpenGL
+## 22. Depth Testing
+* depth testing：fragment shader 和 stencil test 之后，in screen space
+* OpenGL 中的屏幕坐标
+  * 根据 glViewport() 给出的屏幕大小参数从 NDC $\in [-1, 1]$ 变换到屏幕坐标左下到右上 $[(0, 0), (w, h)]$
+  * GLSL 在 fragment shader 中的内置变量 `gl_FragCoord` 
+    * x、y 分量为屏幕坐标
+    * z 分量为深度测试时与 depth buffer 做比较的深度值
+* 提前深度测试
+  * 在 fragment shader 前
+  * `限制`：不能对 fragment shader 写入 depth value
+  * 【？】：因为用的剪枝条件刀很大直接 cut 掉该 frag 所以这个 frag 相关的深度数据直接不计算？
+  * [深入剖析 GPU Early Z 优化](https://www.cnblogs.com/ghl_carmack/p/10166291.html)
+* 深度测试选项
+  * 打开深度测试：`glEnable(GL_DEPTH_TEST);`
+  * 每帧渲染前清空深度缓冲：`glClear(GL_DEPTH_BUFFER_BIT);`
+  * 做深度测试但不更新深度缓冲（禁用写入，仅在深度测试启用时有效）：`glDepthMask(GL_FALSE);`
+  * 设置深度测试的方式：`glDepthFunc(default = GL_LESS)`
+
+    ![](images/10.png)
+### 深度值精度问题与可视化
+* 由于经过透视投影，深度值不是线性的了，在接近近平面处变化平缓，精度高，反之精度低
+
+    ![](images/11.png)
+* 可视化深度图时，非线性值的结果比较不友好，需要逆变换到 NDC 再作逆投影
+* 深度冲突：精度问题导致的物体遮挡关系不稳定
+* 抗深度冲突
+  * 设计场景时不把物体放太近
+  * 把近平面设远
+  * 用更高精度的深度缓冲，牺牲性能
+
+## 23. Stencil testing
+
+
+## 24. Blending
+## 25. Face culling
+## 26. Framebuffers
+## 27. Cubemaps
+## 28. Advanced Data
+## 29. Advanced GLSL
+## 30. Geometry Shader
+## 31. Instancing
+## 32. Anti Aliasing
+
 
 # Part Ⅴ - Advanced Lighting
+## 33. Advanced Lighting
+## 34. Gamma Correction
+## 35. Shadow Mapping
+## 36. Point Shadows
+## 37. Normal Mapping
+## 38. Parallax Mapping
+## 39. HDR
+## 40. Bloom
+## 41. Deferred Shading
+## 42. SSAO
 
 # Part Ⅵ - PBR
+## 43. Theory
+## 44. Lighting
+## 45. Diffuse irradiance
+## 46. Specular IBL
 
 # Part Ⅶ - In Practice
+## 47. Debugging
+## 48. Text Rendering
 
 # Part Ⅷ - 2D Game
+
+# More - OIT
+
+# More - Animation
 
 # OpenGL API Document
 * [OpenGL 2.1 Reference Pages](https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/)
 * [OpenGL 4.5 Reference Pages](https://www.khronos.org/registry/OpenGL-Refpages/gl4/)
 
 # To Be Continued...
+
+备用
+* OpenGL
+    API | Describe
+    :--|:-------
+    glDepthFunc() | 设置深度测试的方式
 
 <!-- 使用FontAwesome -->
 <head> 
