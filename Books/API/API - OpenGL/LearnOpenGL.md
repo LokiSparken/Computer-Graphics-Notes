@@ -729,6 +729,7 @@ rotate() | 旋转
 # Part Ⅲ - Model Loading
 * [Wavefront 的 .obj 格式](https://en.wikipedia.org/wiki/Wavefront_.obj_file)
 * [Assimp](http://assimp.org/)
+  * Importer.ReadFile() [后期处理选项](http://assimp.sourceforge.net/lib_html/postprocess_8h.html)：常用 aiProcess_Triangulate 图元三角化，aiProcess_FlipUVs 翻转纹理，aiProcess_GenNormals 法线生成，aiProcess_SplitLargeMeshes 网格细分，aiProcess_OptimizeMeshes 网格简化
 * tips
   * `offsetof(structName, variableInStruct)` 返回变量距离结构体首地址的字节偏移量 `Byte Offset`
   * 网格节点间的父子关系：便于保持模型内部位置关系，统一作位移等操作
