@@ -79,7 +79,12 @@
   * [22. Depth Testing](#22-depth-testing)
     * [深度值精度问题与可视化](#深度值精度问题与可视化)
   * [23. Stencil testing](#23-stencil-testing)
+    * [Stencil testing](#stencil-testing)
+    * [Object Outlining](#object-outlining)
   * [24. Blending](#24-blending)
+    * [透明测试](#透明测试)
+    * [透明混合](#透明混合)
+    * [透明物体的渲染顺序](#透明物体的渲染顺序)
   * [25. Face culling](#25-face-culling)
   * [26. Framebuffers](#26-framebuffers)
   * [27. Cubemaps](#27-cubemaps)
@@ -814,7 +819,7 @@ rotate() | 旋转
   * 【？】：因为用的剪枝条件刀很大直接 cut 掉该 frag 所以这个 frag 相关的深度数据直接不计算？
   * [深入剖析 GPU Early Z 优化](https://www.cnblogs.com/ghl_carmack/p/10166291.html)
 * 深度测试选项
-  * 打开深度测试：`glEnable(GL_DEPTH_TEST);`
+  * 启用深度测试：`glEnable(GL_DEPTH_TEST);`
   * 每帧渲染前清空深度缓冲：`glClear(GL_DEPTH_BUFFER_BIT);`
   * 做深度测试但不更新深度缓冲（禁用写入，仅在深度测试启用时有效）：`glDepthMask(GL_FALSE);`
   * 设置深度测试的方式：`glDepthFunc(default = GL_LESS)`
@@ -832,9 +837,62 @@ rotate() | 旋转
   * 用更高精度的深度缓冲，牺牲性能
 
 ## 23. Stencil testing
+### Stencil testing
+* stencil buffer 可以在渲染过程中更新
+  * 其中单个像素通常位深 8bits，即一个像素可表示 $2^8=256$ 个值
+  * 不同的 window library 对模板缓冲的配置方式不同，GLFW 默认自动配置一个 stencil buffer
+* 模板测试选项
+  * 启用模板测试：`glEnable(GL_STENCIL_TEST);`
+  * 每帧渲染前清空模板缓冲：`glClear(GL_STENCIL_BUFFER_BIT);`
+  * 设置位掩码：`glStencilMask(default = 0xFF)`
+    * `位掩码 bitmask` 用来与将要写入缓冲的模板值做`按位与`
+    * 默认 bitmask = 0xFF 全 1 不影响输出，0x00 时全 0，与 GL_FALSE 禁用写入等价
+    * 大部分情况下只会用 0xFF 和 0x00 :)
+  * 设置模板测试的方式：`glStencilFunc(GLenum func, GLint ref, GLuint mask)`
+    * func：default =  GL_LESS，类似 glDepthFunc()
+    * ref：用于与模板缓冲内的值作比较
+    * mask：位掩码
+  * 设置模板缓冲的写入方式：`glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass)`
+    * sfail：当 stencil test 失败时，针对 stencil buffer 的操作
+    * dpfail：当 stencil test 成功、depth test 失败时，针对 stencil buffer 的操作
+    * dppass：两种测试都成功时对 stencil buffer 的操作
+    * default = GL_KEEP 
 
+        ![](images/12.png)
+### Object Outlining
+* 常用功能：Object outlining - scale object 后描边
+* Object outlining steps
+  * `启用模板测试`：Enable stencil writing
+  * `设置模板缓冲写入方式`：glStencilOp(func = GL_ALWAYS)，将需要描边的物体部分都置 1
+  * 渲染物体
+  * **`禁用模板写入及深度测试`**
+  * 略微放大描边物体
+  * 用另一个 fragment shader 再渲一次物体，把 stencil buffer 内为 0 的部分描边
+  * `重新启用 depth testing 并将 stencil func 置为默认的 GL_KEEP`
+* More
+  * 注：此时多物体描边会合并，要对不同物体分别描边则应在各物体渲染前都 clear buffer
+  * [ ] 【？】中间的禁用是出于性能考虑还是会影响结果？康康不禁用有没影响。
+  * [ ] 在 class : Model 中将是否描边集成到模型类
+  * [ ] 对描边用高斯模糊等做软化，效果更自然
 
 ## 24. Blending
+### 透明测试
+* 在 fragment shader 中 test alpha 值，`discard`
+* 注：当纹理平铺方式为 REPEAT 时，OpenGL 会在纹理边缘进行插值。当纹理带透明通道，alpha 也会被插值，`导致边缘产生框`。所以这种情况下，不需 REPEAT 的话记得把平铺方式设为 CLAMP_TO_EDGE。
+### 透明混合
+* 启用透明混合：`glEnable(GL_BLEND);`
+* OpenGL 的混合方程
+
+    ![](images/13.png)
+  * 颜色值由 OpenGL 自动读取纹理和 fragment shader 输出
+* 指定源因子和目标因子：`glBlendFunc(GLenum sfactor, GLenum dfactor)`，分离 RGB 和 Alpha 通道的因子 glBlendFuncSeparate()
+
+    ![](images/14.png)
+* 调整混合方程的混合模式：glBlendEquation(GLenum mode)
+### 透明物体的渲染顺序
+* [ ] 简单实现一下画家算法
+* [ ] [Order Independent Transparency](#more---oit)
+
 ## 25. Face culling
 ## 26. Framebuffers
 ## 27. Cubemaps
