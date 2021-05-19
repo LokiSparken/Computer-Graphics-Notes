@@ -87,6 +87,10 @@
     * [透明物体的渲染顺序](#透明物体的渲染顺序)
   * [25. Face culling](#25-face-culling)
   * [26. Framebuffers](#26-framebuffers)
+    * [Framebuffers 创建流程](#framebuffers-创建流程)
+    * [Attachment type 1 - Texture](#attachment-type-1---texture)
+    * [Attachment type 2 - Renderbuffer Object](#attachment-type-2---renderbuffer-object)
+    * [Post-processing](#post-processing)
   * [27. Cubemaps](#27-cubemaps)
   * [28. Advanced Data](#28-advanced-data)
   * [29. Advanced GLSL](#29-advanced-glsl)
@@ -894,7 +898,100 @@ rotate() | 旋转
 * [ ] [Order Independent Transparency](#more---oit)
 
 ## 25. Face culling
+* 面剔除：基于“一个物体只有部分表面会被观察者看到”，剔除背对 camera 的部分，节省计算开销
+* 正向面 Front Face & 背向面 Back Face `判定`
+  * 环绕顺序：默认逆时针顺序为正向
+  * 定义正向的逆时针顺序，翻转后即为背向的顺时针
+* 实现
+  * 启用面剔除：`glEnable(GL_CULL_FACE);`
+  * 剔除面的类型：`glCullFace(default = GL_BACK);`
+  * 规定正向环绕顺序：`glFrontFace(default = GL_CCW)`
+
 ## 26. Framebuffers
+* 帧缓冲：带 color/depth/stencil attachments，使用后相关的读写操作都和该帧缓冲的 attachment 交互。如深度测试时读取绑定到该帧缓冲的 depth attachment
+### Framebuffers 创建流程
+```cpp
+// Step 1 - 创建帧缓冲对象 FBO
+unsigned int FBO;
+glGenFramebuffers(1, &FBO);
+
+// Step 2 - 把帧缓冲对象 FBO 绑定到读写目标，or GL_READ/DRAW_* 分别绑定不同的 FBO
+glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+/**
+ * 帧缓冲对象使用条件（完整性条件）
+ * 1. Attach at least one buffer
+ *    - 为该对象附加至少一个缓冲
+ *    - attachment：一个内存位置，分为纹理附件 texture attachment 或渲染缓冲对象 renderbuffer object 两种类型
+ * 2. At least one color attachment
+ * 3. All attachments should be complete as well
+ * 4. Each buffer should have the same number of samples
+ */
+
+// Step 3 - 为帧缓冲对象附加纹理附件作为缓冲
+glFrameBufferTexture2D(...)
+/**
+ * 附加的纹理为深度纹理时，纹理的 Format 和 Internalformat 变为 GL_DEPTH_COMPONENT，反映深度缓冲的储存格式。【？】用什么设？咋设？【check】glTexImage2D() 中的两个参数
+ * 附加模板缓冲时，要将纹理格式设为 GL_STENCIL_INDEX
+ * 拼接深度纹理和模板信息：附加 GL_DEPTH_STENCIL_ATTACHMENT 类型
+ */
+
+// Step 4 - 检查帧缓冲对象的完整性
+if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) 
+{
+    /**
+     * 此时所有渲染操作输出到当前绑定帧缓冲的 Attachment 中。
+     * 由于自定义的帧缓冲不是默认帧缓冲，不影响 window output，执行的是 Off-screen Rendering。
+     * 渲染到窗口：再次激活默认帧缓冲，绑定到 0。
+     */
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+// Step 5 - 删除帧缓冲对象
+glDeleteFramebuffers(1, &FBO);
+``` 
+### Attachment type 1 - Texture
+* 类似普通的纹理，主要区别：glTexImage2D 生成时的参数
+  * 维度大小设为屏幕大小
+    * 注意`想把屏幕内容放缩渲染到纹理时要调整 glViewport()`
+  * data = null
+    * 只`分配内存`，不自动填充
+```cpp
+unsigned int texture;
+glGenTextures(1, &texture);
+glBindTexture(GL_TEXTURE_2D, texture);
+
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+```
+
+### Attachment type 2 - Renderbuffer Object
+* 类似 texture，但存储数据时使用的格式为 OpenGL 原生渲染格式，不对纹理格式做转换，便于内存优化
+  * 写入/复制到其它缓冲的速度快：如用于加速每帧迭代时的 glfwSwapBuffers()
+  * 不能直接从其内存读取，需要通过 `glReadPixels()` 间接从当前绑定的 framebuffer 的一块特殊区域读取（【？】所以是从它的内存临时复制到当前绑定的 framebuffer 然后从 framebuffer 转换格式读出来？）
+  * 适合一些`不需要采样的情况`，如 depth/stencil testing（【？】可能是因为采样的话需要 texture2D() 读取？）
+```cpp
+// Step 1 - 创建渲染缓冲对象
+unsigned int RBO;
+glGenRenderbuffers(1, &RBO);
+// Step 2 - 绑定渲染缓冲对象
+glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+// Step 3 - document: establish data storage, format and dimensions of a renderbuffer object's image. 意思看起来应该是分配内存空间和指定内部数据格式？
+glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+// Step 4 - 附加到帧缓冲对象
+glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+```
+### Post-processing
+* 反相：1 - color
+* 灰度
+  * 所有颜色分量取均值，输出 vec3(avg, avg, avg, 1.0)
+  * 考虑到人眼对三色敏感度不同，可以加权一下 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b（又见像素亮度！）
+* 用于给卷积核做周围像素信息的采样
+  * 锐化效果
+  * 模糊效果
+
 ## 27. Cubemaps
 ## 28. Advanced Data
 ## 29. Advanced GLSL
