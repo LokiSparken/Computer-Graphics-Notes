@@ -92,6 +92,7 @@
     * [Attachment type 2 - Renderbuffer Object](#attachment-type-2---renderbuffer-object)
     * [Post-processing](#post-processing)
   * [27. Cubemaps](#27-cubemaps)
+    * [应用](#应用)
   * [28. Advanced Data](#28-advanced-data)
   * [29. Advanced GLSL](#29-advanced-glsl)
   * [30. Geometry Shader](#30-geometry-shader)
@@ -993,6 +994,30 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDER
   * 模糊效果
 
 ## 27. Cubemaps
+* 采样 cubemaps 时，位于原点的立方体顶点位置可以直接作为其三维纹理坐标，在 pipeline 中自动插值
+* OpenGL 中的创建流程类似普通纹理
+  * 六个面分别 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE/NEGATIVE_X/Y, ...)
+  * 考虑不同面之类的缝隙不能恰好采样到，平铺方式设为 CLAMP_TO_EDGE
+* in fragment shader
+    ```cpp
+    in vec3 textureDir;
+    uniform samplerCube cubemap;
+    void main()
+    {
+        gl_FragColor = texture(cubemap, textureDir);
+    }
+    ```
+### 应用
+* [ ] 天空盒 Skybox
+  * 作为场景中最后一个渲染的物体，令其深度值最大 z = 1.0
+  * fix 视觉效果：不跟随 camera 平移
+* 环境贴图 Environment Mapping
+  * [ ] 使物体反射 skybox
+  * [ ] 引入反射贴图
+  * [ ] 单面折射 Single-side Refraction
+  * [ ] 引入二次折射
+  * [ ] 使用帧缓冲实现动态环境贴图
+
 ## 28. Advanced Data
 ## 29. Advanced GLSL
 ## 30. Geometry Shader
