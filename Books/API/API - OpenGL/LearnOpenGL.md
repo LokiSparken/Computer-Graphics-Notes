@@ -104,6 +104,7 @@
     * [Uniform Block Layout](#uniform-block-layout)
     * [使用 Uniform 缓冲](#使用-uniform-缓冲)
   * [30. Geometry Shader](#30-geometry-shader)
+    * [应用](#应用-1)
   * [31. Instancing](#31-instancing)
   * [32. Anti Aliasing](#32-anti-aliasing)
 * [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
@@ -1230,9 +1231,97 @@ glBindBuffer(GL_UNIFORM_BUFFER, 0);
     * 最大处理数量：GL_MAX_VERTEX_UNIFORM_COMPONENTS
 
 ## 30. Geometry Shader
-## 31. Instancing
-## 32. Anti Aliasing
+* 输入：一个图元的`所有顶点`
+```GLSL
+#version 330 core
+// 声明输入输出的图元类型
+layout (points) in;
+layout (line_strip, max_vertices = 2) out;
 
+void main() 
+{ 
+    gl_Position = gl_in[0].gl_Position + vec4(-0.1, 0.0, 0.0, 0.0); 
+    // 将 gl_Position 中的向量添加到输出图元的顶点序列
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position + vec4( 0.1, 0.0, 0.0, 0.0);
+    EmitVertex();
+
+    // 将输出顶点序列合成为输出图元类型
+    EndPrimitive();
+}
+```
+* 输入图元类型（括号内为该类型图元最小顶点数）
+
+    ![](images/17.png)
+* 输出图元类型：points、line_strip、triangle_strip，用 max_vertices 限制最大输出顶点数。多出的顶点 OpenGL 将其忽略。
+* Built-in
+    ```GLSL
+    // Geometry Shader
+    in gl_Vertex
+    {
+        vec4 gl_Position;
+        float gl_PointSize;
+        float gl_ClipDistance[];
+    } gl_in[];  // 输入的图元每个顶点都有一套相关数据
+    ```
+* 普通数据传递
+    ```GLSL
+    // Vertex Shader
+    out VS_OUT 
+    {
+        vec3 color;
+    } vs_out;
+    
+    // Geometry Shader
+    in VS_OUT 
+    {
+        vec3 color;
+    } gs_in[];
+    // 或者
+    in vec3 vColor[];
+    // 输出
+    out vec3 fColor;
+    ```
+  * vertex shader -> geometry shader 数据传输：interface block，也可以在 geometry shader 中输入单个数组，但是 interface block 总比散装好
+  * 注意：`out` 类型数据在每次 `EmitVertex()` 生成输出顶点序列的时候会将当前调用时的值附加给当前要生成的输出顶点作为 fragment shader 的输入数据
+### 应用
+* [ ] house
+* [ ] explode：各三角图元沿法向移动一小段时间
+* [ ] **`可视化法向量`**
+
+## 31. Instancing
+* 实例化 Instancing：考虑 draw call（glDrawArrays/glDrawElements）对 CPU 的巨大开销，渲多个相同物体的时候一次性发送所有数据（合批？）
+* glDrawArraysInstanced/glDrawElementsInstanced
+  * 多一个参数：Instance Count
+  * vertex shader 中多一个 gl_InstanceID，配合数组给出不同物体的不同属性
+* 实例化数组 Instanced Array
+  * recap uniform 变量上限，所以普通 uniform 数组传递属性会容易爆
+  * `在 vs 中的定义就是一个顶点属性`，其仅在 vs 渲染一个新实例时更新
+  * 使用：类似普通的属性，数据放在 VBO，设置 VertexAttribPointer 并启用属性后用 `glVertexAttribDivisor(属性 ID, 属性除数 Attribute Divisor)` 规定属性如何更新。divisor = 0 时 vs 每次迭代都更新（即逐顶点），1 时每个新实例更新，2 时每 2 个新实例更新。
+* 练习
+  * [ ] hello, rectangle
+  * [ ] 小行星带
+
+## 32. Anti Aliasing
+* MSAA：每个像素跑一次 fs，四个子采样点颜色插值到子样本
+* OpenGL 的 MSAA - 多重采样缓冲 Multisample Buffer：能在每个像素中存储大于一个颜色值的颜色缓冲
+  * 由 window system 提供（GLFW）
+  * 多重采样的具体算法在 OpenGL 驱动的 rasterizer 中已实现
+```cpp
+// 使 GLFW 为每个像素创建四个子采样点的缓冲。（在调用 glfwCreateWindow 创建渲染窗口时，每个屏幕坐标用一个包含四个子采样点的颜色缓冲。）
+glfwWindowHint(GLFW_SAMPLES, 4);
+// 启用多重采样（多数 OpenGL 驱动上默认启用）
+glEnable(GL_MULTISAMPLE);
+```
+* off-screen MSAA
+  * 为帧缓冲创建多重采样纹理附件（glTexImage2DMultisample）或多重采样 RBO
+  * 不能直接采样多重采样缓冲生成的图像，用 glBlitFramebuffer 进行还原（resolve）
+  * 非要用的情况（如对 multisample buffer 做 post-processing）：把位块传送到普通 FBO 再用
+    * 此时纹理又变成了单一采样点的普通纹理，类似边缘检测的 post-processing 会重新整出锯齿
+* 自定义 AA
+  * 在 shader 中定义多重样本采样器 `uniform sampler2DMS screenTextureMS;`
+  * 获取子样本值 `texelFetch(screenTextureMS, texCoords, 0-3);`
 
 # Part Ⅴ - Advanced Lighting
 ## 33. Advanced Lighting
