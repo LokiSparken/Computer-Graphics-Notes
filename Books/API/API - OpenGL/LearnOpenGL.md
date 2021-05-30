@@ -91,6 +91,7 @@
     * [Attachment type 1 - Texture](#attachment-type-1---texture)
     * [Attachment type 2 - Renderbuffer Object](#attachment-type-2---renderbuffer-object)
     * [Post-processing](#post-processing)
+    * [Implement Tips](#implement-tips)
   * [27. Cubemaps](#27-cubemaps)
     * [应用](#应用)
   * [28. Advanced Data](#28-advanced-data)
@@ -840,6 +841,9 @@ rotate() | 旋转
   * 设计场景时不把物体放太近
   * 把近平面设远
   * 用更高精度的深度缓冲，牺牲性能
+* `非线性深度值 -> 线性深度值（distance from frag to camera）`[（Recap: 投影变换矩阵推导）](http://www.songho.ca/opengl/gl_projectionmatrix.html)
+  * 结论：
+    $$ Z_{linear} = \frac{2 * near * far}{far + near - Z_{ndc} * (far - near)} $$
 
 ## 23. Stencil testing
 ### Stencil testing
@@ -877,13 +881,18 @@ rotate() | 旋转
 * More
   * 注：此时多物体描边会合并，要对不同物体分别描边则应在各物体渲染前都 clear buffer
   * [ ] 【？】中间的禁用是出于性能考虑还是会影响结果？康康不禁用有没影响。
-  * [ ] 在 class : Model 中将是否描边集成到模型类
+  * [x] 实现描边
+    * 打开 stencil test 后注意其对不需要描边的物体的影响
+    * backpack 背后有 floor 的部分无描边：同上，因为先渲了 floor，忘记把 Mask 置 0 导致 floor 的部分也写入了 stencil buffer，导致 scale 放大的部分通过了 stencil test
+  * [x] 在 class : Model 中将是否描边集成到模型类
   * [ ] 对描边用高斯模糊等做软化，效果更自然
 
 ## 24. Blending
 ### 透明测试
 * 在 fragment shader 中 test alpha 值，`discard`
 * 注：当纹理平铺方式为 REPEAT 时，OpenGL 会在纹理边缘进行插值。当纹理带透明通道，alpha 也会被插值，`导致边缘产生框`。所以这种情况下，不需 REPEAT 的话记得把平铺方式设为 CLAMP_TO_EDGE。
+    
+    ![](images/15.png)
 ### 透明混合
 * 启用透明混合：`glEnable(GL_BLEND);`
 * OpenGL 的混合方程
@@ -895,7 +904,17 @@ rotate() | 旋转
     ![](images/14.png)
 * 调整混合方程的混合模式：glBlendEquation(GLenum mode)
 ### 透明物体的渲染顺序
-* [ ] 简单实现一下画家算法
+* 遮挡关系混乱
+    
+    ![](images/16.png)
+    * 窗户之间的遮挡和 bag 的遮挡关系都炸了：stencil test 的锅。描边完没把 stencil test 关掉，前面的窗户 stencil test failed 被裁了。描边完后把 stencil test 关掉可破，但是描边又不稳定了，转转视角描边就凉了=。=【？】
+        
+        ![](images/17.png)
+
+        ![](images/18.png)
+    * [x] 简单对透明物体 position 排个序（按到 camera 距离）（也就修好了窗户……而且对体积大一点的物体 position 和实际各部分位置差别很大……TODO list++: render queue manager?【？】）
+
+        ![](images/19.png)
 * [ ] [Order Independent Transparency](#more---oit)
 
 ## 25. Face culling
@@ -907,6 +926,8 @@ rotate() | 旋转
   * 启用面剔除：`glEnable(GL_CULL_FACE);`
   * 剔除面的类型：`glCullFace(default = GL_BACK);`
   * 规定正向环绕顺序：`glFrontFace(default = GL_CCW)`
+* Tips
+  * 正规模型文件的正向顺序貌似是默认逆时针？好像并不是：backpack 模型可能不够大？剔除前后效率没啥区别……显示效果 ok。nanosuit 好像剔多了昂？正反剔都瘸=。=
 
 ## 26. Framebuffers
 * 帧缓冲：带 color/depth/stencil attachments，使用后相关的读写操作都和该帧缓冲的 attachment 交互。如深度测试时读取绑定到该帧缓冲的 depth attachment
@@ -927,10 +948,13 @@ glBindFramebuffer(GL_FRAMEBUFFER, FBO);
  * 2. At least one color attachment
  * 3. All attachments should be complete as well
  * 4. Each buffer should have the same number of samples
+ *    - 如当开启 AA 时，子样本数要相同
  */
 
-// Step 3 - 为帧缓冲对象附加纹理附件作为缓冲
-glFrameBufferTexture2D(...)
+// Step 3.1 - 为帧缓冲对象附加纹理附件作为缓冲
+glFramebufferTexture2D(...);
+// Step 3.2 - 为帧缓冲对象附加渲染缓冲对象附件作为缓冲
+glFramebufferRenderbuffer(...);
 /**
  * 附加的纹理为深度纹理时，纹理的 Format 和 Internalformat 变为 GL_DEPTH_COMPONENT，反映深度缓冲的储存格式。【？】用什么设？咋设？【check】glTexImage2D() 中的两个参数
  * 附加模板缓冲时，要将纹理格式设为 GL_STENCIL_INDEX
@@ -941,7 +965,8 @@ glFrameBufferTexture2D(...)
 if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) 
 {
     /**
-     * 此时所有渲染操作输出到当前绑定帧缓冲的 Attachment 中。
+     * 此时所有渲染操作输出到当前绑定帧缓冲的 Attachment 中。Depth/Stencil testing 也从当前帧缓冲的 attachment 中读取。
+     * 【？】如果当前的 framebuffer 没有相应的 depth buffer & stencil buffer，那么会自动输出到默认帧缓冲的 attachment 中吗？：并不会，depth testing 由于莫得参照数据直接烂掉（。）然而好像描边的 stencil test 不知道从什么鬼地方取了值还跑出来了啊喂！可能没写入 stencil data ，比较器又设的是 not_equal 1 ，默认和 0 比所以全 success？
      * 由于自定义的帧缓冲不是默认帧缓冲，不影响 window output，执行的是 Off-screen Rendering。
      * 渲染到窗口：再次激活默认帧缓冲，绑定到 0。
      */
@@ -981,6 +1006,8 @@ glGenRenderbuffers(1, &RBO);
 glBindRenderbuffer(GL_RENDERBUFFER, RBO);
 // Step 3 - document: establish data storage, format and dimensions of a renderbuffer object's image. 意思看起来应该是分配内存空间和指定内部数据格式？
 glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+// （分配完空间就能将当前绑定的 RBO 恢复成默认值）
+glBindRenderbuffer(GL_RENDERBUFFER, 0);
 // Step 4 - 附加到帧缓冲对象
 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 ```
@@ -992,6 +1019,24 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDER
 * 用于给卷积核做周围像素信息的采样
   * 锐化效果
   * 模糊效果
+### Implement Tips
+* 绑定新的帧缓冲记得先 clear buffer
+
+    ![](images/20.png)
+* 整个包怎么都描成边了 orz... 而且旁边的 cube 好像深度不太对？
+
+    ![](images/21.png)
+    * 去掉 stencil test 可以发现是 depth testing 的锅=。=
+    * `ERROR`：glFramebufferRenderbuffer(`GL_RENDERBUFFER`, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    * 憨批日记：第 998244353 次因传错参数绝望 debug :)
+    * 过了过了过了正常了正常了正常了啊啊啊啊啊啊啊啊啊！！！
+    * 不知道为什么修好这里 transparent shader 的 file read failed 也突然好了……阿巴阿巴……？？？
+* 绝美配色我的天！！！
+
+    ![](images/22.png)
+* kernel 在边缘处采样会超出纹理边界，默认 REPEAT 的平铺模式可能导致边缘把另一边的值采过来，记得换 CLAMP_TO_EDGE
+    
+    ![](images/23.png)
 
 ## 27. Cubemaps
 * 采样 cubemaps 时，位于原点的立方体顶点位置可以直接作为其三维纹理坐标，在 pipeline 中自动插值
@@ -1008,15 +1053,26 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDER
     }
     ```
 ### 应用
-* [ ] 天空盒 Skybox
+* [x] 天空盒 Skybox
   * 作为场景中最后一个渲染的物体，令其深度值最大 z = 1.0
-  * fix 视觉效果：不跟随 camera 平移
+  * fix 视觉效果：不跟随 camera 平移，camera.view -> mat3 -> mat4
+  * fix skybox 只有 front：阿巴阿巴 draw arrays count 只传了 6（
 * 环境贴图 Environment Mapping
-  * [ ] 使物体反射 skybox
+  * [x] 使物体反射 skybox
+    * cube 完全不反射：uniform 忘传，VAO attribute pointer 没设好
+    * 修完 uniform 还有两个面反射不出东西：
+
+        ![](images/24.png)
+    * 哦哦果然还是 VAO attribute pointer 的锅（竟然没修完（
   * [ ] 引入反射贴图
-  * [ ] 单面折射 Single-side Refraction
+  * [x] 单面折射 Single-side Refraction
+    * 写完 bug 看 (-4, 0, -4) 的 refract cube 顶是黑的以为真有 bug... 顶上那个面比较暗是因为单次折射用的折射向量采样到的是底下 bottom 那块的 skybox 所以才看着黑搓搓。那没事了w
   * [ ] 引入二次折射
-  * [ ] 使用帧缓冲实现动态环境贴图
+  * [ ] 使用帧缓冲实现动态环境贴图（反射探针 reflection probe？）
+  * [ ] sphere map
+    * 用三维极坐标生成球面顶点 position、indices、normal
+    * [StackOverflow: Wrap an image around a sphere in opengl](https://stackoverflow.com/questions/22980246/i-want-to-wrap-an-image-around-a-sphere-in-opengl)
+    * [StackOverflow: Creating a 3D sphere in OpenGL using Visual C++](https://stackoverflow.com/questions/5988686/creating-a-3d-sphere-in-opengl-using-visual-c)
 
 ## 28. Advanced Data
 ## 29. Advanced GLSL
