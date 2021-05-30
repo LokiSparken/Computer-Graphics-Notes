@@ -95,8 +95,17 @@
   * [27. Cubemaps](#27-cubemaps)
     * [应用](#应用)
   * [28. Advanced Data](#28-advanced-data)
+    * [Buffer Object](#buffer-object)
+    * [Batching vertex attributes](#batching-vertex-attributes)
+    * [复制缓冲](#复制缓冲)
   * [29. Advanced GLSL](#29-advanced-glsl)
+    * [GLSL built-in variables](#glsl-built-in-variables)
+    * [Interface Block](#interface-block)
+    * [Uniform Buffer Object](#uniform-buffer-object)
+    * [Uniform Block Layout](#uniform-block-layout)
+    * [使用 Uniform 缓冲](#使用-uniform-缓冲)
   * [30. Geometry Shader](#30-geometry-shader)
+    * [应用](#应用-1)
   * [31. Instancing](#31-instancing)
   * [32. Anti Aliasing](#32-anti-aliasing)
 * [Part Ⅴ - Advanced Lighting](#part-ⅴ---advanced-lighting)
@@ -432,7 +441,7 @@ glPolygonMode() | 指定绘制几何图形的模式（默认 FILL 实心）
 ## 6. Shaders
 ### 一、Vectors
 * Swizzling
-    ```cpp
+    ```GLSL
     vec2 someVec;
     vec4 otherVec = someVec.xyxx;
     vec4 anotherVec = otherVec.wyxz;
@@ -822,7 +831,7 @@ rotate() | 旋转
 * 提前深度测试
   * 在 fragment shader 前
   * `限制`：不能对 fragment shader 写入 depth value
-  * 【？】：因为用的剪枝条件刀很大直接 cut 掉该 frag 所以这个 frag 相关的深度数据直接不计算？
+  * 【？】：因为用的剪枝条件刀很大直接 cut 掉该 frag 所以这个 frag 相关的深度数据直接不计算？【check】字面意思，因为把深度值改了所以测了也白测=。=，see [Fragment Shader - gl_FragDepth](#glsl-built-in-variables)
   * [深入剖析 GPU Early Z 优化](https://www.cnblogs.com/ghl_carmack/p/10166291.html)
 * 深度测试选项
   * 启用深度测试：`glEnable(GL_DEPTH_TEST);`
@@ -1044,7 +1053,7 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDER
   * 六个面分别 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE/NEGATIVE_X/Y, ...)
   * 考虑不同面之类的缝隙不能恰好采样到，平铺方式设为 CLAMP_TO_EDGE
 * in fragment shader
-    ```cpp
+    ```GLSL
     in vec3 textureDir;
     uniform samplerCube cubemap;
     void main()
@@ -1075,11 +1084,300 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDER
     * [StackOverflow: Creating a 3D sphere in OpenGL using Visual C++](https://stackoverflow.com/questions/5988686/creating-a-3d-sphere-in-opengl-using-visual-c)
 
 ## 28. Advanced Data
-## 29. Advanced GLSL
-## 30. Geometry Shader
-## 31. Instancing
-## 32. Anti Aliasing
+### Buffer Object
+* 缓冲对象绑定到缓冲目标 Buffer Target（GL_ARRAY_BUFFER/GL_ELEMENT_ARRAY_BUFFER/...）
+  * 存储：stores a `reference` to the buffer per target
+  * 以不同的方式处理缓冲：`processes the buffer differently` based on the target type
+* 填充 Buffer Object 管理的内存的方式
+  * glBufferData()：分配内存，并填充由参数 data 给出的数据。
+    * data = null 时只分配内存，不作填充。
+    * 可用于预留空间。
+  * glBufferSubData(缓冲目标, offset, datasize, data)：根据 offset 填充缓冲的特定区域。
+    * `要预先通过 glBufferData() 分配内存。`
+  * glMapBuffer(bufferType, 读写方式)：请求当前所绑定的缓冲的内存指针。
+    * 适合要直接映射数据到缓冲的需求，without first storing it in temporary memory。类似从文件读取数据后直接复制到 buffer memory
+      ```cpp
+      float data[] = {...};
+      glBindBuffer(GL_ARRAY_BUFFER, buffer);
+      // 获取指针
+      void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      // 复制数据到内存
+      memcpy(ptr, data, sizeof(data));
+      // 释放指针，在成功将数据映射到 buffer 后返回 GL_TRUE
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+      ```
+### Batching vertex attributes
+* 把同种属性数据放在一块空间连续存储
+  * 当然还是交错处理对 shader 更友好，vertex shader 读单个顶点数据的时候可以从连续的空间取
+    ```cpp
+    float positions[] = { ... };
+    float normals[] = { ... };
+    float tex[] = { ... };
+    // 【？】要先分内存来着？
+    // 填充缓冲
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(positions), &positions);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions), sizeof(normals), &normals);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(normals), sizeof(tex), &tex);
+    // 指定向 GPU 传输数据时的内存读取方式
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);  
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(sizeof(positions)));  
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(sizeof(positions) + sizeof(normals)));
+    ```
+### 复制缓冲
+* `void glCopyBufferSubData(GLenum readtarget, GLenum writetarget, GLintptr readoffset, GLintptr writeoffset, GLsizeiptr size);`
+  * read/write target 分别为一种缓冲目标类型，分别读写当前绑定到该缓冲目标的缓冲内容
+* 需要读写同种类型缓冲的情况：由于`不能同时将两个缓冲绑定到同一缓冲目标`，用 GL_COPY_READ_BUFFER、GL_COPY_WRITE_BUFFER
+    ```cpp
+    float vertexData[] = { ... };
+    glBindBuffer(GL_COPY_READ_BUFFER, vbo1);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, vbo2);
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, sizeof(vertexData));
 
+    // 或者
+
+    float vertexData[] = { ... };
+    glBindBuffer(GL_ARRAY_BUFFER, vbo1);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, vbo2);
+    glCopyBufferSubData(GL_ARRAY_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, sizeof(vertexData));
+    ```
+
+## 29. Advanced GLSL
+### GLSL built-in variables
+* [Built-in Variables (GLSL)](khronos.org/opengl/wiki/Built-in_Variable_(GLSL))
+* Vertex Shader - gl_PointSize 修改渲染的像素点大小
+  * OpenGL - glPointSize()
+  * GLSL
+    * 在 OpenGL 中启用在 vertex shader 中修改点大小的功能：glEnable(GL_PROGRAM_POINT_SIZE);
+    * vertex shader 中 gl_PointSize = e.g. gl_Position.z;
+    * application：`粒子特效`
+* Vertex Shader - gl_VertexID
+  * glDrawElements 渲染时，存储当前顶点的索引
+  * glDrawArrays 渲染时，存储从渲染调用开始的已处理顶点数
+* Fragment Shader - gl_FragCoord .xy 屏幕空间坐标
+* Fragment Shader - bool gl_FrontFacing
+  * 可用于对正向面和背向面上不同的纹理，剔除了就没用
+* Fragment Shader - gl_FragDepth 修改片元深度值，默认取用 gl_FragCoord.z
+  * 使用时会破坏提前深度测试
+  * OpenGL 4.2+ 可在 Fragment Shader 顶部声明
+    ```GLSL
+    layout (depth_<condition>) out float gl_FragDepth;
+
+    // sample: 注意版本
+    #version 420 core
+    out vec4 FragColor;
+    layout (depth_greater) out float gl_FragDepth;
+
+    void main()
+    {             
+        FragColor = vec4(1.0);
+        gl_FragDepth = gl_FragCoord.z + 0.1;
+    }  
+    ```
+
+    ![](images/15.png)
+### Interface Block
+* 接口块 Interface Block：用于从 vertex shader 打包数据发给 fragment shader，便于管理
+* 输出接口块
+    ```GLSL
+    out VS_OUT
+    {
+        vec2 texCoords;
+    } vs_out;
+    ```
+* 输入接口块
+  * 块名保持一致，实例名随意
+    ```GLSL
+    in VS_OUT
+    {
+        vec2 texCoords;
+    } fs_in;
+    ```
+* 在 Geometry Shader 中会有用
+
+### Uniform Buffer Object
+* Uniform 缓冲对象：定义在多个着色器中相同的 uniform
+* in Vertex Shader
+    ```GLSL
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    
+    // 声明 Uniform 块
+    layout (std140) uniform Matrices
+    {
+        mat4 projection;
+        mat4 view;
+    };
+
+    uniform mat4 model;
+
+    void main()
+    {
+        gl_Position = projection * view * model * vec4(aPos, 1.0);
+    }
+    ```
+  * Uniform 块中的变量直接访问，不用加块名前缀
+  * 当 OpenGL 将相关数据存入缓冲，每个声明了该 Uniform 块的着色器都能访问那些数据
+  * layout (std140)：对当前定义 Uniform 块使用特定内存布局
+### Uniform Block Layout
+* Uniform 块布局：将数据放进预留内存供 Uniform 块使用后，要`规定内存的各部分分别对应 shader 中的哪个 uniform 变量`
+* 对于 shader 中定义的一个 Uniform 块，把相关数据放进缓冲的时候要明确这个块里`每个变量的大小（字节）`以及`（从块起始位置的）偏移量`
+  * Shared 布局：默认情况下，GLSL 使用的布局为 Shared，在多个程序间共享。使用该布局时，变量顺序保持不变，但 GLSL 可以为了优化变动各变量的位置和间距（比如可能将 vec3 填充成 4 个 floats 的数组），虽然可以用 glGetUniformIndices() 查询但很麻烦。
+  * std140 布局：显式声明每个变量类型的内存布局
+* Packed 布局：非共享，不保证在每个程序中不改变。根据着色器的行为，允许编译器将 uniform 变量从 Uniform 块中优化掉。
+* [std140](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_uniform_buffer_object.txt)
+    
+    ![](images/16.png)
+  * 其中，每个 int、float、bool 为 4 字节量，用一个 N 表示。
+    ```GLSL
+    layout (std140) uniform ExampleBlock
+    {
+                         // 基准对齐量       // 对齐偏移量
+        float value;     // 4               // 0 
+        vec3 vector;     // 16              // 16  (必须是16的倍数，所以 4->16)
+        mat4 matrix;     // 16              // 32  (列 0)
+                         // 16              // 48  (列 1)
+                         // 16              // 64  (列 2)
+                         // 16              // 80  (列 3)
+        float values[3]; // 16              // 96  (values[0])
+                         // 16              // 112 (values[1])
+                         // 16              // 128 (values[2])
+        bool boolean;    // 4               // 144
+        int integer;     // 4               // 148
+    }; 
+    ```
+### 使用 Uniform 缓冲
+```cpp
+// 创建 Uniform 缓冲对象
+unsigned int uboExampleBlock;
+glGenBuffers(1, &uboExampleBlock);
+// 绑定到缓冲目标 GL_UNIFORM_BUFFER 
+glBindBuffer(GL_UNIFORM_BUFFER, uboExampleBlock);
+// 分配 152 字节的内存
+glBufferData(GL_UNIFORM_BUFFER, 152, NULL, GL_STATIC_DRAW);
+
+glBindBuffer(GL_UNIFORM_BUFFER, 0);
+```
+* 绑定点 Binding points
+* 链接 Uniform 块到绑定点：glUniformBlockBinding(shaderID, Uniform Block Index)
+    ```cpp
+    unsigned int lights_index = glGetUniformBlockIndex(shaderA.ID, "Lights");
+    glUniformBlockBinding(shaderA.ID, lights_index, 2);
+    ```
+    * OpenGL 4.2 起可以在 shader 中显式设置绑定点
+        ```GLSL
+        layout(std140, binding = 2) uniform Lights {...};
+        ```
+* 链接 Uniform 缓冲对象到绑定点：glBindBufferBase()、glBindBufferRange()
+    ```cpp
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, uboExampleBlock); 
+    // 或
+    // 绑定 Uniform 缓冲的一部分到绑定点，绑到不同的绑定点，可以把多个不同的 Uniform 块取用同一缓冲对象的内容
+    glBindBufferRange(GL_UNIFORM_BUFFER, 2, uboExampleBlock, 0, 152);
+    ```
+* 向 Uniform 缓冲中添加数据：glBufferSubData()
+    ```cpp
+    glBindBuffer(GL_UNIFORM_BUFFER, uboExampleBlock);
+    int b = true; // GLSL中的bool是4字节的，所以我们将它存为一个integer
+    glBufferSubData(GL_UNIFORM_BUFFER, 144, 4, &b); 
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    ```
+* Uniform 块优势
+  * 统一在 UBO 中修改
+  * OpenGL 限制了 uniform 数量，用块能假装破上限（
+    * 最大处理数量：GL_MAX_VERTEX_UNIFORM_COMPONENTS
+
+## 30. Geometry Shader
+* 输入：一个图元的`所有顶点`
+```GLSL
+#version 330 core
+// 声明输入输出的图元类型
+layout (points) in;
+layout (line_strip, max_vertices = 2) out;
+
+void main() 
+{ 
+    gl_Position = gl_in[0].gl_Position + vec4(-0.1, 0.0, 0.0, 0.0); 
+    // 将 gl_Position 中的向量添加到输出图元的顶点序列
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position + vec4( 0.1, 0.0, 0.0, 0.0);
+    EmitVertex();
+
+    // 将输出顶点序列合成为输出图元类型
+    EndPrimitive();
+}
+```
+* 输入图元类型（括号内为该类型图元最小顶点数）
+
+    ![](images/17.png)
+* 输出图元类型：points、line_strip、triangle_strip，用 max_vertices 限制最大输出顶点数。多出的顶点 OpenGL 将其忽略。
+* Built-in
+    ```GLSL
+    // Geometry Shader
+    in gl_Vertex
+    {
+        vec4 gl_Position;
+        float gl_PointSize;
+        float gl_ClipDistance[];
+    } gl_in[];  // 输入的图元每个顶点都有一套相关数据
+    ```
+* 普通数据传递
+    ```GLSL
+    // Vertex Shader
+    out VS_OUT 
+    {
+        vec3 color;
+    } vs_out;
+    
+    // Geometry Shader
+    in VS_OUT 
+    {
+        vec3 color;
+    } gs_in[];
+    // 或者
+    in vec3 vColor[];
+    // 输出
+    out vec3 fColor;
+    ```
+  * vertex shader -> geometry shader 数据传输：interface block，也可以在 geometry shader 中输入单个数组，但是 interface block 总比散装好
+  * 注意：`out` 类型数据在每次 `EmitVertex()` 生成输出顶点序列的时候会将当前调用时的值附加给当前要生成的输出顶点作为 fragment shader 的输入数据
+### 应用
+* [ ] house
+* [ ] explode：各三角图元沿法向移动一小段时间
+* [ ] **`可视化法向量`**
+
+## 31. Instancing
+* 实例化 Instancing：考虑 draw call（glDrawArrays/glDrawElements）对 CPU 的巨大开销，渲多个相同物体的时候一次性发送所有数据（合批？）
+* glDrawArraysInstanced/glDrawElementsInstanced
+  * 多一个参数：Instance Count
+  * vertex shader 中多一个 gl_InstanceID，配合数组给出不同物体的不同属性
+* 实例化数组 Instanced Array
+  * recap uniform 变量上限，所以普通 uniform 数组传递属性会容易爆
+  * `在 vs 中的定义就是一个顶点属性`，其仅在 vs 渲染一个新实例时更新
+  * 使用：类似普通的属性，数据放在 VBO，设置 VertexAttribPointer 并启用属性后用 `glVertexAttribDivisor(属性 ID, 属性除数 Attribute Divisor)` 规定属性如何更新。divisor = 0 时 vs 每次迭代都更新（即逐顶点），1 时每个新实例更新，2 时每 2 个新实例更新。
+* 练习
+  * [ ] hello, rectangle
+  * [ ] 小行星带
+
+## 32. Anti Aliasing
+* MSAA：每个像素跑一次 fs，四个子采样点颜色插值到子样本
+* OpenGL 的 MSAA - 多重采样缓冲 Multisample Buffer：能在每个像素中存储大于一个颜色值的颜色缓冲
+  * 由 window system 提供（GLFW）
+  * 多重采样的具体算法在 OpenGL 驱动的 rasterizer 中已实现
+```cpp
+// 使 GLFW 为每个像素创建四个子采样点的缓冲。（在调用 glfwCreateWindow 创建渲染窗口时，每个屏幕坐标用一个包含四个子采样点的颜色缓冲。）
+glfwWindowHint(GLFW_SAMPLES, 4);
+// 启用多重采样（多数 OpenGL 驱动上默认启用）
+glEnable(GL_MULTISAMPLE);
+```
+* off-screen MSAA
+  * 为帧缓冲创建多重采样纹理附件（glTexImage2DMultisample）或多重采样 RBO
+  * 不能直接采样多重采样缓冲生成的图像，用 glBlitFramebuffer 进行还原（resolve）
+  * 非要用的情况（如对 multisample buffer 做 post-processing）：把位块传送到普通 FBO 再用
+    * 此时纹理又变成了单一采样点的普通纹理，类似边缘检测的 post-processing 会重新整出锯齿
+* 自定义 AA
+  * 在 shader 中定义多重样本采样器 `uniform sampler2DMS screenTextureMS;`
+  * 获取子样本值 `texelFetch(screenTextureMS, texCoords, 0-3);`
 
 # Part Ⅴ - Advanced Lighting
 ## 33. Advanced Lighting
