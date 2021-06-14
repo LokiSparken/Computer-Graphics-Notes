@@ -22,7 +22,7 @@
     * [Engines](#engines)
   * [GPU](#gpu)
   * [文章资料](#文章资料)
-  * [好东西！](#好东西)
+  * [好东西！& Toolbox](#好东西-toolbox)
 * [Unreal Engine](#unreal-engine)
   * [入门教程](#入门教程)
   * [基本主题](#基本主题)
@@ -45,7 +45,7 @@
     * [Unreal Engine GDC 2019 | bilibili](#unreal-engine-gdc-2019--bilibili)
     * [Inside Unreal | YouTube](#inside-unreal--youtube)
   * [文章资料](#文章资料-1)
-  * [好东西！](#好东西-1)
+  * [好东西！](#好东西)
 * [Computer Science](#computer-science)
   * [C++是不可能会用的](#c是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
@@ -148,7 +148,7 @@
    * Symposium on Interactive 3D Graphics and Games
 8. ShaderX 系列
 
-## 好东西！
+## 好东西！& Toolbox
 * [stb](https://github.com/nothings/stb) | `图片读写库`
 * [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) | `模型导入`
 * [IMGUI](github.com/ocornut/imgui) | `超香GUI`
@@ -157,6 +157,8 @@
 * [GLSL Sandbox Gallery](http://glslsandbox.com/)
     * [嗷嗷嗷嗷嗷！！！](http://glslsandbox.com/e#71861.0)
 * [POV-Ray](http://www.povray.org/)
+* [Panorama to Cubemap](https://jaxry.github.io/panorama-to-cubemap/) | `全景图转 cubemap`
+* [NormalMap-Online](https://cpetry.github.io/NormalMap-Online/) | `在线生成 specular 贴图等`
 
 ---
 
