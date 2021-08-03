@@ -11,8 +11,7 @@
 目录
 <!-- TOC -->
 
-* [Personal Road to Games & CG](#personal-road-to-games--cg)
-* [Computer Graphcis & Game Engine](#computer-graphcis--game-engine)
+* [图形学与游戏引擎 Computer Graphcis & Game Engine](#图形学与游戏引擎-computer-graphcis--game-engine)
   * [Basic 基础入门](#basic-基础入门)
   * [Rendering 渲染](#rendering-渲染)
   * [API & Engine](#api--engine)
@@ -23,7 +22,7 @@
   * [GPU](#gpu)
   * [文章资料](#文章资料)
   * [好东西！& Toolbox](#好东西-toolbox)
-* [Unreal Engine](#unreal-engine)
+* [虚幻引擎 Unreal Engine](#虚幻引擎-unreal-engine)
   * [入门教程](#入门教程)
   * [基本主题](#基本主题)
     * [NPC AI](#npc-ai)
@@ -46,37 +45,27 @@
     * [Inside Unreal | YouTube](#inside-unreal--youtube)
   * [文章资料](#文章资料-1)
   * [好东西！](#好东西)
-* [Computer Science](#computer-science)
+* [计科基础 Computer Science](#计科基础-computer-science)
   * [C++是不可能会用的](#c是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
   * [其它](#其它)
-* [TODO Flag](#todo-flag)
+* [深渊天坑 TODO Flag](#深渊天坑-todo-flag)
   * [Sparkler](#sparkler)
+* [第九艺术](#第九艺术)
+  * [Sparkle 光](#sparkle-光)
+* [个人小结 Personal Road to Games & CG](#个人小结-personal-road-to-games--cg)
+  * [DONE](#done)
+  * [DOING](#doing)
+  * [NEXT](#next)
 
 <!-- /TOC -->
 
 ---
 
-# Personal Road to Games & CG
-> <font color=#6495ED size=6>DONE List Encourage！</font>  
-> <font color=#6495ED size=6>——假装有变强。</font>
-
-增量式笔记，已学过的部分后续不再赘述。
-* CG - CSE167 Maths
-* CG - Peter Shirley Ray Tracing 三部曲
-  * Ray tracing in one weekend
-  * Ray tracing in the next week
-* CG - GAMES101
-* Engine - 后天星期六 & TomLooman（UE 入……入不了门）
-* CG - Unity Shader 入门精要（主 shader）
-* ing
-  * CG - LearnOpenGL
-  * CG - GAMES202
-
-# Computer Graphcis & Game Engine
+# 图形学与游戏引擎 Computer Graphcis & Game Engine
 
 > <font color=#6495ED size=6>Welcome to CG & Engine！(>ᴗ<*)ฅ</font>  
-> <font color=#6495ED>——有生之年。</font>
+> <font color=#6495ED>—— 有生之年。</font>
 
 ## Basic 基础入门
 - [ ] 1. [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
@@ -162,10 +151,10 @@
 
 ---
 
-# Unreal Engine
+# 虚幻引擎 Unreal Engine
 
 > <font color=#6495ED size=6>虚幻引擎</font>  
-> <font color=#6495ED>——这辈子都不可能会用的</font>
+> <font color=#6495ED>—— 这辈子都不可能会用的</font>
 
 ## 入门教程
 1. 后天星期六 | 泰课在线 | `看了 TomLooman 所以小男神剩下的部分应该要咕了`
@@ -307,10 +296,10 @@
 
 ---
 
-# Computer Science
+# 计科基础 Computer Science
 
 > <font color=#6495ED size=6>计算机基础</font>  
-> <font color=#6495ED>——空空如也，莫得基础 :)</font>
+> <font color=#6495ED>—— 空空如也，莫得基础 :)</font>
 
 ## C++是不可能会用的
 - C++ Primer
@@ -337,10 +326,10 @@
 
 ---
 
-# TODO Flag
+# 深渊天坑 TODO Flag
 
 > <font color=#6495ED size=6>永不下落的旗帜</font>  
-> <font color=#6495ED>——实现当然是不存在的。</font>
+> <font color=#6495ED>—— 实现当然是不存在的。</font>
 
 ## Sparkler
 * IMGUI
@@ -351,6 +340,42 @@
 * Debugger
   * Rendering Statistics：Resolution、Render Time、FPS、Batches、Saved by batching、Tris & Verts……
   * Frame Debugger：Pixel Tracer（a pixel picker and show some intermediate rendering data about this pixel?）、Events List、DC with results……
+
+---
+
+# 第九艺术
+> <font color=#6495ED size=6>创世美学须知</font>  
+> <font color=#6495ED>—— 我说，要有光。</font>
+## Sparkle 光
+* [ ] [基础色彩理论](https://www.bilibili.com/video/BV1t7411o79q)
+* [ ] [光影色彩理论](https://www.bilibili.com/video/BV14t41127Xz) | Jerry Mickery
+* [ ] [色彩与光线](https://www.bilibili.com/video/BV1rW411B7qX) | James Gurney
+
+# 个人小结 Personal Road to Games & CG
+> <font color=#6495ED size=6>DONE List Encourage！</font>  
+> <font color=#6495ED size=6>—— 假装有变强。</font>
+
+TIPS: Incremental learning notes.
+
+## DONE
+* CG - CSE167 Maths
+* CG - Peter Shirley Ray Tracing 三部曲
+  * Ray tracing in one weekend
+  * Ray tracing in the next week
+* CG - GAMES101
+* Engine - 后天星期六 & TomLooman（UE 入……入不了门）
+* CG - Unity Shader 入门精要（主 shader）
+
+## DOING
+* CG - LearnOpenGL
+* CG - GAMES202
+
+## NEXT
+* CG - DX12
+* FLAG - Renderer with 
+  * soft rs.
+  * rt.
+  * API dx12
 
 > # To Be Continued...
 
