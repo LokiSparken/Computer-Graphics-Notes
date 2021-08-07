@@ -46,7 +46,7 @@
   * [文章资料](#文章资料-1)
   * [好东西！](#好东西)
 * [计科基础 Computer Science](#计科基础-computer-science)
-  * [C++是不可能会用的](#c是不可能会用的)
+  * [C++ 是不可能会用的](#c-是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
   * [其它](#其它)
 * [深渊天坑 TODO Flag](#深渊天坑-todo-flag)
@@ -154,7 +154,7 @@
 # 虚幻引擎 Unreal Engine
 
 > <font color=#6495ED size=6>虚幻引擎</font>  
-> <font color=#6495ED>—— 这辈子都不可能会用的</font>
+> <font color=#6495ED>—— 这辈子都不可能会用的。</font>
 
 ## 入门教程
 1. 后天星期六 | 泰课在线 | `看了 TomLooman 所以小男神剩下的部分应该要咕了`
@@ -299,14 +299,16 @@
 # 计科基础 Computer Science
 
 > <font color=#6495ED size=6>计算机基础</font>  
-> <font color=#6495ED>—— 空空如也，莫得基础 :)</font>
+> <font color=#6495ED>—— 空空如也，莫得基础。 :)</font>
 
-## C++是不可能会用的
+## C++ 是不可能会用的
 - C++ Primer
 - Effective 系列
   - [ ] Effective C++
   - [ ] More effective C++
   - [ ] Inside the C++ Object Model
+  - [ ] Effective STL
+  - [ ] Effective Modern C++
 - STL 源码剖析
 - CMake
   - git:cmake-examples
@@ -369,6 +371,7 @@ TIPS: Incremental learning notes.
 ## DOING
 * CG - LearnOpenGL
 * CG - GAMES202
+* CS - Effective C++
 
 ## NEXT
 * CG - DX12
