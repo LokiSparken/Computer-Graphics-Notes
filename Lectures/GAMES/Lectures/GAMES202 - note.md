@@ -59,8 +59,11 @@
   * [Real-Time Global Illumination（Screen Space）](#real-time-global-illuminationscreen-space)
     * [Screen Space Ambient Occlusion（SSAO）](#screen-space-ambient-occlusionssao)
     * [Screen Space Directional Occlusion（SSDO）（in Lecture 9）](#screen-space-directional-occlusionssdoin-lecture-9)
-    * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
 * [Lecture 9 - Real-Time Global Illumination（Screen Space cont.）](#lecture-9---real-time-global-illuminationscreen-space-cont)
+    * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
+* [Lecture 10 - Real-time Physically-based Materials(surface models)](#lecture-10---real-time-physically-based-materialssurface-models)
+  * [微表面模型 Microfacet BRDF](#微表面模型-microfacet-brdf)
+  * [Disney principled BRDF](#disney-principled-brdf)
 
 <!-- /TOC -->
 
@@ -791,9 +794,43 @@
 
     ![](note%20-%20image/GAMES202/39.png)
     
+# Lecture 9 - Real-Time Global Illumination（Screen Space cont.）
 ### Screen Space Reflection（SSR）
 * SSR 屏幕空间反射
-  * 
+  * 在屏幕空间做 ray tracing
+  * 不需要三维几何信息（同样只从屏幕空间获取）
+* 解决的问题
+  * 计算交点：对任意从 camera 出发的光线，与场景（屏幕空间下的）求交
+  * 着色：求交点对着色点的贡献
+* ① 求交
+  * 考虑：反射的内容`大部分`来自“去掉反射后”场景中已有的内容
+  * 已知屏幕空间
+    * 场景渲染结果
+    * normal map
+    * depth map
+    * 求：具有反射的部分的反射结果
+  * 在反射面上取点，从其深度开始，步进式减小其深度，看该深度是否小于视野场景某点的深度
+  * 动态决定步长：对深度图做 mipmap，但过程中不取均值而取深度的最小值（类似三维中的 BVH/KD-Tree。设上层为小一维度的深度图，其值为下层四个像素的最小深度（最浅）。则如果光线连最浅的那个像素都无法相交，那必然也无法与下一层该处其它像素相交。动态步长：每次步长是往下一层/上一层走）[00:48:00]
+* 问题
+  * screen space：由于 tracing 数据只来自屏幕，所以除了“表面”的信息，深度更大的几何信息丢失了，所得的反射结果也就不存在
 
+    ![](note%20-%20image/GAMES202/40.png)
+  * edge cutoff：超出屏幕的部分断层式消失 -> 改进为 edge fading，根据反射距离逐渐虚化
+* ② 着色
+  * 同样假设作为次级光源的部分都是 diffuse 的（反射到 camera 与反射到 shading point 的颜色相同，前者为屏幕空间能得到的信息，后者为着色的入射项 $L_i$）
+* 问题
+  * 有没有距离平方衰减？No. 从 shading point 做 tracing，没有对次级光源的 area 做积分算贡献。不定义在面积上，就不会因为距离衰减。（BRDF sampling 都不存在平方衰减的问题，而 light sampling 一定会有）
+* 自然地达到以下现象
+  * sharp and blurry reflections（BRDF 不同导致的反射清晰度）
+  * contact hardening shadow 接触硬化阴影（越近的物体反射结果越清晰）
+  * specular elongation（反射物体上下拉长）
+  * per-pixel roughness and normal
+* approach
+  * BRDF 重要性采样
+  * hit point 复用：一个交点对多个 shading point 有贡献（需要多次 trace）时
+  * 对屏幕空间结果 prefilter 时，由于其含有明确的深度信息，要考虑深度之间的关系（深度差别很大的像素不能直接均值，即前后景关系不能混乱，另外深度本身不能混合）（GI 中环境光认为从无穷远处来，不影响）
 
-# Lecture 9 - Real-Time Global Illumination（Screen Space cont.）
+# Lecture 10 - Real-time Physically-based Materials(surface models)
+## 微表面模型 Microfacet BRDF
+
+## Disney principled BRDF
