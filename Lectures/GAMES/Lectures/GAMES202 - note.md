@@ -58,9 +58,9 @@
     * [Voxel Global Illumination（VXGI）](#voxel-global-illuminationvxgi)
   * [Real-Time Global Illumination（Screen Space）](#real-time-global-illuminationscreen-space)
     * [Screen Space Ambient Occlusion（SSAO）](#screen-space-ambient-occlusionssao)
-    * [Screen Space Directional Occlusion（SSDO）](#screen-space-directional-occlusionssdo)
+    * [Screen Space Directional Occlusion（SSDO）（in Lecture 9）](#screen-space-directional-occlusionssdoin-lecture-9)
     * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
-* [Lecture 9 -](#lecture-9--)
+* [Lecture 9 - Real-Time Global Illumination（Screen Space cont.）](#lecture-9---real-time-global-illuminationscreen-space-cont)
 
 <!-- /TOC -->
 
@@ -668,7 +668,7 @@
     * 对该分布用 SH 做压缩（工业界：前两阶）
     * `得到 indirect radiance 初值`
   * Step 3 - Propagation 传播
-    * 对每个 grid cell，把 radiance 按照其穿透 face 的方向传播到邻近的 6 cells
+    * 对每个 grid cell，把 radiance 按照其穿透 face 的方向传播到邻近的 6 cells【？诶是不是有状态转移内味儿了】
     * 传播后在其它 cell 中仍旧用 SH 表示
     * 迭代到 volume 稳定（约四五次）
   * Step 4 - Rendering
@@ -714,7 +714,7 @@
   * SSAO first introduced by Crytek
   * 效果：物体之间接触部分的深阴影 contact shadow，加深空间立体感
   * 科普：三维建模（离线渲染）软件中称 AO 为天光
-* SSAO
+* SSAO 环境光遮蔽
   * an `approximation` of GI
   * in screen space
 * `Key Idea`
@@ -758,8 +758,42 @@
     ![](note%20-%20image/GAMES202/36.png)
   * 现在能得到法线，就在半球上整：HBAO，考虑的遮挡范围也有优化，减轻了一些 false occlusion
 
-### Screen Space Directional Occlusion（SSDO）
+### Screen Space Directional Occlusion（SSDO）（in Lecture 9）
+* SSDO 屏幕空间方向性遮挡
+  * 对 SSAO 的改进
+  * 考虑次级光源，在 occlusion 部分不止是变暗，而且加深的阴影部分带上次级光源的颜色
 
+    ![](note%20-%20image/GAMES202/37.png)
+* `Idea`
+  * 不假设 uniform incident indirect lighting
+  * 考虑来自 directional light 结果的次级光源信息
+* 做法（类似 path tracing）
+  * 次级光源信息来自渲染好的图像信息
+  * 计算某点 p 时：
+    * 从 p 点发射光线，未遇到障碍物，直接光照
+    * 遇到障碍物，加上间接光
+* SSAO/DO 对比（间接光的假设来源不同）
+  * AO：假设任意点可接收四周间接光照（间接光来自很远的地方），考虑四周有障碍物的方向接收不到的情况
+  * DO：假设任意点没有间接光，有障碍物的方向上传来该障碍物反射的光（假设间接光打到其它障碍物才产生，来自很近的地方）
+  * 障碍物的距离是小范围
+  * 所以理论上应该结合 AO/DO，分别考虑远处/近处的间接光
+* 采样方法 Lecture9 - 00:19:15
+  * 考虑着色点 p 所在的半球内随机采样
+  * 避免 trace 光线，将 p 到采样点 A 的可见性转化为 camera 到渲染成图像后的 A 的映射点的可见性（一种假设，当两种可见性不同时会有大问题（
+    
+    ![](note%20-%20image/GAMES202/38.png)
+* 总结
+  * 优势：效果尚可
+  * 问题
+    * 只能表示小范围的间接光
+    * visibility 部分判断的是 camera 到这些点的可见性，准确性不足
+    * screen space：间接光来自图像空间（视野场景内最浅的深度），缺失了从 camera 看不见的表面的信息
+
+    ![](note%20-%20image/GAMES202/39.png)
+    
 ### Screen Space Reflection（SSR）
+* SSR 屏幕空间反射
+  * 
 
-# Lecture 9 - 
+
+# Lecture 9 - Real-Time Global Illumination（Screen Space cont.）
