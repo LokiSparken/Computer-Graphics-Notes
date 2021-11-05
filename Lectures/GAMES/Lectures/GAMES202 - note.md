@@ -797,7 +797,7 @@
 # Lecture 9 - Real-Time Global Illumination（Screen Space cont.）
 ### Screen Space Reflection（SSR）
 * SSR 屏幕空间反射
-  * 在屏幕空间做 ray tracing
+  * 在屏幕空间做 ray tracing（在近表面的球壳上做 ray tracing；可以写在 shader 里加速）
   * 不需要三维几何信息（同样只从屏幕空间获取）
 * 解决的问题
   * 计算交点：对任意从 camera 出发的光线，与场景（屏幕空间下的）求交
