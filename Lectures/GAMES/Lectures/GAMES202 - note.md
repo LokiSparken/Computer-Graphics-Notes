@@ -64,7 +64,9 @@
 * [Lecture 10 - Real-time Physically-based Materials(surface models)](#lecture-10---real-time-physically-based-materialssurface-models)
   * [微表面模型 Microfacet BRDF](#微表面模型-microfacet-brdf)
     * [The Kulla-Conty Approximation](#the-kulla-conty-approximation)
+  * [Shading Microfacet Models using **`Linearly Transformed Cosines (LTC)`**（Lecture 11）](#shading-microfacet-models-using-linearly-transformed-cosines-ltclecture-11)
   * [Disney principled BRDF](#disney-principled-brdf)
+  * [Non-Photorealistic Rendering（NPR）](#non-photorealistic-renderingnpr)
 
 <!-- /TOC -->
 
@@ -923,4 +925,55 @@
     * 将该项乘到无颜色的 BRDF 中即可
 * 注：所有项都是三维量 (r, g, b)
 
+## Shading Microfacet Models using **`Linearly Transformed Cosines (LTC)`**（Lecture 11）
+* LTC：解决了微表面模型的着色问题
+  * by Unity research
+  * 最初基于 GGX，但可通用
+  * 由于解决的是着色问题所以 no shadows
+  * `under polygon shaped lighting` 多边形光源：通常在多边形上采样，LTC 不采样
+* Key idea
+  * 由于已经在着色阶段，所以已知 BRDF lobe。假设该二维 BRDF lobe 可以通过某种线性变换（“在球面上对各个方向做变换”）转化为一个余弦函数。【？】
+
+    ![](note%20-%20image/GAMES202/55.png)
+  * 使当前处理的面积光源各顶点随 lobe 同步变化
+
+    ![](note%20-%20image/GAMES202/56.png)
+  * 新定义出的面积光源照亮该 shading point 与原来的域中效果相同
+  * 解渲染方程的时候就变成了对 cosine lobe 积分，有解析解（analytic）
+* 做法
+
+    $$ L(\omega_o) = L_i \cdot \int_P F(\omega_i)\ d\omega_i $$
+  * 暂时假设多边形光源上各点发出的能量相同（$L_i$ 在不同方向相同，提出积分）
+  * P 为积分域：光源覆盖的立体角范围
+  * 原来的方向 $\omega_i$ 用经过变换后的新方向替换，由于变换后可能不在单位球面上，长度发生变化，因此归一化成单位向量
+
+    $$ \omega_i = \frac{M\omega_i'}{|M\omega_i'|} $$
+  * 回代
+
+    $$ L(\omega_o) = L_i \cdot \int_P cos(\omega_i')\ d\frac{M\omega_i'}{|M\omega_i'|} $$
+  * 换元变域得到有解析解的形式
+
+    $$ L(\omega_o) = L_i \cdot \int_P' cos(\omega_i')\ J\ d\omega_i' $$
+* 【？】
+  * 怎么求变换 $M$：对常见的 BRDF lobe 预计算，求的时候可以“给定初值，通过优化方法求”
+  * 对于有纹理的光源（各点 $L_i$ 不同）：可以作为近似方法
+  * 对各向异性表面：可用，虽然 lobe 奇怪点但是不影响映射成 cosine
+
 ## Disney principled BRDF
+* Motivation
+  * 微表面模型不能解释多层复合材质
+  * artist 不友好（参数都是物理量）
+* Principles
+  * 参数是直观的量（粗糙度、饱和度等）
+  * 参数尽量少
+  * 参数域映射到 [0, 1]（最小最大值）
+  * 允许参数超过最值限制
+  * 各种组合的情况都应尽可能得到 robust & plausible 的结果
+* 实现：拟合了一个能量守恒的模型（详见 open source）
+
+## Non-Photorealistic Rendering（NPR）
+* NPR => stylization 风格化
+  * 注意实时领域的 fast & reliable
+  * （炼丹不能用的原因
+* 00：58：03
+
