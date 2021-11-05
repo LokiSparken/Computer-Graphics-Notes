@@ -63,6 +63,7 @@
     * [Screen Space Reflection（SSR）](#screen-space-reflectionssr)
 * [Lecture 10 - Real-time Physically-based Materials(surface models)](#lecture-10---real-time-physically-based-materialssurface-models)
   * [微表面模型 Microfacet BRDF](#微表面模型-microfacet-brdf)
+    * [The Kulla-Conty Approximation](#the-kulla-conty-approximation)
   * [Disney principled BRDF](#disney-principled-brdf)
 
 <!-- /TOC -->
@@ -831,6 +832,95 @@
   * 对屏幕空间结果 prefilter 时，由于其含有明确的深度信息，要考虑深度之间的关系（深度差别很大的像素不能直接均值，即前后景关系不能混乱，另外深度本身不能混合）（GI 中环境光认为从无穷远处来，不影响）
 
 # Lecture 10 - Real-time Physically-based Materials(surface models)
+* PBR materials in RTR
+  * 表面：微表面模型（根据使用情况，有时其实不是真正的 PBR）、disney principled BRDF（艺术家友好，轻量，然而并不 PBR）
+  * 体积：云雾烟，头发皮肤
 ## 微表面模型 Microfacet BRDF
+* 微表面把 $\omega_i$ 反射到 $\omega_o$ 方向上
+
+    ![](note%20-%20image/GAMES202/41.png)
+* ① The Fresnel Term
+  * 反射的量取决于入射角度（grazing 掠射，即入射角度近乎垂直于表面法线时，反射量最大。如下图三）
+
+    ![](note%20-%20image/GAMES202/42.png)
+  * 决定了反射率。
+  * 一般用 Schlick 近似
+* ② `Normal Distribution Function（NDF）`
+  * 考虑不光滑表面时，可以认为是由光滑表面的法线分布高度场放大变成的
+
+    ![](note%20-%20image/GAMES202/43.png)
+    ![](note%20-%20image/GAMES202/44.png)
+  * 描述法线分布的常用模型：Beckmann、GGX（、Yan 2014/6/8）
+  * 三维法线，由二维球面极坐标描述。可视化时使用 projected solid angle（三维半球压缩成二维平面圆，横纵分别 [-1, 1]）
+  * Beckmann 模型（各向同性情况）：形似高斯函数（正态分布的通用解释）
+
+    ![](note%20-%20image/GAMES202/45.png)
+    * $\alpha$ 即表面的法线分布 lobe
+    * 指数上为什么是 $tan^2$ 不是直接 $\theta_h^2$：因为模型定义在坡度空间 slope space 上。如图圆心为 shading point，过圆心的横线为物体表面，则 shading 时整个上半球都是法线可能分布的方向。微观微表面法线（红色箭头）与宏观法线（黑色箭头）夹角为上式 $\theta_h$。单纯的角度在不限制范围的前提下，当 $\theta_h$ 超过 $90\degree$，法线指向下半球，是有问题的。而在上半圆的切线（推广到三维即上半球的切面）上定义高斯函数（support 无限大，在某处衰减趋近于 0 但不会为 0），直接保证法线角度处于上半球。注：保证微表面法线不朝下，但反射光可能朝下。
+
+        ![](note%20-%20image/GAMES202/46.png)
+    * 分母是为了归一化：令该函数在 projected solid angle 域中积分为 $1$。【？】然而这又是为什么=。=【是在球面上的 $cos$ 项和积分两部分整体为 $1$，也即投影为 $1$】
+  * GGX 模型（TR, Trowbridge-Reitz）[Walter et al. 2007]
+    * 同样形似高斯，但有 long tail 特征
+
+        ![](note%20-%20image/GAMES202/47.png)
+    * 长尾特征带来的性质：峰值处对应高光，衰减处有光晕，比 Beckmann 柔和
+
+        ![](note%20-%20image/GAMES202/48.png)
+  * Extending GGX [by Brent Burley from WDAS]
+    * GTR（Generalized TR）：为 GGX 定义参数 $\gamma$，$\gamma=2$ 时为 GGX，值越大越趋近于 Beckmann，越小尾巴越长
+* ③ `Shadowing-Masking/Geometry Term`
+  * 解决微表面的自遮挡问题。
+  * 其中将“从 light 出发，到达微表面并受到自遮挡问题（光线无法照射到部分微表面）”的部分称为 shadowing，“反射后通往视点过程受到自遮挡问题影响（视点看不到部分微表面）”的部分称为 masking
+
+    ![](note%20-%20image/GAMES202/49.png)
+  * 问题主要来自于 grazing angle，由于部分受到遮挡，所以整体所能看到的能量应该要做衰减。考虑不存在 $G$ 项时，为了归一化导致分母中有 $\overrightarrow{n}\cdot \overrightarrow{i}$，接近 grazing angle 时点积趋近于 0，整体结果无限大，体现的结果就是相应位置全白，显然不合理。
+  * 常用方法 The Smith shadowing-masking term：假设法线分布，并推出相应的项。其假设 shadowing 与 masking 无关，即 $G(i, o, m) \approx G_1(i, m)G_1(o, m)$（m 为半程向量）
+
+    ![](note%20-%20image/GAMES202/50.png)
+* G 项引入了新的问题
+  * 白炉测试 The White Furnace Test，看出在不同 roughness 的情况下，照射到物体的能量产生了不同程度的能量损失，不符合能量守恒
+
+    ![](note%20-%20image/GAMES202/51.png)
+  * 原因：越粗糙的表面，光线在微表面之间多次弹射的概率越大，其受到自遮挡问题影响的概率也越大
+  * 方法
+    * 离线：通过模拟把损失的能量加回去（accurate method: Heitz et al. 2016）
+    * 实时：考虑“光线被遮挡 = 其会发生下一级 bounce”（The Kulla-Conty Approximation，通过经验性的方式补全多次反射丢失的能量）
+### The Kulla-Conty Approximation
+* 考虑从某单个方向观察，单次弹射，能够从表面上出来的能量
+
+  ![](note%20-%20image/GAMES202/52.png)
+
+  其中：
+  * $\mu = sin\ \theta$
+  * 假设各方向入射光 $L_i = 1$
+  * 假设微表面 BRDF $f(\mu_o, \mu_i, \phi)$ 为 issotropic 各向同性（$\phi$ 与 $i、o$ 无关）
+  * 没有 $cos$ 项：对整个球面立体角 $(\theta, \phi)$ 积分即 $sin\theta \ d\theta \ d\phi$，令 $\mu = sin\theta$。原式 $f_{BRDF} \cdot cos \cdot sin\theta \cdot d\theta\ d\phi$ 变为 $sin\theta\ dsin\theta\ d\phi$，同时变化积分域（sin 的范围 [0, 1]）
+* Key idea
+  * 从方向 $o$ 观察，光线一次 bounce 损失的能量为 $1-E(\mu_o)$
+  * 怎么补：由于可逆，对称应有 $1-E(\mu_i)$，保留要得到的值 $1-E(\mu_o)$，其余未知部分认为是一个系数 $c$ 即有
+
+      $$ \int c(1-E(\mu_i))(1-E(\mu_o)) = 1-E(\mu_o) $$
+  * 计算可得
+
+      ![](note%20-%20image/GAMES202/53.png)
+
+      $c=\pi(1-E_{avg})$ 代入验证
+      ![](note%20-%20image/GAMES202/54.png)
+  * 补在哪里：BRDF 项上，使其表现更真实
+* 但 $E_{avg}(\mu_o)=2\int_0^1 E(\mu_i)\mu_i\ d\mu_i$ 过于复杂，类似 split sum：积分复杂不一定有解析解的情况下可以考虑 => 预计算/打表，考虑维度主要是 $\mu_o$ 和 roughness 两个参数，二维纹理表可用
+* 对于材料本身就吸收部分能量的情况：加上由于吸收引起的能量损失
+  * 定义 `the average Fresnel 项`：对于不同的观察角度，平均其 fresnel term。 fresnel 与 cos 项在球面立体角上进行积分，换元成 $\mu$
+
+    $$ F_{avg} = \frac{\int_0^1 F(\mu)\mu d\mu}{\int_0^1 \mu d\mu} = 2\int_0^1 F(\mu)\mu d\mu $$
+  * $E_{avg}$ 为能够观察到的单次弹射的所有能量，也即这部分能量“确定不会发生多次 bounce”
+  * 即，最终观察到的能量可分为几部分
+    * 直接看到的部分：$F_{avg}E_{avg}$
+    * after 1 bounce：$F_{avg}(1-E_{avg}) \cdot F_{avg}E_{avg}$
+    * ...
+    * after k bounce：$(F_{avg})^k(1-E_{avg})^k \cdot F_{avg}E_{avg}$
+    * 相加所得级数，称之为 `the color term`：$\frac{F_{avg}E_{avg}}{1-F_{avg}(1-E_{avg})}$
+    * 将该项乘到无颜色的 BRDF 中即可
+* 注：所有项都是三维量 (r, g, b)
 
 ## Disney principled BRDF
