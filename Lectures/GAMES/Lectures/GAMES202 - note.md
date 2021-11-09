@@ -67,6 +67,9 @@
   * [Shading Microfacet Models using **`Linearly Transformed Cosines (LTC)`**（Lecture 11）](#shading-microfacet-models-using-linearly-transformed-cosines-ltclecture-11)
   * [Disney principled BRDF](#disney-principled-brdf)
   * [Non-Photorealistic Rendering（NPR）](#non-photorealistic-renderingnpr)
+    * [Outline Rendering（轮廓线）](#outline-rendering轮廓线)
+    * [Color blocks](#color-blocks)
+  * [Strokes Surface Stylization](#strokes-surface-stylization)
 
 <!-- /TOC -->
 
@@ -975,5 +978,46 @@
 * NPR => stylization 风格化
   * 注意实时领域的 fast & reliable
   * （炼丹不能用的原因
-* 00：58：03
+* NPR steps
+  * photorealistic 的结果出发
+  * 对部分作加强/简化：NPR 重点，分析某风格的某现象如何抽象成统一的步骤作实现
+* 安利环节
+  * Atelier Ryza 2: Lost Legends & the Secret Fairy（莱莎的炼金工坊2）
+  * Xenoblade Chronicles 2（异度神剑2 on Switch）
+### Outline Rendering（轮廓线）
+* 描边 -> 首先定义边 -> 轮廓分类 by RTR
+
+    ![](note%20-%20image/GAMES202/57.png)
+  * [B]oundary / border edge：物体边缘轮廓
+  * [C]rease：折痕
+  * [M]aterial edge
+  * [S]ilhouette edge：多面共享的物体边缘轮廓
+  * 物体边缘轮廓：在当前视角呈现的图像上的物体边缘
+* 方法
+  * shading
+  * geometry
+  * 后期处理
+* shading 方法（描 silhouette edge）
+  * 观察：该种类型边出现在物体两个面的法线朝向视点、背向视点的交界处，即其 grazing angle 处
+  * 作法：shading 时 check 视线方向与 shading point 法线（接近）垂直时认为该点在 S 边上，把它描黑（描边范围根据垂直的范围大小进行控制）
+  * 问题：不同位置的法线变化度会导致描边粗细不同
+* geometry
+  * 考虑：把模型整个扩一圈，渲两个模型
+  * 作法：直接把“背向”视点的面放大，或者把顶点沿其法线往外扩一点距离
+* 后期处理：图像边缘检测
+  * sobel detector
+  * 除了最终结果，也可以对中间结果如深度图做边缘检测
+### Color blocks
+* 色块：阈值化/量化 Quantization
+
+    ![](note%20-%20image/GAMES202/58.png)
+  * shading 过程中/最终结果中作限制都可
+## Strokes Surface Stylization
+* 素描风格：线条浓度体现颜色深浅明暗 => 不同密度的纹理
+* Tonal art maps（TAMs）
+  * 不同密度的纹理
+  * 远近的 uv 放缩会导致密度变化，所以全作 mipmap 且保持密度不变
+
+    ![](note%20-%20image/GAMES202/59.png)
+
 
