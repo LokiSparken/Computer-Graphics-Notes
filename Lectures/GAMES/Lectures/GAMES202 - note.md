@@ -70,6 +70,11 @@
     * [Outline Rendering（轮廓线）](#outline-rendering轮廓线)
     * [Color blocks](#color-blocks)
   * [Strokes Surface Stylization](#strokes-surface-stylization)
+* [Lecture 12 - Real-Time Ray-Tracing 1](#lecture-12---real-time-ray-tracing-1)
+  * [Preview](#preview)
+  * [Denoising](#denoising)
+* [Lecture 13 - Real-Time Ray-Tracing 2](#lecture-13---real-time-ray-tracing-2)
+* [Lecture 14 - A Glimpse of Industrial Solution](#lecture-14---a-glimpse-of-industrial-solution)
 
 <!-- /TOC -->
 
@@ -1019,5 +1024,39 @@
   * 远近的 uv 放缩会导致密度变化，所以全作 mipmap 且保持密度不变
 
     ![](note%20-%20image/GAMES202/59.png)
+
+# Lecture 12 - Real-Time Ray-Tracing 1
+## Preview
+* 高级材质（体渲染/散射材质等）
+  * RTE、BSSRDF、single/multiple scattering, etc.
+  * ！！！会出在之后离线渲染的课里！！！
+* "Ray tracing is the future and ever will be."
+* RTX
+  * 之前的 GPU 难做场景中光线物体求交（遍历 BVH 等）
+  * tensor core：加速神经网络的 inference
+  * RT core：加速 ray tracing
+* 10 Giga rays per second == 1 sample per pixel (for real time applications)
+  * 1SPP 即一条光路样本 == 
+  * 1 rasterization: primary, `from camera to the scene`（用一次光栅化的结果代替一次 trace，更快一点）
+  * 1 ray: primary visibility, `from the hitpoint produced by rasterization to the source light`
+  * add bounce
+  * 1 ray: secondary bounce, `the hitpoint to another object in the scene (and produce secondary hitpoint)`
+  * 1 ray: secondary visibility, `the secondary hitpoint to the source light`
+* Key tech: `Denoising`
+
+## Denoising 
+* Goals (with 1 SPP)
+  * Quality: no overblur, no artifacts, keep all details...
+  * Speed: < 2 ms to denoise one frame
+* 。。。
+  * Sheared filtering series (SF, AAF, FSF, MAAF, ...)
+  * Offline filtering method (IPP, BM3D, APR, ...)
+  * DL series (CNN, Autoencoder, ...)（目前至少几十到几百 ms，或更久）
+* NVIDIA interface: OPTX
+* [00:42:03]
+
+# Lecture 13 - Real-Time Ray-Tracing 2
+
+# Lecture 14 - A Glimpse of Industrial Solution
 
 
