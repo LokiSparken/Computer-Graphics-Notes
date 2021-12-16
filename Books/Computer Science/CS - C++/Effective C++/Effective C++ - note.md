@@ -13,9 +13,9 @@
   * [初始化 Initialization](#初始化-initialization)
   * [术语 Terminology](#术语-terminology)
   * [本书习惯 & 其它相关事项](#本书习惯--其它相关事项)
-* [Chapter 1 - Accustoming Yourself to C++ 让自己习惯 C++](#chapter-1---accustoming-yourself-to-c-让自己习惯-c)
-  * [Item 1 - View C++ as a federation of languages](#item-1---view-c-as-a-federation-of-languages)
-  * [Item 2 - Prefer consts, enums, and inlines to #defines](#item-2---prefer-consts-enums-and-inlines-to-defines)
+* [Chapter 1 - 习惯 C++](#chapter-1---习惯-c)
+  * [Item 1 - 把 C++ 视为 C & 面向对象 & 模板 & STL 四个子语言](#item-1---把-c-视为-c--面向对象--模板--stl-四个子语言)
+  * [Item 2 - 以 const, enum, inline（编译器）替换 #define（预处理器）](#item-2---以-const-enum-inline编译器替换-define预处理器)
   * [Item 3 - Use const whenever possible](#item-3---use-const-whenever-possible)
   * [Item 4 - Make sure that objects are initialized before they're used](#item-4---make-sure-that-objects-are-initialized-before-theyre-used)
 * [Chapter 2 - Constructors, Destructors, and Assignment Operators 构造/析构/赋值运算](#chapter-2---constructors-destructors-and-assignment-operators-构造析构赋值运算)
@@ -23,7 +23,7 @@
 * [Chapter 4 - Designs and Declarations 设计与声明](#chapter-4---designs-and-declarations-设计与声明)
   * [Item 18 - Make interfaces easy to use correctly and hard to use incorrectly](#item-18---make-interfaces-easy-to-use-correctly-and-hard-to-use-incorrectly)
   * [Item 19 - Treat class design as type design](#item-19---treat-class-design-as-type-design)
-  * [Item 20 - Prefer pass-by-reference-to-const to pass-by-value](#item-20---prefer-pass-by-reference-to-const-to-pass-by-value)
+  * [Item 20 - 尽量用 const & 代替传值](#item-20---尽量用-const--代替传值)
   * [Item 21 - Don't try to return a reference when you must return an object](#item-21---dont-try-to-return-a-reference-when-you-must-return-an-object)
   * [Item 22 - Declare data members private](#item-22---declare-data-members-private)
   * [Item 23 - Prefer non-member non-friend functions to member functions](#item-23---prefer-non-member-non-friend-functions-to-member-functions)
@@ -119,8 +119,8 @@
   * boost.org
   * C++ 标准库功能实验场
 
-## Chapter 1 - Accustoming Yourself to C++ 让自己习惯 C++
-### Item 1 - View C++ as a federation of languages
+## Chapter 1 - 习惯 C++
+### Item 1 - 把 C++ 视为 C & 面向对象 & 模板 & STL 四个子语言
 * C++ 已是一个多重泛型编程语言（multiparadigm programming language），其支持
   * 过程形式 procedural
   * 面向对象形式 object-oriented
@@ -140,7 +140,18 @@
   * Template C++：const &
   * STL：迭代器、函数对象由于基于 C 指针，传值更好
 
-### Item 2 - Prefer consts, enums, and inlines to #defines
+### Item 2 - 以 const, enum, inline（编译器）替换 #define（预处理器）
+* `#define` 的问题：e.g. `#define RATIO 1.653` 则 RATIO 在编译器处理源码前已被预处理器替换为值 1.653
+  * RATIO 未进入编译器的符号表（symbol table），所以编译错误信息只能给出值 1.653。不清楚这个量是干嘛的情况下，trace 它的来源可能导致额外工作量。（对符号调试器 symbolic debugger 有相同的问题）
+  * 直接 `#define` 可能导致代码相当于直接在多处使用了值 1.653，使编译所得目标代码 object code 里有多份 1.653 这个值
+  * 较好的方案：以常量替换 `const double Ratio = 1.653;`
+* 关于 const 指针注意区分：
+  * 常量指针
+  * 指向常量的指针
+* class 专属的常量成员
+  * 为了将其作用域（scope）限制在 class 内，要让它成为 class 的一个 member
+  * 为了保证该常量对所有该 class 类型只有一份：static
+
 ### Item 3 - Use const whenever possible
 ### Item 4 - Make sure that objects are initialized before they're used
 
@@ -151,7 +162,20 @@
 ## Chapter 4 - Designs and Declarations 设计与声明
 ### Item 18 - Make interfaces easy to use correctly and hard to use incorrectly
 ### Item 19 - Treat class design as type design
-### Item 20 - Prefer pass-by-reference-to-const to pass-by-value
+### Item 20 - 尽量用 const & 代替传值
+* 缺省情况下 C++ 以 by value 传递对象至函数：是实际实参的副本，返回值同理，`由 copy 构造函数给出`
+  * 传对象用 const & 较好
+  * const：对用户友好，保证内部不对其做修改
+  * **`避免对象切割（slicing）问题`**：通过 by value 传子类对象给需要父类对象的参数时，会把子类特性切了（应该是隐式转换了？）。如调 virtual function 时调到的是 Father::function() 版本而非 Derived::function()
+* “较小”的对象也并不意味 pass-by-value（copy 构造）的代价小，原因：
+  * copy 指针意味着 copy 指针所指的每一样东西
+  * 编译器对内置类型和自定义类型的处理可能不同（即使底层表述 underlying representation 相同）
+    * e.g. 某对象只含一个 double，但由于其为自定义类型，不会被编译器放进寄存器。如果是裸内置类型 double 就会被放入寄存器。
+    * 此时以 by reference 方式传递对象，由于 reference 常以指针实现，所以这个底层的指针可以被编译器放入寄存器。
+    * 总之不同的底层处理方式也会导致最终效率不同。
+  * 该对象也可能在将来修改后“变大”，并且如果包含如 string 的成员，不同的 STL 库实现版本，其大小也不一样
+* 小结：`built-in types、STL iterator、function object types 传值，其余传引用。`
+
 ### Item 21 - Don't try to return a reference when you must return an object
 ### Item 22 - Declare data members private
 ### Item 23 - Prefer non-member non-friend functions to member functions
