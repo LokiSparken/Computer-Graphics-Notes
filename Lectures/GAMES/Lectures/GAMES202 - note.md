@@ -70,10 +70,11 @@
     * [Outline Rendering（轮廓线）](#outline-rendering轮廓线)
     * [Color blocks](#color-blocks)
   * [Strokes Surface Stylization](#strokes-surface-stylization)
-* [Lecture 12 - Real-Time Ray-Tracing 1](#lecture-12---real-time-ray-tracing-1)
+* [Lecture 12 - Real-Time Ray-Tracing 1: Temporal Denoising](#lecture-12---real-time-ray-tracing-1-temporal-denoising)
   * [Preview](#preview)
   * [Denoising](#denoising)
-* [Lecture 13 - Real-Time Ray-Tracing 2](#lecture-13---real-time-ray-tracing-2)
+  * [Temporal Method](#temporal-method)
+* [Lecture 13 - Real-Time Ray-Tracing 2: Spatial Denoising](#lecture-13---real-time-ray-tracing-2-spatial-denoising)
 * [Lecture 14 - A Glimpse of Industrial Solution](#lecture-14---a-glimpse-of-industrial-solution)
 
 <!-- /TOC -->
@@ -1025,7 +1026,7 @@
 
     ![](note%20-%20image/GAMES202/59.png)
 
-# Lecture 12 - Real-Time Ray-Tracing 1
+# Lecture 12 - Real-Time Ray-Tracing 1: Temporal Denoising
 ## Preview
 * 高级材质（体渲染/散射材质等）
   * RTE、BSSRDF、single/multiple scattering, etc.
@@ -1053,9 +1054,46 @@
   * Offline filtering method (IPP, BM3D, APR, ...)
   * DL series (CNN, Autoencoder, ...)（目前至少几十到几百 ms，或更久）
 * NVIDIA interface: OPTX
-* [00:42:03]
+* Industrial solution: **`Temporal`**
+  * 目标：滤波当前帧
+  * 假设：认为前一帧已滤波好，`场景中的运动连续`
+  * 思路：用 motion vector 找物体各点在上一帧对应的位置。由于认为运动连续，约等于着色连续，可以将上一帧的降噪结果复用
 
-# Lecture 13 - Real-Time Ray-Tracing 2
+## Temporal Method
+* 几何缓冲区 Geometry Buffer
+  * 存各像素点的辅助信息：depth, normal, world coordinate, etc.
+  * only screen space
+  * 一遍 rasterization 即可
+* Step
+  * Step 1 - **`Back Projection`**（accurate）：求 motion vector
+    * 从 G-Buffer 里取 world coord/世界坐标 $s = M^{-1}V^{-1}P^{-1}E^{-1}x$（带 z value）
+    * 设上一帧世界坐标 $s'$ 经变换 $T$ 变成当前帧世界坐标 $s$，则有：$s' = T^{-1}s$
+    * 则上一帧该点屏幕坐标为：$x'=E'P'V'M's'$
+    * 科普：CV 中类似有 optical flow 光流，但基于内容
+  * Step 2 - `Filter[]`：对 1 SPP 结果做初步降噪（in Lecture 13）
+  * Step 3 - 复用上一帧结果：**`线性 blending`**
+
+    ![](note%20-%20image/GAMES202/60.png)
+    * 上标 `~` 表示 noisy 项，`-` 表示降噪完结果
+    * $\alpha=0.1-0.2$（大部分依赖于上一帧）
+* 科普
+  * 1 SPP 降噪后变“亮”了，是降噪前的亮点值过大被屏幕色域限制（完美 HDR 能看不出亮度差别） => `filter 绝不应该导致画面亮度变化（能量不守恒）`
+  * 靠算力摁算的参考图称为 Ground Truth
+* motion vector 问题：
+  * switching scenes：第一帧/切镜头
+  * walking backwards: `screen space issue`，倒退走路，场景中内容增多
+  * disocclusion: 上一帧对应到的点当时被遮挡住。强行摁用就会产生 Lagging/Ghosting 拖影现象
+    * clamping: 让上一帧结果趋近当前帧结果
+    * detection: check 有问题（e.g. use object ID）时不用上一帧结果/调整 $\alpha$
+    * 但都重新引入了噪声
+  * shading 自身的问题：场景静止但光照改变，此时 motion vector 没有改变
+    * 出现阴影的拖尾，detached/lagging shadows
+    * 镜面反射滞后
+* side notes
+  * similar to TAA
+  * EuroGraphics(EG) paper: "Temporally Reliable Motion Vectors for Real-time Ray Tracing"
+
+# Lecture 13 - Real-Time Ray-Tracing 2: Spatial Denoising
 
 # Lecture 14 - A Glimpse of Industrial Solution
 
