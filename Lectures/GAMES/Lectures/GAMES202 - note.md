@@ -65,11 +65,15 @@
   * [微表面模型 Microfacet BRDF](#微表面模型-microfacet-brdf)
     * [The Kulla-Conty Approximation](#the-kulla-conty-approximation)
   * [Shading Microfacet Models using **`Linearly Transformed Cosines (LTC)`**（Lecture 11）](#shading-microfacet-models-using-linearly-transformed-cosines-ltclecture-11)
+* [Lecture 11 - Real-Time Physically-based Materials](#lecture-11---real-time-physically-based-materials)
   * [Disney principled BRDF](#disney-principled-brdf)
   * [Non-Photorealistic Rendering（NPR）](#non-photorealistic-renderingnpr)
     * [Outline Rendering（轮廓线）](#outline-rendering轮廓线)
     * [Color blocks](#color-blocks)
   * [Strokes Surface Stylization](#strokes-surface-stylization)
+* [Lecture 12 - Real-Time Ray-Tracing 1](#lecture-12---real-time-ray-tracing-1)
+* [Lecture 13 - Real-Time Ray-Tracing 2](#lecture-13---real-time-ray-tracing-2)
+* [Lecture 14 - A Glimpse of Industrial Solution](#lecture-14---a-glimpse-of-industrial-solution)
 
 <!-- /TOC -->
 
@@ -962,6 +966,7 @@
   * 对于有纹理的光源（各点 $L_i$ 不同）：可以作为近似方法
   * 对各向异性表面：可用，虽然 lobe 奇怪点但是不影响映射成 cosine
 
+# Lecture 11 - Real-Time Physically-based Materials
 ## Disney principled BRDF
 * Motivation
   * 微表面模型不能解释多层复合材质
@@ -1019,5 +1024,13 @@
   * 远近的 uv 放缩会导致密度变化，所以全作 mipmap 且保持密度不变
 
     ![](note%20-%20image/GAMES202/59.png)
+
+# Lecture 12 - Real-Time Ray-Tracing 1
+
+
+
+# Lecture 13 - Real-Time Ray-Tracing 2
+
+# Lecture 14 - A Glimpse of Industrial Solution
 
 
