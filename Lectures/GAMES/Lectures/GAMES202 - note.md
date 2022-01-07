@@ -76,6 +76,13 @@
   * [Denoising](#denoising)
   * [Temporal Method](#temporal-method)
 * [Lecture 13 - Real-Time Ray-Tracing 2: Spatial Denoising](#lecture-13---real-time-ray-tracing-2-spatial-denoising)
+  * [Implementation of filtering](#implementation-of-filtering)
+  * [双边滤波 Bilateral Filtering](#双边滤波-bilateral-filtering)
+  * [联合双边滤波 Joint/Cross Bilateral Filtering](#联合双边滤波-jointcross-bilateral-filtering)
+  * [大型滤波优化 Implementing Large Filters](#大型滤波优化-implementing-large-filters)
+    * [Solution 1 - Separate Passes](#solution-1---separate-passes)
+    * [Solution 2 - Progressively Growing Sizes](#solution-2---progressively-growing-sizes)
+  * [Outlier Removal](#outlier-removal)
 * [Lecture 14 - A Glimpse of Industrial Solution](#lecture-14---a-glimpse-of-industrial-solution)
 
 <!-- /TOC -->
@@ -1096,6 +1103,98 @@
   * EuroGraphics(EG) paper: "Temporally Reliable Motion Vectors for Real-time Ray Tracing"
 
 # Lecture 13 - Real-Time Ray-Tracing 2: Spatial Denoising
+## Implementation of filtering
+* 去噪问题：一般噪声都是高频，所以做低通滤波。但
+  * 会把高频信息滤掉
+  * 部分低频的噪声难处理
+* 符号定义
+  * $\widetilde{C}$ 输入：噪声图
+  * $K$ 处理：滤波核
+  * $\overline{C}$ 输出：降噪结果图
+* 做法
+  * 每个像素周围的像素都会对该像素产生贡献
+  * 根据滤波核定义的该距离上像素贡献的权值求产生的贡献到底是多少
+* 实现细节
+    ```cpp
+    for each pixel i
+        sum_of_weights = sum_of_weighted_values = 0
+
+        // 求贡献
+        for each pixel j around i   // 限制产生贡献的半径，包括 i 自身
+            w_ij = G(|i-j|, sigma)
+            sum_of_weighted_values += w_ij * C^{input}[j]
+            sum_of_weights += w_ij
+
+        // 归一化，高斯核权值和不会为零
+        C^{output}[i] = sum_of_weighted_values / sum_of_weights
+    ```
+* side notes
+  * 归一化求和除平均，或类似渲染方程提取 visibility 项后上积分，下空积分
+  * 为保证通用性，归一化时判一下权值和是否为零
+  * sum_of_weighted_values 一般三通道
+
+## 双边滤波 Bilateral Filtering
+* 高斯滤波问题
+  * 所有像素均等糊掉，只保留低频信息
+  * 希望边界保持锐利：边界是高频信息
+* 双边滤波
+  * 认为：边界 $\approx$ 颜色变化剧烈
+  * 处理：当像素颜色差别很大时，减小互相间的贡献
+
+    ![](note%20-%20image/GAMES202/61.png)
+    * 其中 $(i, j)\ (k, l)$ 为两个像素点坐标，$I(i, j)$ 该像素点颜色
+  * 但其无法判断颜色的差异是因为边界还是不同程度的噪声差异所导致的（to SVGF）
+
+## 联合双边滤波 Joint/Cross Bilateral Filtering
+* 考虑
+  * 高斯滤波：1 metric - 提出像素间的距离作为贡献标准
+  * 双边滤波：2 metrics - 像素位置距离、颜色距离
+  * more metrics? 泛化 -> 联合双边滤波（很适合对蒙特卡洛路径追踪方法生成的图降噪），用渲染过程中的辅助信息（G-Buffers）指导滤波过程
+* notes
+  * G-Buffers 中的信息本身是完全无噪的。所以大颜色差异不会有歧义，必边界
+  * 滤波核选择：高斯，或任意随距离衰减的函数（指数函数 exponential, 向量点乘/余弦函数 cosine），用的时候也不必完全套公式，会衰减就完事了（如高斯的系数可以都丢了。不过应该大致保持数量级？）
+  * 不同的 metrics 各自求高斯，用不同的系数 $\sigma$ 控制贡献程度，最后相乘
+  * 系数实现时需手调，每个系数条件都放宽，最终效果欧克即可
+
+## 大型滤波优化 Implementing Large Filters
+* FFT + 乘法 + FFT$^{-1}$，可，但 FFT 在 GPU 上不是很快
+### Solution 1 - Separate Passes
+* 水平/竖直分别滤一遍：每个像素，只取其水平/竖直上的附近像素
+* 数量级：平方到线性
+* 成立的原因
+  * 二维高斯滤波核的可拆分性质 $G_{2D}(x, y) = G_{1D}(x) \cdot G_{1D}(y)$
+  * 滤波 == 卷积，写成积分的形式，滤波核函数拆开后是分别与 x 和 y 相关，可以先积一个再积一个，也就是先后把水平竖直分开做
+      $$\int\int F(x_0, y_0) \cdot G_{2D}(x_0-x, y_0-y)dxdy = \int(\int F(x_0, y_0) \cdot G_{1D}(x_0-x)dx) \cdot G_{1D}(y_0-y)dy$$
+  * 所以理论上稍微复杂一点的卷积核就八行了，但如果半径不是很大，可以摁用（
+### Solution 2 - Progressively Growing Sizes
+* Idea：多次卷，逐渐扩大半径
+* `a-trous wavelet`
+  * multiple passes, each is a $5 \times 5$ filter
+  * 第 i 次的采样间隔为 $2^i$ 个元素
+
+    ![](note%20-%20image/GAMES202/62.png)
+* 原因
+  * growing size：apply larger filter == removing lower frequencies，便于对不同的频段作更恰当的处理
+  * safe to skip samples: sampling == repeating the spectrum （采样 == 平移/重复频谱，采样稀疏即平移的距离小，过于稀疏时平移出的新段和原始频谱混叠，就会有问题），而逐步扩大 size 的过程中，① 每一遍采样去掉部分高频段，② 下一遍采样间隔是剩下部分的最高频段乘二，频谱以 0 为中心对称，乘二就是剩下部分的总频段区间，以这个大小为间隔，也就是将剩下的频段平移该大小，正好用剩下的频段往外拼，恰好不造成混叠
+
+    ![](note%20-%20image/GAMES202/63.png)
+* 实际使用的问题
+  * 考虑多 feature 时每次滤波可能会保留部分信息，不是直接 clamp，所以还会混叠造成 artifacts，（于是就再处理一下（
+
+## Outlier Removal
+* 对于部分极亮的点（fire fly/火萤），经过 filter 后会扩散，所以要在 filter 前处理掉（【？】但它不是能量守恒要匀到整个画面的吗）
+  * 能量问题：没错！outlier removal 以后就不正确了，但是速度快（
+* 做法
+  * Step 1 - Outlier Detection
+    * 每个像素看周围的 $7 \times 7$
+    * 求均值 $\mu$ /中位数和方差 $\sigma$
+    * 认为值应在 $[\mu - k\sigma, \mu + k\sigma]$，$k$ 约 1-3，超出则认为是 outlier
+  * Step 2 - Outlier Removal
+    * 超出的值直接 clamp 到界值
+* Q & A
+  * 小型光源被 outlier：先渲无光源的，处理完再加光源
+  * 物体边缘本来就有颜色断层会不准：yep
+  * 整体来说是在拖影和 noise 之间折中，倾向于避免拖影。（RTRT：权衡 ghosting/noise/overblur=。=）
 
 # Lecture 14 - A Glimpse of Industrial Solution
 
