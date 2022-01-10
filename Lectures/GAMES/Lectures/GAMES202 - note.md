@@ -84,6 +84,24 @@
     * [Solution 2 - Progressively Growing Sizes](#solution-2---progressively-growing-sizes)
   * [Outlier Removal](#outlier-removal)
 * [Lecture 14 - A Glimpse of Industrial Solution](#lecture-14---a-glimpse-of-industrial-solution)
+  * [SVGF](#svgf)
+    * [Factor - Depth](#factor---depth)
+    * [Factor - Normal](#factor---normal)
+    * [Factor - Luminance (grayscale color value)](#factor---luminance-grayscale-color-value)
+    * [Failure cases](#failure-cases)
+  * [RAE](#rae)
+  * [Comparison - SVGF vs. RAE](#comparison---svgf-vs-rae)
+  * [Practical Industrial Solutions - AA](#practical-industrial-solutions---aa)
+  * [Practical Industrial Solutions - Super Resolution](#practical-industrial-solutions---super-resolution)
+  * [Practical Industrial Solutions - Shading](#practical-industrial-solutions---shading)
+    * [Deferred Shading](#deferred-shading)
+    * [Tiled Shading](#tiled-shading)
+    * [Clustered Shading](#clustered-shading)
+  * [Practical Industrial Solutions - LoD](#practical-industrial-solutions---lod)
+    * [Cascaded samples](#cascaded-samples)
+    * [`Nanite`](#nanite)
+  * [Practical Industrial Solutions - GI](#practical-industrial-solutions---gi)
+* [Further Topics](#further-topics)
 
 <!-- /TOC -->
 
@@ -1197,5 +1215,167 @@
   * 整体来说是在拖影和 noise 之间折中，倾向于避免拖影。（RTRT：权衡 ghosting/noise/overblur=。=）
 
 # Lecture 14 - A Glimpse of Industrial Solution
+## SVGF
+* Spatiotemporal Variance-Guided Filtering(Schied et al.)
+* paper: HPG - High Performance Graphics
+* 3 factors to guide filtering
+### Factor - Depth
+$$w_z = exp(- \frac{|z(p)-z(q)|}{\sigma_z | \triangledown z(p) \cdot (p-q)| + \epsilon })$$
+* 指数衰减
+* $\epsilon$ - 防止分母为零
+* $\sigma_z$ - 控制衰减程度
+* $\triangledown z(p) \cdot (p-q)$ - 梯度项。
+  * 当点 $p$、$q$ 在同一个面，颜色相近，互相贡献应权值较大，但若该面侧对视点会导致其深度差异很大，那么深度指导下的滤波贡献就很低。
+  * 为了校正这种情况，考虑在同一个面的两个点，其在该面的法线方向上深度相近，所以投影到两点切平面上看两者深度差。
+### Factor - Normal
+$$w_n = max(0, n(p) \cdot n(q))^{\sigma_n}$$
+* 防止为负，clamp
+* 指数系数 $\sigma_n$ 同样控制指数衰减程度，对法线差异的判定严格程度
+* 如果用了法线贴图，只考虑应用前的 macro normals
+### Factor - Luminance (grayscale color value)
+$$w_l = exp( - \frac{|l_i(p) - l_i(q)|}{\sigma_l \sqrt{g_{3 \times 3} (Var(l_i(p)))} + \epsilon} )$$
+* 噪声对颜色差异判断的干扰问题：如阴影里的亮噪点，会和非阴影里的点颜色相近。=> 考虑当前滤波的像素附近颜色的标准差
+* Variance（spatial - temporal - spatial）
+  * 空间：取当前滤点周围 $7 \times 7$ 区域的方差
+  * 时间：用 motion vector 把之前帧的方差累积下来，作为 $Var(l_i(p))$
+  * 最后使用时：再取周围 $3 \times 3$ 的 motion vector 即 $g_{3 \times 3}$
+### Failure cases
+* 静止的物体 motion vector 不变，拖影严重
+* noise 和 overblur 之间倾向于 overblur
 
+## RAE
+* Interactive Reconstruction of Monte Carlo Image Sequences using a `Recurrent` denoising `AutoEncoder` [Chaitanya et al.]
+* 没有使用 motion vector，不存在因为 MV 缺失导致的问题
+* 训练需要给出一系列帧，跑的时候时间复用性体现在先前帧的一些信息会留在网络中待用
+* 效果容易 overblur
+
+## Comparison - SVGF vs. RAE
+![](note%20-%20image/GAMES202/64.png)
+* boiling artifacts - 由于一些低频噪声在画面中残留导致的现象
+* RAE
+  * 现在有 tensor core 之后性能比当时好点，但还是比较慢
+  * 优势在于，当 SPP 增大，SVGF 对 motion vector 的计算量剧增，而 RAE 则不会，因此表现会很好。inference 更快以后可能会取代 SVGF。
+  * NVIDIA 将其去掉 R 之后用于在 Optix 中对单帧做降噪，效果挺奈斯
+
+## Practical Industrial Solutions - AA
+* TAA - Temporal Anti-Aliasing
+  * 假设画面静止
+  * 每帧在一个像素内取不同区域的具体采样点（如左上、右上、右下、左下等）（一般不随机取，避免分布不均匀）
+  * 从时间上做复用时，相当于对一个像素进行了多次采样
+* MSAA vs. SSAA
+  * Supersampling - 按大分辨率严格渲所有像素，再合成小分辨率。开销巨大。
+  * Multisample - 比 SS 稍优化
+    * 一个像素内有多个 primitive (e.g. triangle) 时，每个 primitive 只渲一次，多采样点包含在该 primitive 内时取一个代表点。具体实现为每个像素维护色值表和深度，通过深度计算一个位置作为代表求结果。
+
+        ![](note%20-%20image/GAMES202/65.png)
+    * 将选取的样本分布在邻接点时可从空间上 reuse 采样点
+
+        ![](note%20-%20image/GAMES202/66.png)
+* SMAA - Enhanced subpixel morphological AA
+  * 基于图像的降噪方法 image based AA solution
+  * 历史变迁：FXAA(Fast Approximate AA) -> MLAA(Morphological AA) -> SMAA（当前常用，720p-1080p 1ms）
+  * Idea
+
+    ![](note%20-%20image/GAMES202/67.png)
+    * 对锯齿处矢量化
+    * 计算其经过的像素分割占比，按比例填颜色
+* ATTENTION！G-Buffers 绝不能做 AA
+  * 因为其本身有物理意义，如 depth/normal。但 AA 后填入的值就是无意义的。
+
+## Practical Industrial Solutions - Super Resolution
+* Super resolution (or super sampling)
+* DLSS
+  * 1.0 - 摁猜
+  * 2.0 - 根据 temporal 信息猜
+* DLSS 2.0
+  * Problem：由于提升了分辨率，不能直接将上一帧对应像素的值 clamp 过来。要从一片区域做计算，得到的结果就很糊。
+  * Key：寻找一种更优的复用 temporal 信息的方案
+  * 网络输出的结果不是具体的值，而是“如何将之前帧 temporal 信息应用到当前帧”
+  * network inference performance optimization 硬件优化
+  * 类似成果
+    * by AMD - FidelityFX Super Resolution
+    * by facebook - Neural Supersampling for Real-time Rendering [Xiao et al.]（更像 1.0）
+
+## Practical Industrial Solutions - Shading
+### Deferred Shading
+* the rasterization process
+  * triangles -> fragments -> depth test -> shade -> pixel
+  * Complexity: $O(fragment * light)$
+* `Deferred Shading`
+  * rasterize the scene twice
+  * pass 1: update the depth buffer, no shading
+  * pass 2: depth test 时只让最浅深度的片元通过测试，才对其做 shading
+  * Complexity: $O(\#fragment * \#light)$ -> $O(\#vis.frag. * \#light)$
+* Issue
+  * difficult to do AA：依赖 depth buffer，不能对其做 AA
+  * 只能在渲染完成之后用 TAA 或 image based solution
+* Further: frag 减少很大，关注 light
+
+### Tiled Shading
+* Key
+  * 把屏幕横竖切分成小块 tiles 如 32*32 => 也即将视锥区内的场景切成立体条
+  * 由于光对距离的平方衰减，不是所有光源都对 all tiles 都有影响 => 限制光源的辐射范围
+  * 对每块 tiles 只计算对它有影响的光源
+* Complexity: $O(\#vis.frag. * avg. \#light\ per\ tile)$
+
+### Clustered Shading
+* Key: tiled shading 以上，再对深度切分 => 视锥内的场景切成网格
+* Complexity: $O(\#vis.frag. * avg\ \#light\ per\ cluster)$
+
+## Practical Industrial Solutions - LoD
+* e.g. MIPMAP
+### Cascaded samples
+* Cascaded shadow map
+  * [Dimitrov et al., Cascaded Shadow Maps]
+  * 过渡区用两层做 blend
+* Cascaded in LPV
+  * [Anton Kaplanyan, Light Propagation Volumes in CryEngine 3]
+
+    ![](note%20-%20image/GAMES202/68.png)
+  * 传播时自近及远，逐级粗化传播网格
+* Key Challenge
+  * `Transition between levels`：popping artifacts
+  * => need some overlapping & blending near boundaries
+### `Nanite`
+* Geometric LoD
+  * pre-generate 高模 -> 多层级的低模
+  * `对每个像素，选取其覆盖的物体应有的层级模型`
+  * popping artifacts => just TAA
+* Problems
+  * 一个物体用了不同的层级模型，如何保证邻接处自然过渡没有 cracks？
+  * 如何动态加载和调度不同层级，how to make the best use of cache and bandwidth?
+  * 用 triangles 还是 geometry textures 表示几何？（几何纹理做 LoD 更简单）
+  * Clipping and culling for faster performance? 工程优化
+
+## Practical Industrial Solutions - GI
+* Issues
+  * when SSR - screen space ray tracing fail
+  * 只有 RTRT 才能正确解决，但太慢
+* => combine
+* e.g.
+  * SSR for a rough GI approx.
+  * SSR fail -> use RTRT (hardware/software)
+* software RT
+  * ① 近处在 shader 中 trace HQ SDF
+  * ② 整个场景 LQ SDF
+  * ③ 强方向光源/点光源：RSM
+  * DDGI（Dynamic Diffuse GI）：probe
+* hardware RT
+  * ④ indirect 部分用简化的模型计算
+  * RTXGI：probes
+* ① - ④：UE5 Lumen solutions
+
+# Further Topics
+* how to texture an SDF
+* tansparent material & order-independent transparency
+* particle rendering
+* post processing (depth of field, motion blur, etc.)
+* 随机数 & 蓝噪声 blue noise
+* foveated rendering
+* probe based GI
+* ReSTIR(2020), Neural Radiance Caching(2021), etc.
+* many-light theory and light cuts
+* participating media, 次表面散射的 SSSSS
+* hair appearance
+* ...
 
