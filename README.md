@@ -54,9 +54,6 @@
 * [第九艺术](#第九艺术)
   * [Sparkle 光](#sparkle-光)
 * [个人小结 Personal Road to Games & CG](#个人小结-personal-road-to-games--cg)
-  * [DONE](#done)
-  * [DOING](#doing)
-  * [NEXT](#next)
 
 <!-- /TOC -->
 
@@ -68,18 +65,18 @@
 > <font color=#6495ED>—— 有生之年。</font>
 
 ## Basic 基础入门
-- [ ] 1. [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎 | `真正遇到的第一个资料，虽然只爬了一点点……`
-- [ ] 2. [Computer Graphics (CSE167x)](https://www.edx.org/course/computer-graphics-2) | Ravi Ramamoorthi | edX | `爬了数学部分`
+- [ ] 1. [【授权翻译】如何开始学习图形学编程](https://zhuanlan.zhihu.com/p/55518151) | 知乎
+- [ ] 2. [Computer Graphics (CSE167x)](https://www.edx.org/course/computer-graphics-2) | Ravi Ramamoorthi | edX | `数学部分挺好，狂敲黑板注意几何意义`
 - [ ] 3. [GAMES101](https://www.bilibili.com/video/BV1X7411F744) | 闫令琪 | GAMES | bilibili | `★★★★★，入门第二课，男神超可爱！`
    - [x] Lectures & Notes
-   - [ ] Homeworks
+   - [ ] Homeworks 3/8
 - [ ] 4. Fundamentals of Computer Graphics, 4th Edition | Book | `虎书`
 - [ ] 5. [GAMES202](https://www.bilibili.com/video/BV1YK4y1T7yY) | 闫令琪 | GAMES | bilibili | `Real-Time High Quality Rendering`
-  - [ ] Lectures & Notes
-  - [ ] Homeworks
+  - [x] Lectures & Notes
+  - [ ] Homeworks 1/5
 
 ## Rendering 渲染
-- [ ] 1. Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多没看懂，据说看了PBRT再来review会豁然贯通=。=`
+- [ ] 1. Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多？？？的地方，据说看了PBRT再来review会豁然贯通=。=`
    - [x] Ray Tracing in one weekend
    - [x] Ray Tracing the next week
    - [ ] Ray Tracing the rest of your life | `蒙特卡洛+重要性采样做优化`
@@ -91,8 +88,10 @@
 ## API & Engine
 ### API - DirectX
 - [ ] DirectX 12 3D 游戏开发实践 | `龙书`
+- [ ] [Windows 渲染引擎入门](https://www.zhihu.com/column/c_1465096004047822849) | MaxwellGeng | 知乎专栏 | `龙书精炼`
 ### API - OpenGL
-  - [ ] [LearnOpenGL](https://learnopengl-cn.github.io/) | `OpenGL入门`
+  - [ ] [LearnOpenGL](https://learnopengl.com/) | `OpenGL入门，2020 & 2021 更新了 OIT 等几块高级内容`
+  - [ ] [LearnOpenGL 中译](https://learnopengl-cn.github.io/) | `社区好人翻译，更新部分暂未收录`
 ### API - Vulkan
   - [ ] [GameTechDev/IntroductionToVulkan](https://github.com/GameTechDev/IntroductionToVulkan) | `入门示例`
   - [ ] [vulkan-tutorial](https://vulkan-tutorial.com/) | `入门`
@@ -221,7 +220,7 @@
 5. - [x] [虚幻引擎4开放世界ARPG《幻塔》技术分享](https://www.bilibili.com/video/BV1Ka4y1W7NE) | 幻塔 丁许朋 | `开放大世界的地形优化，移动平台限制（DrawCall、顶点数），超大视距（UE中的裁剪优化、动态遮挡查询、植被DC优化、阴影方案）`
 6. - [ ] [虚幻引擎4全平台热更新方案](https://www.bilibili.com/video/BV1ey4y1q7s4) | 查利鹏
 ### [Fest Europe 2019 | bilibili](https://space.bilibili.com/138827797/video?tid=0&page=1&keyword=FestEurope2019&order=pubdate)
-1. - [ ] [Using the Gameplay Ability System](https://www.bilibili.com/video/BV1gJ411J7AM) 使用游戏玩法技能系统
+1. - [x] [Using the Gameplay Ability System](https://www.bilibili.com/video/BV1gJ411J7AM) 使用游戏玩法技能系统
 2. - [ ] [Gameplay Abilities Meet Behavior Trees](https://www.bilibili.com/video/BV12E41147eb) 游戏技能系统搭配行为树
 3. - [ ] [Digital Material with the Substance Tools](https://www.bilibili.com/video/BV1dE41147gn) UE4里的Substance流程
 4. - [x] [UE4 Pixel Streaming](https://www.bilibili.com/video/BV1gJ411J7Jv) UE4像素流技术
@@ -356,7 +355,7 @@
 # 个人小结 Personal Road to Games & CG
 > <font color=#6495ED size=6>DONE List Encourage！</font>  
 > <font color=#6495ED size=6>—— 假装有变强。</font>
-
+<!-- 
 TIPS: Incremental learning notes.
 
 ## DONE
@@ -379,6 +378,8 @@ TIPS: Incremental learning notes.
   * soft rs.
   * rt.
   * API dx12
+ -->
+
 
 > # To Be Continued...
 
