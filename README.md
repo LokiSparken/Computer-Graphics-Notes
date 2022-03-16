@@ -74,6 +74,10 @@
 - [ ] 5. [GAMES202](https://www.bilibili.com/video/BV1YK4y1T7yY) | 闫令琪 | GAMES | bilibili | `Real-Time High Quality Rendering`
   - [x] Lectures & Notes
   - [ ] Homeworks 1/5
+- [ ] 6. [GAMES104](https://www.bilibili.com/video/BV1oU4y1R7Km) | 王希 | GAMES | bilibili | `引擎架构入门`（配合 Game Engine Architecture？）
+  - [ ] Lectures & Notes
+  - [ ] Homeworks 
+<!-- - [ ]  -->
 
 ## Rendering 渲染
 - [ ] 1. Ray Tracing 三部曲 | Peter Shirley | Book | `cookbook，入门第一课，还有很多？？？的地方，据说看了PBRT再来review会豁然贯通=。=`
