@@ -11,17 +11,17 @@
 目录
 <!-- TOC -->
 
-* [图形学与游戏引擎 Computer Graphcis & Game Engine](#图形学与游戏引擎-computer-graphcis--game-engine)
+* [图形学与游戏引擎 Computer Graphcis \& Game Engine](#图形学与游戏引擎-computer-graphcis--game-engine)
   * [Basic 基础入门](#basic-基础入门)
   * [Rendering 渲染](#rendering-渲染)
-  * [API & Engine](#api--engine)
+  * [API \& Engine](#api--engine)
     * [API - DirectX](#api---directx)
     * [API - OpenGL](#api---opengl)
     * [API - Vulkan](#api---vulkan)
     * [Engines](#engines)
   * [GPU](#gpu)
   * [文章资料](#文章资料)
-  * [好东西！& Toolbox](#好东西-toolbox)
+  * [好东西！\& Toolbox](#好东西-toolbox)
 * [虚幻引擎 Unreal Engine](#虚幻引擎-unreal-engine)
   * [入门教程](#入门教程)
   * [基本主题](#基本主题)
@@ -48,12 +48,13 @@
 * [计科基础 Computer Science](#计科基础-computer-science)
   * [C++ 是不可能会用的](#c-是不可能会用的)
   * [工程是不可能会写的](#工程是不可能会写的)
+  * [软硬件协同设计](#软硬件协同设计)
   * [其它](#其它)
 * [深渊天坑 TODO Flag](#深渊天坑-todo-flag)
   * [Sparkler](#sparkler)
 * [第九艺术](#第九艺术)
   * [Sparkle 光](#sparkle-光)
-* [个人小结 Personal Road to Games & CG](#个人小结-personal-road-to-games--cg)
+* [个人小结 Personal Road to Games \& CG](#个人小结-personal-road-to-games--cg)
 
 <!-- /TOC -->
 
@@ -319,6 +320,9 @@
 
 ## 工程是不可能会写的
 - 设计模式
+
+## 软硬件协同设计
+- [一生一芯](https://ysyx.oscc.cc/) | `轮子之心一路造到底层`
 
 ## 其它
 - 深入理解计算机系统结构
