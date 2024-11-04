@@ -11,25 +11,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 基于物理着色 by文刀秋二
 * 知乎专栏 Behind the Pixels https://zhuanlan.zhihu.com/behindthepixels
 ## 基于物理着色（一）
