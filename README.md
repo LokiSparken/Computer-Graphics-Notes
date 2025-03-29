@@ -106,7 +106,7 @@
 - [ ] [Game Engine Series](https://www.youtube.com/playlist?list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT) | The Cherno | YouTube | `更新至93p`
 - [ ] 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
 - [ ] 游戏引擎架构 | 叶劲峰 译
-- [ ] Unity Shader 入门精要 | 冯乐乐
+- [x] Unity Shader 入门精要 | 冯乐乐
 - [ ] Unity Tutorials | Jasper Flick | (Catlike Coding)(https://catlikecoding.com/unity/tutorials/)
 
 ## GPU
