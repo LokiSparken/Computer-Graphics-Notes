@@ -102,6 +102,7 @@
   - [ ] [vulkan-tutorial](https://vulkan-tutorial.com/) | `入门`
   - [ ] Vulkan Cookbook | Pawel Lapinski | Book | `据说不适合初学者（`
   - [ ] [awesome-vulkan](http://www.vinjn.com/awesome-vulkan/) | Vinjn张静 | `资料汇总`
+  - [ ] [Vulkan Guide](https://vkguide.dev/docs/gpudriven)
 ### Engines
 - [ ] [Game Engine Series](https://www.youtube.com/playlist?list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT) | The Cherno | YouTube | `更新至93p`
 - [ ] 从零开始手敲次世代游戏引擎 | 陈文礼 | 知乎 | `2020.06.11更新至八十三`
@@ -323,7 +324,10 @@
 
 ## 软硬件协同设计
 - [一生一芯](https://ysyx.oscc.cc/) | `轮子之心一路造到底层`
-- [操作系统：设计与实现](https://www.bilibili.com/video/BV1Xm411f7CM) | 南京大学OS课 蒋炎岩
+- OS
+  - [操作系统：设计与实现](https://www.bilibili.com/video/BV1Xm411f7CM) | 南京大学OS课 蒋炎岩
+  - MIT 6.828
+  - 
 - 电路设计工程计算基础 | 武晔卿、李东伟、石小兵 | 电子工业出版社
 
 ## 其它
@@ -335,6 +339,8 @@
   - [ ] 计算机网络（自顶向下方法）
   - [ ] 现代计算机网络
 - 编译原理
+- 数据库
+  - CMU 15-445
 
 ---
 
