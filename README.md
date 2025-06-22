@@ -329,6 +329,7 @@
   - MIT 6.828
   - 
 - 电路设计工程计算基础 | 武晔卿、李东伟、石小兵 | 电子工业出版社
+- [Linux Performance](https://www.brendangregg.com/linuxperf.html)
 
 ## 其它
 - 深入理解计算机系统结构
