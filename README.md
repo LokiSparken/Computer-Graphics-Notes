@@ -50,6 +50,7 @@
   * [工程是不可能会写的](#工程是不可能会写的)
   * [软硬件协同设计](#软硬件协同设计)
   * [其它](#其它)
+  * [AI](#ai)
 * [深渊天坑 TODO Flag](#深渊天坑-todo-flag)
   * [Sparkler](#sparkler)
 * [第九艺术](#第九艺术)
@@ -62,7 +63,7 @@
 
 # 图形学与游戏引擎 Computer Graphcis & Game Engine
 
-> <font color=#6495ED size=6>Welcome to CG & Engine！(>ᴗ<*)ฅ</font>  
+> <font color=#6495ED size=2>Welcome to CG & Engine！(>ᴗ<*)ฅ</font>  
 > <font color=#6495ED>—— 有生之年。</font>
 
 ## Basic 基础入门
@@ -159,7 +160,7 @@
 
 # 虚幻引擎 Unreal Engine
 
-> <font color=#6495ED size=6>虚幻引擎</font>  
+> <font color=#6495ED size=2>虚幻引擎</font>  
 > <font color=#6495ED>—— 这辈子都不可能会用的。</font>
 
 ## 入门教程
@@ -304,7 +305,7 @@
 
 # 计科基础 Computer Science
 
-> <font color=#6495ED size=6>计算机基础</font>  
+> <font color=#6495ED size=2>计算机基础</font>  
 > <font color=#6495ED>—— 空空如也，莫得基础。 :)</font>
 
 ## C++ 是不可能会用的
@@ -318,6 +319,7 @@
 - STL 源码剖析
 - CMake
   - git:cmake-examples
+  - [ ] [CMake Tutorial](https://cmake.org/cmake/help/latest/guide/tutorial/index.html)
 
 ## 工程是不可能会写的
 - 设计模式
@@ -343,11 +345,16 @@
 - 数据库
   - CMU 15-445
 
+## AI
+- [ ] [Stanford CS146S](https://themodernsoftware.dev/)
+- [ ] [Stanford CS336](https://stanford-cs336.github.io/spring2025/)
+- [ ] ...
+
 ---
 
 # 深渊天坑 TODO Flag
 
-> <font color=#6495ED size=6>永不下落的旗帜</font>  
+> <font color=#6495ED size=2>永不下落的旗帜</font>  
 > <font color=#6495ED>—— 实现当然是不存在的。</font>
 
 ## Sparkler
@@ -363,7 +370,7 @@
 ---
 
 # 第九艺术
-> <font color=#6495ED size=6>创世美学须知</font>  
+> <font color=#6495ED size=2>创世美学须知</font>  
 > <font color=#6495ED>—— 我说，要有光。</font>
 ## Sparkle 光
 * [ ] [基础色彩理论](https://www.bilibili.com/video/BV1t7411o79q)
@@ -371,8 +378,8 @@
 * [ ] [色彩与光线](https://www.bilibili.com/video/BV1rW411B7qX) | James Gurney
 
 # 个人小结 Personal Road to Games & CG
-> <font color=#6495ED size=6>DONE List Encourage！</font>  
-> <font color=#6495ED size=6>—— 假装有变强。</font>
+> <font color=#6495ED size=2>DONE List Encourage！</font>  
+> <font color=#6495ED size=2>—— 假装有变强。</font>
 <!-- 
 TIPS: Incremental learning notes.
 
